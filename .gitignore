@@ -1,7 +1,7 @@
 # gasp distribution
 dist/*
 build/*
-gasp.egg-info
+gasp3.egg-info
 # .pyc files
 *.pyc
 # eclipse projects
