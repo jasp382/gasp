@@ -1,0 +1,32 @@
+{
+	"TEMPERATURE": [
+		"C:\\path\\to\\january.tif",
+		"C:\\path\\to\\february.tif",
+		"C:\\path\\to\\march.tif",
+		"C:\\path\\to\\april.tif",
+		"C:\\path\\to\\may.tif",
+		"C:\\path\\to\\june.tif",
+		"C:\\path\\to\\july.tif",
+		"C:\\path\\to\\august.tif",
+		"C:\\path\\to\\september.tif",
+		"C:\\path\\to\\october.tif",
+		"C:\\path\\to\\november.tif",
+		"C:\\path\\to\\december.tif"
+	],
+	"PRECIPITATION": [
+		"C:\\path\\to\\january.tif",
+		"C:\\path\\to\\february.tif",
+		"C:\\path\\to\\march.tif",
+		"C:\\path\\to\\april.tif",
+		"C:\\path\\to\\may.tif",
+		"C:\\path\\to\\june.tif",
+		"C:\\path\\to\\july.tif",
+		"C:\\path\\to\\august.tif",
+		"C:\\path\\to\\september.tif",
+		"C:\\path\\to\\october.tif",
+		"C:\\path\\to\\november.tif",
+		"C:\\path\\to\\december.tif"
+	],
+	"TEXTURE": "None",
+	"INSOLATION": [9.8,10.7,12.0,13.3,14.4,15.0,14.7,13.7,12.5,11.0,10.0,9.4]
+}
