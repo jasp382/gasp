@@ -2,6 +2,20 @@
 GASP Python Package
 """
 
+def __import(full_path):
+    """
+    For 'gasp.apis.module', return the 'module' object
+    """
+    
+    components = full_path.split('.')
+    mod = __import__(components[0])
+    
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    
+    return mod
+
+
 def exec_cmd(cmd):
     """
     Execute a command and provide information about the results
@@ -15,11 +29,13 @@ def exec_cmd(cmd):
     
     if p.returncode != 0:
         raise ValueError(
-            'Output: {o}\nError: {e}'.format(o=str(out), e=str(err))
+            'Output: {o}\nError: {e}'.format(
+                o=out.decode('utf-8'), e=err.decode('utf-8')
+            )
         )
     
     else:
-        return out
+        return out.decode('utf-8')
 
 
 def goToList(obj):

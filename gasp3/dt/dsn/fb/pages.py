@@ -82,7 +82,7 @@ def extract_by_page(face_page, data_type='posts', nposts=100, returnNext=None,
     try:
         raw_data = json_fm_httpget(URL)
     except:
-        print URL
+        print(URL)
         return None, None
     
     data = pandas.DataFrame(raw_data["data"])

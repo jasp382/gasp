@@ -13,7 +13,7 @@ def vector_formats():
 
 def raster_formats():
     return [
-        '.tiff', '.tif', '.img', '.nc', 'ecw', '.jpg', '.png', '.vrt'
+        '.tiff', '.tif', '.img', '.nc', 'ecw', '.jpg', '.png', '.vrt', '.jp2'
     ]
 
 

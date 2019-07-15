@@ -46,7 +46,7 @@ def lst_views(conParam, schema='public'):
     List Views in database
     """
     
-    from gasp.fm.sql import query_to_df
+    from gasp3.dt.fm.sql import query_to_df
     
     views = query_to_df(conParam, (
         "SELECT table_name FROM information_schema.views "
@@ -66,7 +66,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
     """
     
     if api == 'psql':
-        from gasp.fm.sql import query_to_df
+        from gasp3.dt.fm.sql import query_to_df
     
         tbls = query_to_df(conObj, (
             "SELECT table_name FROM information_schema.tables "
@@ -144,3 +144,27 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
     
     return colnames
 
+
+"""
+Table Meta
+"""
+
+def check_last_id(lnk, pk, table):
+    """
+    Check last ID of a given table
+    
+    return 0 if there is no data
+    
+    TODO: Do this with Pandas
+    """
+    
+    from gasp3.sql.c     import psqlcon
+    from gasp3.dt.fm.sql import query_to_df
+    
+    q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)
+    d = query_to_df(lnk, q, db_api='psql').fid.tolist()
+    
+    if not d[0]:
+        return 0
+    else:
+        return d[0]

@@ -3,6 +3,97 @@ Raster Management Tools
 """
 
 """
+Join Bands
+"""
+
+def comp_bnds(rsts, outRst):
+    """
+    Composite Bands
+    """
+    
+    from osgeo             import gdal, gdal_array
+    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.gt.prop.rst import get_nodata
+    from gasp3.gt.prop.prj import get_epsg_raster, epsg_to_wkt
+    
+    # Get Arrays
+    _as = [rst_to_array(r) for r in rsts]
+    
+    # Get nodata values
+    nds = [get_nodata(r) for r in rsts]
+    
+    # Assume that first raster is the template
+    img_temp = gdal.Open(rsts[0])
+    geo_tran = img_temp.GetGeoTransform()
+    band = img_temp.GetRasterBand(1)
+    dataType = gdal_array.NumericTypeCodeToGDALTypeCode(_as[0].dtype)
+    rows, cols = _as[0].shape
+    epsg = get_epsg_raster(rsts[0])
+    
+    # Create Output
+    drv = gdal.GetDriverByName(drv_name(outRst))
+    out = drv.Create(outRst, cols, rows, len(_as), dataType)
+    out.SetGeoTransform(geo_tran)
+    out.SetProjection(epsg_to_wkt(epsg))
+    
+    # Write all bands
+    for i in range(len(_as)):
+        outBand = out.GetRasterBand(i+1)
+        outBand.SetNoDataValue(nds[i])
+        outBand.WriteArray(_as[i])
+        
+        outBand.FlushCache()
+    
+    return outRst
+
+"""
+Clipping
+"""
+
+def clip_rst(raster, clipShp, outRst, nodataValue=None, api='gdal'):
+    """
+    Clip Raster using GDAL WARP
+    """
+    
+    if api == 'gdal':
+        from gasp3            import exec_cmd
+        from gasp3.gt.prop.ff import drv_name
+    
+        outcmd = exec_cmd((
+            "gdalwarp {ndata}-cutline {clipshp} -crop_to_cutline "
+            "-of {ext} {inraster} -overwrite {outrst}"
+        ).format(
+            clipshp=clipShp, inraster=raster, outrst=outRst,
+            ext=drv_name(outRst),
+            ndata="-dstnodata {} ".format(
+                str(nodataValue)) if nodataValue else ""
+        ))
+    
+    elif api == 'pygrass':
+        from grass.pygrass.modules import Module
+        
+        m = Module(
+            'r.clip', input=raster, output=outRst,
+            overwrite=True, run_=False, quiet=True
+        )
+        
+        m()
+    
+    elif api == 'grass':
+        from gasp3 import exec_cmd
+        
+        rcmd = exec_cmd('r.clip input={} output={} --overwrite --quiet'.format(
+            raster, outRst
+        ))
+    
+    else:
+        raise ValueError('API {} is not available'.format(api))
+    
+    return outRst
+
+
+"""
 Merge and Combine raster dataset
 """
 def mosaic_raster(inRasterS, o, asCmd=None):
@@ -76,7 +167,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     # ************************************************************************ #
     # GRASS MODULES #
     # ************************************************************************ #
-    from gasp3.to.rst      import rst_to_grs, grs_to_rst
+    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
     from gasp3.gt.wenv.grs import rst_to_region
     # ************************************************************************ #
     # SET GRASS GIS LOCATION EXTENT #

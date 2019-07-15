@@ -137,31 +137,31 @@ r.in.gdal --overwrite input=C:\Landsat\Land8Clip\bnd_11.TIF output=dnB.11
 g.region rast=dnB.1@landsat8 
 
 
--------- conversão de DN para reflectancia e correcção atmosférica:---------------------
+-------- conversao de DN para reflectancia e correccao atmosferica:---------------------
 
 
 i.landsat.toar input_prefix=dnB. output_prefix=toar. metfile=C:\Landsat\Land8\LC82030322014167LGN00_MTL.txt sensor=ot8 method=dos4
 
------ importar o modelo de elevação digital do terreno para o grass ------------------------------------
+----- importar o modelo de elevacao digital do terreno para o grass ------------------------------------
 
 r.in.gdal input=C:\Landsat\mdt_WGS84.tif output=mdt_WGS --overwrite
 
---------------------------------------correcção topográfica-----------------------------
+--------------------------------------correccao topografica-----------------------------
 
 90-(28.05822610) = 61.9417739
 90 - (64.32430312) = 25.67569688
 90 - 66.12573608 = 23.87426392
 
-       1. Primeiro o modelo de illuminação do terreno a partir da DEM
+       1. Primeiro o modelo de illuminacao do terreno a partir da DEM
 
 i.topo.corr -i --overwrite output=aster.illu basemap=mdt_WGS@landsat8 zenith=23.87426392 azimuth=128.64173925
 
-       2. A correção topográfica
+       2. A correcaoo topografica
 
 i.topo.corr --overwrite input=toar.1,toar.2,toar.3,toar.4,toar.5,toar.6,toar.7,toar.8,toar.9,toar.10,toar.11 output=topo. basemap=mdt_WGS@landsat8 zenith=23.87426392 azimuth=128.64173925 method=minnaert
 
 
----------------------------------------exportação em tiff --------------------------------
+---------------------------------------exportacao em tiff --------------------------------
 
 g.rename --overwrite rast=topo..toar.1,topo..toar.01 
 g.rename --overwrite rast=topo..toar.2,topo..toar.02 
@@ -178,7 +178,7 @@ Usar a ferramenta: i.group
 
 i.group group=land8_estrela input=topo..toar.01@landsat8,topo..toar.02@landsat8,topo..toar.03@landsat8,topo..toar.04@landsat8,topo..toar.05@landsat8,topo..toar.06@landsat8,topo..toar.07@landsat8,topo..toar.08@landsat8,topo..toar.09@landsat8,topo..toar.10@landsat8,topo..toar.11@landsat8
 
-# Nomes têm de estar em maiúsculas
+# Nomes tem de estar em maiusculas
 r.out.gdal --overwrite input=land8_estrela@landsat8 output=C:\Landsat\land8_estrela.tif format=GTiff
 """
 
@@ -214,30 +214,30 @@ r.in.gdal --overwrite input=C:\Landsat\Land7Clip\Bnd_08.TIF output=dnB.8
 g.region rast=dnB.1@Sao_pedro 
 
 
--------- conversão de DN para reflectancia e correcção atmosférica:---------------------
+-------- conversao de DN para reflectancia e correccao atmosferica:---------------------
 
 
 i.landsat.toar input_prefix=dnB. output_prefix=toar. metfile=C:\Landsat\LE72030322001171EDC00_MTL.txt sensor=tm7 method=dos3
 
------ importar o modelo de elevação digital do terreno para o grass ------------------------------------
+----- importar o modelo de elevacao digital do terreno para o grass ------------------------------------
 
 r.in.gdal input=C:\Landsat\mdt_WGS84.tif output=mdt_WGS --overwrite
 
---------------------------------------correcção topográfica-----------------------------
+--------------------------------------correccao topografica-----------------------------
 
 90-(28.05822610) = 61.9417739
 90 - (64.32430312) = 25.67569688
-64.32430312 = elevação do sol
-       1. Primeiro o modelo de illuminação do terreno a partir da DEM
+64.32430312 = elevacao do sol
+       1. Primeiro o modelo de illuminacao do terreno a partir da DEM
 
 i.topo.corr -i --overwrite output=aster.illu basemap=mdt_WGS@landsat7 zenith=25.67569688 azimuth=124.18532847
 
-       2. A correção topográfica
+       2. A correcao topografica
 
 i.topo.corr --overwrite input=toar.1,toar.2,toar.3,toar.4,toar.5,toar.61,toar.62,toar.7,toar.8 output=topo. basemap=mdt_WGS@landsat7 zenith=25.67569688 azimuth=124.18532847 method=minnaert
 
 
----------------------------------------exportação em tiff --------------------------------
+---------------------------------------exportacao em tiff --------------------------------
 
 g.rename --overwrite rast=topo..toar.1,topo..toar.01 
 g.rename --overwrite rast=topo..toar.2,topo..toar.02 

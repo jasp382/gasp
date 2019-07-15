@@ -12,10 +12,9 @@ def GDAL_Hidric_Balance(meta_file=os.path.join(
     """
     
     import os
-    
-    from gasp.fm.rst   import rst_to_array
+    from gasp3.dt.fm.rst import rst_to_array
     from gasp.to.rst   import array_to_raster
-    from gasp.prop.rst import get_cellsize
+    from gasp3.gt.prop.rst import get_cellsize
     
     def DecodeJson(json_file):
         import json

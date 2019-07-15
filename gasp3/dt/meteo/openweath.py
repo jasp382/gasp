@@ -16,7 +16,6 @@ def conditions_by_position(lat, lng):
         "https://api.openweathermap.org/data/2.5/weather?lat={}&lon={}"
         "&appid={}"
     ).format(str(lat), str(lng), API_KEY)
-    print URL
     
     data = json_fm_httpget(URL)
     

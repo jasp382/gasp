@@ -67,7 +67,8 @@ def obj_to_tbl(pyObj, outTbl, delimiter=None, wIndex=None,
                 writer,
                 sheet_name="{}_{}".format(
                     get_filename(outTbl), str(i)
-                ) if not sheetsName or i+1 > len(sheetsName) else sheetsName[i]
+                ) if not sheetsName or i+1 > len(sheetsName) else sheetsName[i],
+                index=wIndex
             )
         
         writer.save()
@@ -111,8 +112,8 @@ def db_to_tbl(conDB, tables, outTbl, txtDelimiter=None, dbAPI='psql',
     """
     
     import os
-    from gasp3        import goToList
-    from gasp3.fm.sql import query_to_df
+    from gasp3           import goToList
+    from gasp3.dt.fm.sql import query_to_df
     
     if tables == 'ALL':
         from gasp3.sql.i import lst_tbl
@@ -248,7 +249,7 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
     import os
     from gasp3         import goToList
     from gasp3.pyt.oss import get_fileformat, get_filename
-    from gasp3.fm      import tbl_to_obj
+    from gasp3.dt.fm   import tbl_to_obj
     
     if os.path.isdir(tblFile):
         from gasp3.pyt.oss import list_files

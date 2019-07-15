@@ -13,7 +13,7 @@ def get_stop_words(conPSQL, inTbl, fidCol, txtCol, outFile,
     from gasp3.pyt.oss    import get_filename
     from gasp3.sql.i      import cols_name
     from gasp3.sql.mng.db import create_db
-    from gasp3.to         import tbl_to_db, db_to_tbl
+    from gasp3.dt.to      import tbl_to_db, db_to_tbl
     
     
     FILENAME = get_filename(inTbl)

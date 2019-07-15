@@ -195,7 +195,7 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
             # Assuming is file
             if os.path.exists(inShp):
                 # Is File 
-                from gasp.fm import tbl_to_obj
+                from gasp3.dt.fm import tbl_to_obj
                 
                 df = tbl_to_obj(inShp)
             else:

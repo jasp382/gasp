@@ -2,9 +2,8 @@
 Validation techniques for modelling results
 """
 
+"""
 def roc_analysis(movs, validation_sample, rst_score, lmt, w, output):
-    """TODO: This is a old version; adapt to a new one based on pysage way
-    of working"""
     def Extract_Presences(shape, driver):
 	shp = ogr.GetDriverByName(driver).Open(shape, 0)
 	lyr = shp.GetLayer()
@@ -96,4 +95,5 @@ def roc_analysis(movs, validation_sample, rst_score, lmt, w, output):
     graph = PlotRocGraphic(dic_scores['true'], dic_scores['score'])
     pp = PdfPages(output)
     pp.savefig(graph)
-    pp.close()    
+    pp.close()
+"""    

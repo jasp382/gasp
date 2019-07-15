@@ -9,16 +9,16 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
     """
     
     import os; import math; import numpy
-    from osgeo          import gdal
-    from gasp.fm.rst    import rst_to_array
-    from gasp.fm        import tbl_to_obj
-    from gasp.prop.feat import get_geom_type
-    from gasp.prop.rst  import rst_shape
-    from gasp.prop.rst  import count_cells
-    from gasp.prop.rst  import get_cellsize
-    from gasp.stats.rst import frequencies
-    from gasp.oss.ops   import create_folder
-    from gasp.to.rst    import array_to_raster
+    from osgeo              import gdal
+    from gasp3.dt.fm.rst    import rst_to_array
+    from gasp3.dt.fm        import tbl_to_obj
+    from gasp3.gt.prop.feat import get_geom_type
+    from gasp3.gt.prop.rst  import rst_shape
+    from gasp3.gt.prop.rst  import count_cells
+    from gasp3.gt.prop.rst  import get_cellsize
+    from gasp3.gt.prop.rst  import frequencies
+    from gasp3.pyt.oss      import create_folder
+    from gasp.to.rst        import array_to_raster
     
     # Create Workspace for temporary files
     workspace = create_folder(os.path.join(
@@ -26,7 +26,7 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
     )
     
     # Get Variables Raster Shape and see if there is any difference
-    varShapes = rst_shape(variables, gisApi='gdal')
+    varShapes = rst_shape(variables)
     for i in range(1, len(variables)):
         if varShapes[variables[i-1]] != varShapes[variables[i]]:
             raise ValueError((

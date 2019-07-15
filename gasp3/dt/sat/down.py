@@ -23,11 +23,11 @@ def lst_prod(shpExtent, start_time, end_time, user, password,
     """
     
     import os
-    from sentinelsat   import SentinelAPI, read_geojson, geojson_to_wkt
-    from datetime      import date
-    from gasp3.fm      import tbl_to_obj
-    from gasp3.pyt.oss import get_fileformat
-    from gasp3.to.shp  import df_to_shp
+    from sentinelsat     import SentinelAPI, read_geojson, geojson_to_wkt
+    from datetime        import date
+    from gasp3.dt.fm     import tbl_to_obj
+    from gasp3.pyt.oss   import get_fileformat
+    from gasp3.dt.to.shp import df_to_shp
     
     # Get Search Area
     
@@ -64,7 +64,7 @@ def down_imgs(inTbl, user, password, imgIDcol, outFolder=None):
     
     import os
     from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
-    from gasp3.fm    import tbl_to_obj
+    from gasp3.dt.fm import tbl_to_obj
     
     of = outFolder if outFolder else os.path.dirname(inTbl)
     

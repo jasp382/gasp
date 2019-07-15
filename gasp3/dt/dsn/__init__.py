@@ -113,9 +113,9 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
                     )
                 
                 if type(tmpData) == int:
-                    print "NoData finded for buffer '{}' and keyword '{}'".format(
+                    print("NoData finded for buffer '{}' and keyword '{}'".format(
                         bf['cardeal'], k
-                    )
+                    ))
                     
                     continue
                 
@@ -336,7 +336,7 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     """
     
     import time
-    from gasp.fm                import tbl_to_obj
+    from gasp3.dt.fm            import tbl_to_obj
     from gasp.sql.mng.db        import create_db
     from gasp.web.dsn.fb.places import places_by_query
     from gasp.mng.prj           import project

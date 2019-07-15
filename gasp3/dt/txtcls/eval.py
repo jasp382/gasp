@@ -14,14 +14,28 @@ def binary_eval(refTbl, refId, refCol, tstTbl, tstId,
     import numpy as np
     import pandas
     import math
-    from gasp3.fm import tbl_to_obj
-    from gasp3.to import obj_to_tbl
+    from gasp3.dt.fm import tbl_to_obj
+    from gasp3.dt.to import obj_to_tbl
     
     # TODO: this only works for xlsx.
     
     # Data to Pandas Dataframe
-    ref_df = tbl_to_obj(refTbl, useFirstColAsIndex=None)
-    tst_df = tbl_to_obj(tstTbl, useFirstColAsIndex=None)
+    ref_df = tbl_to_obj(refTbl, fields=[refId, refCol])
+    tst_df = tbl_to_obj(tstTbl, fields=[tstId] if not tstCol else [tstId, tstCol])
+    
+    # Check if refId is equal to tstId; they must be different
+    if refId == tstId:
+        colRename = {tstId:'tst_fid__'}
+        
+        # Do the same for refCol and tstCol
+        if refCol == tstCol:
+            colRename[tstCol] = 'tst_col__'
+        
+        tst_df.rename(columns=colRename, inplace=True)
+        tstId = 'tst_fid__'
+        
+        if refCol == tstCol:
+            tstCol = 'tst_col__'
     
     df = ref_df.merge(
         tst_df, how='left', left_on=refId, right_on=tstId)
@@ -178,4 +192,49 @@ def binary_eval(refTbl, refId, refCol, tstTbl, tstId,
         [conf_tbl, evalMeasures, df], outTbl,
         sheetsName=['matrix', 'eval_mesures', 'tbl']
     )
+
+
+def model_conf_matrix(tblFile, refCol, clsCol, outMxt):
+    """
+    Model Evaluation
+    """
+    
+    import pandas as pd
+    from gasp3.dt.fm     import tbl_to_obj
+    from gasp3.dt.to     import obj_to_tbl
+    from sklearn.metrics import confusion_matrix, classification_report
+    
+    data = tbl_to_obj(tblFile)
+    
+    ref_id = data[[refCol]].drop_duplicates().sort_values(refCol)
+    
+    conf_mat = confusion_matrix(data[refCol], data[clsCol])
+    
+    mxt = pd.DataFrame(
+        conf_mat, columns=ref_id[refCol].values, index=ref_id[refCol].values)
+    mxt.reset_index(inplace=True)
+    mxt.rename(columns={'index' : 'confusion_mxt'}, inplace=True)
+    
+    # Get classification report
+    report = classification_report(
+        data[refCol], data[clsCol],
+        target_names=ref_id[refCol],
+        output_dict=True
+    )
+    
+    global_keys = ['accuracy', 'macro avg', 'micro avg', 'weighted avg']
+    
+    cls_eval = {k : report[k] for k in report if k not in global_keys}
+    glb_eval = {k : report[k] for k in report if k in global_keys}
+    
+    if 'accuracy' in glb_eval:
+        glb_eval['accuracy'] = {
+            'f1-score' : glb_eval['accuracy'], 'precision' : 0,
+            'recall' : 0, 'support' : 0
+        }
+    
+    cls_eval = pd.DataFrame(cls_eval).T
+    gbl_eval = pd.DataFrame(glb_eval).T
+    
+    return obj_to_tbl([gbl_eval, cls_eval, mxt], outMxt, sheetsName=['global', 'report', 'matrix'])
 

@@ -51,6 +51,7 @@ def tbl_to_obj(tblFile, sheet=None, useFirstColAsIndex=None,
         """
         
         import pandas
+        from gasp3 import goToList
         
         sheet = 0 if sheet == None else sheet
         
@@ -58,7 +59,8 @@ def tbl_to_obj(tblFile, sheet=None, useFirstColAsIndex=None,
         
         tableDf = pandas.read_excel(
             tblFile, sheet, index_col=indexCol,
-            encoding='utf-8', dtype='object'
+            encoding='utf-8', dtype='object',
+            usecols=goToList(fields) if fields != "ALL" else None
         )
     
     elif fFormat == '.txt' or fFormat == '.csv':
@@ -137,3 +139,4 @@ def tbl_to_obj(tblFile, sheet=None, useFirstColAsIndex=None,
         tableDf = tableDf.to_dict(orient=orientation)
     
     return tableDf
+
