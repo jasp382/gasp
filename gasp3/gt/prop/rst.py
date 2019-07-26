@@ -178,7 +178,6 @@ def get_nodata(r):
     
     API'S Available:
     * gdal;
-    * arcpy;
     """
     
     gisApi = 'gdal'
@@ -288,9 +287,9 @@ def adjust_ext_to_snap(outExt, snapRst):
     Adjust extent for a output raster to snap with other raster
     """
     
-    from gasp3.gt.prop.ff import check_isShp, check_isRaster
+    from gasp3.gt.prop.ff  import check_isShp, check_isRaster
     from gasp3.gt.prop.rst import rst_ext, get_cellsize
-    from gasp3.dt.to.geom import create_point, create_polygon
+    from gasp3.dt.to.geom  import create_point, create_polygon
     
     # Check if outExt is a raster or not
     isRst = check_isRaster(outExt)
@@ -353,6 +352,11 @@ def adjust_ext_to_snap(outExt, snapRst):
         outExtPnt['bottom_left'] if out_rst_pseudo['bottom_left'] else \
         outExtPnt['top_right'] if out_rst_pseudo['top_right'] else \
         outExtPnt['bottom_right'] if out_rst_pseudo['bottom_right'] else None
+        
+    if not pseudoOrigin:
+        raise ValueError((
+            'Extents doesn\'t have overlapping areas'
+        ))
     
     pseudoOriginName = 'top_left' if out_rst_pseudo['top_left'] else \
         'bottom_left' if out_rst_pseudo['bottom_left'] else \

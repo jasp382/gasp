@@ -132,9 +132,10 @@ def get_epsg_raster(rst, returnIsProj=None):
     from osgeo import osr
     
     if not os.path.exists(rst):
-        raise ValueError(
-            "{} does not exist! Please give a valid path to a raster file"
-        )
+        raise ValueError((
+            "{} does not exist! Please give a valid "
+            "path to a raster file"
+        ).format(rst))
     
     d    = gdal.Open(rst)
     proj = osr.SpatialReference(wkt=d.GetProjection())

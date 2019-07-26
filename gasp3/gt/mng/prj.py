@@ -80,28 +80,13 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
     Project Geodata using GIS
     
     API's Available:
-    * arcpy
     * ogr
     * ogr2ogr;
     * pandas
     """
     import os
     
-    if gisApi == 'arcpy':
-        """
-        Execute Data Management > Data Transformations > Projection
-        """
-        
-        import arcpy
-        from gasp.cpu.arcg.lyr import feat_lyr
-        from gasp.web.srorg    import get_wkt_esri
-        
-        layer   = feat_lyr(inShp)
-        srs_obj = get_wkt_esri(outEPSG)
-        
-        arcpy.Project_management(layer, outShp, srs_obj)
-    
-    elif gisApi == 'ogr':
+    if gisApi == 'ogr':
         """
         Using ogr Python API
         """
@@ -112,12 +97,12 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
                 ' input data using inEPSG parameter'
             )
         
-        from osgeo          import ogr
-        from gasp.prop.feat import get_geom_type
-        from gasp.prop.ff   import drv_name
-        from gasp.mng.fld   import ogr_copy_fields
-        from gasp.prop.prj  import get_sref_from_epsg
-        from gasp.oss       import get_filename
+        from osgeo                   import ogr
+        from gasp3.gt.mng.fld.ogrfld import copy_flds
+        from gasp3.gt.prop.feat      import get_geom_type
+        from gasp3.gt.prop.ff        import drv_name
+        from gasp3.gt.prop.prj       import get_sref_from_epsg
+        from gasp3.pyt.oss           import get_filename
         
         def copyShp(out, outDefn, lyr_in, trans):
             for f in lyr_in:
@@ -151,7 +136,7 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         )
         
         # Copy fields to the output
-        ogr_copy_fields(inLyr, outlyr)
+        copy_flds(inLyr, outlyr)
         # Copy/transform features from the input to the output
         outlyrDefn = outlyr.GetLayerDefn()
         copyShp(outlyr, outlyrDefn, inLyr, transP)
@@ -170,8 +155,8 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         if not inEPSG:
             raise ValueError('To use ogr2ogr, you must specify inEPSG')
         
-        from gasp         import exec_cmd
-        from gasp.prop.ff import drv_name
+        from gasp3            import exec_cmd
+        from gasp3.gt.prop.ff import drv_name
         
         cmd = (
             'ogr2ogr -f "{}" {} {}{} -s_srs EPSG:{} -t_srs:{}'
@@ -208,7 +193,7 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         
         if outShp:
             # Try to save as file
-            from gasp.to.shp import df_to_shp
+            from gasp3.dt.to.shp import df_to_shp
             
             return df_to_shp(df, outShp)
         

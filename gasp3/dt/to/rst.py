@@ -40,7 +40,7 @@ def array_to_raster(inArray, outRst, template, noData=None):
         outBand.WriteArray(inArray)
     
         if epsg:
-            from gasp.prop.prj import epsg_to_wkt
+            from gasp3.gt.prop.prj import epsg_to_wkt
             srs = epsg_to_wkt(epsg)
             out.SetProjection(srs)
     
