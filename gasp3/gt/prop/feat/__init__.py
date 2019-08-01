@@ -3,6 +3,48 @@ Feature Classes Properties
 """
 
 
+def feat_count(shp, gisApi='pandas'):
+    """
+    Count the number of features in a feature class
+    
+    API'S Available:
+    * gdal;
+    * arcpy;
+    * pygrass;
+    * pandas;
+    """
+    
+    if gisApi == 'ogr':
+        from osgeo            import ogr
+        from gasp3.gt.prop.ff import drv_name
+    
+        data = ogr.GetDriverByName(drv_name(shp)).Open(shp, 0)
+        lyr = data.GetLayer()
+        fcnt = int(lyr.GetFeatureCount())
+        data.Destroy()
+    
+    elif gisApi == 'pygrass':
+        from grass.pygrass.vector import VectorTopo
+        
+        open_shp = VectorTopo(shp)
+        open_shp.open(mode='r')
+        fcnt = open_shp.num_primitive_of(geom)
+    
+    elif gisApi == 'pandas':
+        from gasp3.dt.fm import tbl_to_obj
+        
+        gdf = tbl_to_obj(shp)
+        
+        fcnt = int(gdf.shape[0])
+        
+        del gdf
+    
+    else:
+        raise ValueError('The api {} is not available'.format(gisApi))
+    
+    return fcnt
+
+
 def get_geom_type(shp, name=True, py_cls=None, geomCol="geometry",
                   gisApi='pandas'):
     """
@@ -115,4 +157,41 @@ def get_ext(shp):
         dt.Destroy()
     
     return list(extent)
+
+
+"""
+Fields Information
+"""
+
+def lst_fld(shp):
+    """
+    Return a list with every field name in a vectorial layer
+    """
+    
+    from osgeo            import ogr
+    from gasp3.gt.prop.ff import drv_name
+    
+    if type(shp) == ogr.Layer:
+        lyr = shp
+        c=0
+    
+    else:
+        data = ogr.GetDriverByName(
+            drv_name(shp)).Open(shp, 0)
+    
+        lyr = data.GetLayer()
+        c= 1
+    
+    defn = lyr.GetLayerDefn()
+    
+    fields = []
+    for i in range(0, defn.GetFieldCount()):
+        fdefn = defn.GetFieldDefn(i)
+        fields.append(fdefn.name)
+    
+    if c:
+        del lyr
+        data.Destroy()
+    
+    return fields
 

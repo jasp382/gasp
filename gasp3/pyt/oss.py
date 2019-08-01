@@ -170,6 +170,8 @@ def create_folder(folder, randName=None, overwrite=True):
     
     if os.path.exists(folder):
         if overwrite:
+            import shutil
+            
             shutil.rmtree(folder)
         else:
             raise ValueError(

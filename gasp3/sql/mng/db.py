@@ -55,3 +55,36 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
     
     return newdb
 
+
+"""
+Delete Databases
+"""
+
+def drop_db(lnk, database):
+    """
+    Delete PostgreSQL database
+    
+    Return 0 if the database does not exist
+    """
+    
+    from gasp3.sql.c import psqlcon
+    from gasp3.sql.i import list_db
+    
+    if "DATABASE" in lnk:
+        raise ValueError(
+            "For this method, the dict used to connected to "
+            "PostgreSQL could not have a DATABASE key"
+        )
+    
+    databases = list_db(lnk)
+    
+    if database not in databases: return 0
+    
+    con = psqlcon(lnk)
+    cursor = con.cursor()
+    
+    cursor.execute("DROP DATABASE {};".format(database))
+        
+    cursor.close()
+    con.close()
+

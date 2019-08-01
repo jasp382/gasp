@@ -263,19 +263,32 @@ def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
     
     # Convert SRS if outEPSG
     if outEpsg and epsg != outEpsg:
-        from gasp3.dt.to.geom    import create_polygon
+        from gasp3.dt.to.geom import create_polygon
         from gasp3.gt.mng.prj import project_geom
         
         poly = project_geom(
             create_polygon(boundary_points), epsg, outEpsg)
         
         left, right, bottom, top = poly.GetEnvelope()
+        #bottom, top, left, right  = poly.GetEnvelope()
         
         boundary_points = [
             (left, top), (right, top), (right, bottom),
             (left, bottom), (left, top)
         ]
     
+    # Create Geometry
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    for pnt in boundary_points:
+        ring.AddPoint(pnt[0], pnt[1])
+    
+    polygon = ogr.Geometry(ogr.wkbPolygon)
+    polygon.AddGeometry(ring)
+    
+    if not outshp:
+        return polygon
+    
+    # Create outShapefile if a path is given
     shp = ogr.GetDriverByName(
         drv_name(outshp)).CreateDataSource(outshp)
     
@@ -288,13 +301,6 @@ def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
     outDefn = lyr.GetLayerDefn()
     
     feat = ogr.Feature(outDefn)
-    ring = ogr.Geometry(ogr.wkbLinearRing)
-    
-    for pnt in boundary_points:
-        ring.AddPoint(pnt[0], pnt[1])
-    
-    polygon = ogr.Geometry(ogr.wkbPolygon)
-    polygon.AddGeometry(ring)
     
     feat.SetGeometry(polygon)
     lyr.CreateFeature(feat)
@@ -303,4 +309,28 @@ def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
     shp.Destroy()
     
     return outshp
+
+
+"""
+Extent to Shape
+"""
+
+def rstext_to_shp(inRst, outShp, epsg=None):
+    """
+    Raster Extent to Feature Class
+    """
+    
+    from gasp3.gt.prop.rst import rst_ext
+    
+    # Get Raster Extent
+    left, right, bottom, top = rst_ext(inRst)
+    
+    # Get EPSG
+    if not epsg:
+        from gasp3.gt.prop.prj import get_epsg_raster
+        
+        epsg = get_epsg_raster(inRst)
+    
+    # Create Boundary
+    return coords_to_boundary((left, top), (right, bottom), epsg, outShp)
 

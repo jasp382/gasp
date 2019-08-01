@@ -1,0 +1,88 @@
+"""
+Manage data in Pandas DataFrame
+"""
+
+
+def merge_df(dfs, ignIndex=True):
+    """
+    Merge Multiple DataFrames into one
+    """
+    
+    if type(dfs) != list:
+        raise ValueError('dfs should be a list with Pandas Dataframe')
+    
+    result = dfs[0]
+    
+    for df in dfs[1:]:
+        result = result.append(df, ignore_index=ignIndex)#, sort=True)
+    
+    return result
+
+
+def df_cols_to_rows(inDf, TO_COLS, col_old_col_name, key_old_col_name, col_mantain):
+    """
+    Dataframe like:
+
+      | pop_res |   ind2  | ind3 |  ind5   | id_unit |pop_res_int | ind2_int | ind3_int| ind5_int
+    0 |   571   | 35.0975 | 123  | 97.373  |   3768  |     2      |    6     |    2    |    7
+    1 |   938   | 18.2114 | 265  | 93.4968 |   3618  |     3      |    1     |    5    |    4
+    2 |   554   | 44.3149 |  76  | 97.4074 |   3788  |     1      |    7     |    1    |    7
+    3 |   711   | 37.8619 | 134  | 96.1429 |   3766  |     2      |    6     |    3    |    6
+    4 |  1268   | 46.0733 | 203  | 90.9385 |   3690  |     5      |    7     |    4    |    3
+
+    To:
+
+    0 | id_unit | id_indicator |  value  | cls
+    2 |   3768  |    pop_res   |   571   |  2
+    3 |   3768  |     ind2     | 35.0975 |  6
+    4 |   3768  |     ind3     |   123   |  2
+    5 |   3768  |     ind5     | 97.373  |  7
+    6 |   3618  |    pop_res   |   938   |  3
+    7 |   3618  |     ind2     | 18.2114 |  1
+    8 |   3618  |     ind3     |   265   |  5 
+    9 |   3618  |     ind5     | 93.4968 |  4
+    ...
+    
+    Using as parameters:
+    data_cols = ['pop_res', 'ind2', 'ind3', 'ind5']
+    col_mantain = 'id_unit'
+    TO_COLS = {
+        # Dict values should have the same length
+        'value' : data_cols,
+        'cls'   : [i + '_int' for i in data_cols]
+    }
+    
+    col_old_col_name = 'id_indicator'
+    key_old_col_name = 'value'
+    """
+    
+    from gasp3 import goToList
+    
+    col_mantain = goToList(col_mantain)
+    newCols     = list(TO_COLS.keys())
+    newDfs      = []
+    
+    for i in range(len(TO_COLS[newCols[0]])):
+        ndf = inDf.copy(deep=True)
+        
+        DROP_COLS = []
+        COLS_MANT = col_mantain.copy()
+        
+        for K in TO_COLS:
+            COLS_MANT.append(TO_COLS[K][i])
+        
+        for col in ndf.columns.values:
+            if col not in COLS_MANT:
+                DROP_COLS.append(col)
+        
+        ndf.drop(DROP_COLS, axis=1, inplace=True)
+        ndf.rename(columns={TO_COLS[k][i] : k for k in TO_COLS}, inplace=True)
+        
+        ndf[col_old_col_name] = TO_COLS[key_old_col_name][i]
+        
+        newDfs.append(ndf)
+    
+    outDf = merge_df(newDfs)
+    
+    return outDf
+

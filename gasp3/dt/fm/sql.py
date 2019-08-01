@@ -35,7 +35,9 @@ def tbl_to_dict(tbl, con, cols=None, apidb='psql'):
     data = query_to_df(
         con,
         'SELECT {cols_} FROM {table}'.format(
-            cols_=', '.join(cols),
+            cols_=', '.join(["{t}.{c} AS {c}".format(
+                t=tbl, c=i
+            ) for i in cols]),
             table=tbl
         ), db_api=apidb
     ).to_dict(orient="records")

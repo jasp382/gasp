@@ -5,6 +5,7 @@ Tools for DBMS and SQL
 def psql_special_words():
     return ['table', 'column', 'natural', 'group', 'left', 'right', 'order']
 
+
 def run_sql_script(lnk, database, sqlfile):
     """
     Run a sql file do whatever is on that script

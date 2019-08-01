@@ -17,6 +17,40 @@ def get_sref_from_epsg(epsg):
     
     return s
 
+
+def get_prj_web(epsg, output):
+    from gasp3.web.ff import get_file
+    
+    if epsg != 3857:
+        sr_org = 'http://spatialreference.org/ref/epsg/{srs}/prj/'.format(
+            srs=str(epsg)
+        )
+    
+    else:
+        sr_org = 'http://spatialreference.org/ref/sr-org/7483/prj/'
+    
+    prj_file = get_file(sr_org, output)
+    
+    return prj_file
+
+
+def get_wkt_web(epsg):
+    import requests
+    
+    
+    if epsg != 3857:
+        URL = 'http://spatialreference.org/ref/epsg/{}/ogcwkt/'.format(
+            str(epsg)
+        )
+    
+    else:
+        URL = 'http://spatialreference.org/ref/sr-org/7483/ogcwkt/'
+    
+    r = requests.get(URL)
+    
+    return r.text
+
+
 def get_shp_sref(shp):
     """
     Get Spatial Reference Object from Feature Class/Lyr
@@ -159,4 +193,24 @@ def get_epsg_raster(rst, returnIsProj=None):
                 return epsg, True
         else:
             return epsg, None
+
+
+"""
+Generic Methods
+"""
+
+def get_epsg(inFile):
+    """
+    Get EPSG of any GIS File
+    """
+    
+    from gasp3.gt.prop.ff import check_isRaster, check_isShp
+    
+    if check_isRaster(inFile):
+        return get_epsg_raster(inFile)
+    else:
+        if check_isShp(inFile):
+            return get_epsg_shp(inFile)
+        else:
+            return None
 

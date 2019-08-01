@@ -29,14 +29,18 @@ setup(
         'gasp3.gt',
         'gasp3.gt.anls',
         'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
-        'gasp3.gt.prop', 'gasp3.gt.spnlst', 'gasp3.gt.stats', 'gasp3.gt.wenv',
+        'gasp3.gt.prop', 'gasp3.ft.prop.feat',
+        'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
+        'gasp3.gt.stats', 'gasp3.gt.wenv',
         # ******************************************************************** #
-        'gasp3.pyt',
+        'gasp3.pyt', 'gasp3.pyt.df',
         # ******************************************************************** #
         'gasp3.sql',
         'gasp3.sql.mng',
         # ******************************************************************** #
-        'gasp3.web'
+        'gasp3.web',
+        'gasp3.web.djg', 'gasp3.web.djg.ff', 'gasp3.web.djg.mdl',
+        'gasp3.web.geosrv', 'gasp3.web.geosrv.styl', 'gasp3.web.geosrv.styl.sld'
         # ******************************************************************** #
     ],
     install_requires=[
@@ -59,7 +63,9 @@ setup(
         'pyexcel-ods==0.5.6',
         'bs4==0.0.1',
         'seaborn==0.9.0',
-        'sentinelsat==0.13'
+        'sentinelsat==0.13',
+        'django==2.2.4', 'django-widget-tweaks==1.4.5',
+        'django-cors-headers==3.1.0', 'djangorestframework==3.10.2'
     ],
     include_package_data=True
 )

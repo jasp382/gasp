@@ -22,10 +22,8 @@ def search_tweets(lat=None, lng=None, radius=None, keyword=None,
     Returns an array with the encountered data
     """
     
-    import tweepy
-    import pandas
-    from gasp.mng.fld.df import listval_to_newcols
-    from gasp            import unicode_to_str
+    import tweepy;        import pandas
+    from gasp3.pyt.df.fld import listval_to_newcols
     
     if not key:
         TOKEN, SECRET, CONSUMER_KEY, CONSUMER_SECRET = TWITTER_TOKEN['TOKEN'],\
@@ -44,12 +42,7 @@ def search_tweets(lat=None, lng=None, radius=None, keyword=None,
     api = tweepy.API(auth)
     
     # Request data from twitter
-    if not keyword:
-        keyword = ''
-    
-    else:
-        if type(keyword) == unicode:
-            keyword = unicode_to_str(keyword)
+    keyword = '' if not keyword else keyword
     
     if not lat or not lng or not radius:
         data = [i._json for i in tweepy.Cursor(
@@ -253,9 +246,9 @@ def geotweets_location(inGeom, epsg_in, keyword=None, epsg_out=4326,
     inGeom = [x, y, radius]
     """
     
-    from shapely.geometry    import Polygon, Point
-    from geopandas           import GeoDataFrame
-    from gasp.anls.prox.bf   import getBufferParam
+    from shapely.geometry      import Polygon, Point
+    from geopandas             import GeoDataFrame
+    from gasp3.gt.prop.feat.bf import getBufferParam
     
     x_center, y_center, dist = getBufferParam(inGeom, epsg_in, outSRS=4326)
     
@@ -277,15 +270,15 @@ def geotweets_location(inGeom, epsg_in, keyword=None, epsg_out=4326,
     gdata = GeoDataFrame(data, crs={'init' : 'epsg:4326'}, geometry=geoms)
     
     if onlySearchAreaContained:
-        from shapely.wkt       import loads
-        from gasp.mng.prj      import project_geom
-        from gasp.anls.prox.bf import coord_to_buffer
+        from shapely.wkt        import loads
+        from gasp3.gt.mng.prj   import project_geom
+        from gasp3.gt.anls.prox import xy_to_buffer
         
         # Check if all retrieve points are within the search area
         _x_center, _y_center, _dist = getBufferParam(
             inGeom, epsg_in, outSRS=3857)
         
-        search_area = coord_to_buffer(
+        search_area = xy_to_buffer(
             float(_x_center), float(_y_center), float(_dist)
         )
         search_area = project_geom(search_area, 3857, 4326, api='ogr')
@@ -310,7 +303,7 @@ def tweets_to_shp(buffer_shp, epsg_in, outshp, keyword=None,
     Search data in Twitter and create a vectorial file with that data
     """
     
-    from gasp.to.shp import df_to_shp
+    from gasp3.dt.to.shp import df_to_shp
     
     tweets = geotweets_location(
         buffer_shp, epsg_in, keyword=keyword,
@@ -335,7 +328,7 @@ def tweets_to_df(keyword=None, inGeom=None, epsg=None, LANG='pt',
     Search for Tweets and Export them to XLS
     """
     
-    from gasp import goToList
+    from gasp3 import goToList
     
     if not inGeom and not keyword:
         raise ValueError('inGeom or keyword, one of them are required')
@@ -385,7 +378,7 @@ def tweets_to_xls(outxls, searchword=None, searchGeom=None, srs=None, lng='pt',
     Search for Tweets and Export them to XLS
     """
     
-    from gasp.to import obj_to_tbl
+    from gasp3.dt.to import obj_to_tbl
     
     data = tweets_to_df(
         keyword=searchword, inGeom=searchGeom, epsg=srs,

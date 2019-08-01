@@ -16,9 +16,8 @@ def search_photos(lat=None, lng=None, radius=None, keyword=None,
     """
     
     import pandas
-    from flickrapi       import FlickrAPI
-    from gasp            import unicode_to_str
-    from gasp.mng.fld.df import listval_to_newcols
+    from flickrapi        import FlickrAPI
+    from gasp3.pyt.df.fld import listval_to_newcols
     
     if apiKey:
         FLIC_PUB, FLIC_SEC = apiKey
@@ -31,12 +30,7 @@ def search_photos(lat=None, lng=None, radius=None, keyword=None,
     
     extras = 'url_l,geo,date_taken,date_upload,description'
     
-    if not keyword:
-        keyword=''
-    
-    else:
-        if type(keyword) == unicode:
-            keyword = unicode_to_str(keyword)
+    keywords = '' if not keyword else keyword
     
     if not lat or not lng or not radius:
         data = flickr_engine.photos.search(
@@ -76,12 +70,12 @@ def photos_location(buffer_shp, epsg_in, keyword=None, epsg_out=4326,
     """
     
     import pandas
-    from shapely.geometry   import Polygon, Point
-    from shapely.wkt        import loads
-    from geopandas          import GeoDataFrame
-    from gasp.anls.prox.bf  import coord_to_buffer
-    from gasp.anls.prox.bf  import getBufferParam
-    from gasp.mng.prj       import project_geom
+    from shapely.geometry      import Polygon, Point
+    from shapely.wkt           import loads
+    from geopandas             import GeoDataFrame
+    from gasp3.gt.anls.prox    import xy_to_buffer
+    from gasp3.gt.prop.feat.bf import getBufferParam
+    from gasp3.gt.mng.prj      import project_geom
     
     x_center, y_center, dist = getBufferParam(buffer_shp, epsg_in, outSRS=4326)
     
@@ -108,7 +102,7 @@ def photos_location(buffer_shp, epsg_in, keyword=None, epsg_out=4326,
         _x_center, _y_center, _dist = getBufferParam(
             buffer_shp, epsg_in, outSRS=3857)
         # Check if all retrieve points are within the search area
-        search_area = coord_to_buffer(
+        search_area = xy_to_buffer(
             float(_x_center), float(_y_center), float(_dist))
         search_area = project_geom(search_area, 3857, 4326, api='ogr')
         search_area = loads(search_area.ExportToWkt())
@@ -154,7 +148,7 @@ def photos_to_shp(buffer_shp, epsg_in, outshp, keyword=None,
     data.
     """
     
-    from gasp.to.shp import df_to_shp
+    from gasp3.dt.to.shp import df_to_shp
     
     photos = photos_location(
         buffer_shp, epsg_in, keyword=keyword, epsg_out=epsg_out,

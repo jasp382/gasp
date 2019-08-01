@@ -7,7 +7,7 @@ from . import FACEBOOK_TOKEN
 
 
 def sanitizeData(df, FACE_PAGE=None):
-    from gasp.mng.fld.df import listval_to_newcols
+    from gasp3.pyt.df.fld import listval_to_newcols
     
     if FACE_PAGE:
         df['page_ref'] = FACE_PAGE
@@ -54,7 +54,7 @@ def extract_by_page(face_page, data_type='posts', nposts=100, returnNext=None,
     """
     
     import pandas
-    from gasp.web import json_fm_httpget
+    from gasp3.dt.to.js import http_to_json
     
     if not apiKeyToUse:
         KEY_ID, KEY_SECRET = FACEBOOK_TOKEN['APP_ID'], FACEBOOK_TOKEN['APP_SECRET']
@@ -80,7 +80,7 @@ def extract_by_page(face_page, data_type='posts', nposts=100, returnNext=None,
     )
     
     try:
-        raw_data = json_fm_httpget(URL)
+        raw_data = http_to_json(URL)
     except:
         print(URL)
         return None, None
@@ -108,7 +108,7 @@ def extract_by_page(face_page, data_type='posts', nposts=100, returnNext=None,
         new_URL = raw_data["paging"]["next"]
         for n in range(N-1):
             try:
-                moreRawData = json_fm_httpget(new_URL)
+                moreRawData = http_to_json(new_URL)
             except:
                 return None, None
             
@@ -136,9 +136,9 @@ def extract_from_url_and_next(url, Nnext=None, returnNext=None):
     """
     
     import pandas
-    from gasp.web import json_fm_httpget
+    from gasp3.dt.to.js import http_to_json
     
-    raw_data = json_fm_httpget(url)
+    raw_data = http_to_json(url)
     
     data = pandas.DataFrame(raw_data["data"])
     

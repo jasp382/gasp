@@ -105,6 +105,59 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
     return __tbls
 
 
+def lst_tbl_basename(basename, dic_con, schema='public'):
+    """
+    List tables with name that includes basename
+    """
+    
+    from gasp3.sql.c import psqlcon
+    
+    conn = psqlcon(dic_con)
+    
+    cs = conn.cursor()
+    cs.execute((
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema='{}' AND table_name LIKE '%{}%'".format(
+            schema, basename
+        )
+    ))
+    
+    f = [x[0] for x in cs.fetchall()]
+    
+    cs.close()
+    conn.close()
+    
+    return f
+
+
+"""
+Counting in table
+"""
+
+def row_num(conObj, table, where=None, api='psql'):
+    """
+    Return the number of rows in Query
+    
+    API's Available:
+    * psql;
+    * sqlite;
+    """
+    
+    from gasp3.dt.fm.sql import query_to_df
+    
+    if not table.startswith('SELECT '):
+        Q = "SELECT COUNT(*) AS nrows FROM {}{}".format(
+            table,
+            "" if not where else " WHERE {}".format(where)
+        )
+    else:
+        Q = "SELECT COUNT(*) AS nrows FROM ({}) AS foo".format(table)
+    
+    d = query_to_df(conObj, Q, db_api=api)
+    
+    return int(d.iloc[0].nrows)
+
+
 """
 Info about fields in table
 """
@@ -168,3 +221,31 @@ def check_last_id(lnk, pk, table):
         return 0
     else:
         return d[0]
+
+
+"""
+Geometric Properties
+"""
+
+def tbl_ext(conParam, table, geomCol):
+    """
+    Return extent of the geometries in one pgtable
+    """
+    
+    from gasp.fm.sql import query_to_df
+    
+    q = (
+        "SELECT MIN(ST_X(pnt_geom)) AS eleft, MAX(ST_X(pnt_geom)) AS eright, "
+        "MIN(ST_Y(pnt_geom)) AS bottom, MAX(ST_Y(pnt_geom)) AS top "
+        "FROM ("
+            "SELECT (ST_DumpPoints({geomcol})).geom AS pnt_geom "
+            "FROM {tbl}"
+        ") AS foo"
+    ).format(tbl=table, geomcol=geomCol)
+    
+    ext = query_to_df(conParam, q, db_api='psql').to_dict(orient='index')[0]
+    
+    return [
+        ext['eleft'], ext['bottom'], ext['eright'], ext['top']
+    ]
+

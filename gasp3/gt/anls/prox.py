@@ -2,6 +2,19 @@
 Buffering Tools
 """
 
+def xy_to_buffer(x, y, radius):
+    """
+    XY Coordinates to Buffer Geometry
+    """
+    
+    from gasp3.dt.to.geom import create_point
+    
+    pnt = create_point(x, y, api='ogr')
+    
+    return pnt.Buffer(int(round(float(radius), 0)))
+
+
+
 def ogr_buffer(geom, radius, out_file, srs=None):
     """
     For each geometry in the input, this method create a buffer and store it

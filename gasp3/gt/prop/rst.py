@@ -471,8 +471,8 @@ def sanitize_report(report):
 
 
 def san_report_combine(report):
-    from gasp3.dt.fm         import tbl_to_obj
-    from gasp3.gt.mng.fld.df import splitcol_to_newcols
+    from gasp3.dt.fm      import tbl_to_obj
+    from gasp3.pyt.df.fld import splitcol_to_newcols
     
     repdata = tbl_to_obj(report, _delimiter="z")
     

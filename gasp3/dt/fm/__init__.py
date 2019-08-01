@@ -97,7 +97,7 @@ def tbl_to_obj(tblFile, sheet=None, useFirstColAsIndex=None,
                         break
             
             if fields != "ALL":
-                from gasp3.gt.mng.fld.df import del_fld_notin_geodf
+                from gasp3.pyt.df.fld import del_fld_notin_geodf
                 
                 tableDf = del_fld_notin_geodf(tableDf, fields, geomCol=geomCol)
             

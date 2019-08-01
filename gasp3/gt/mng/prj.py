@@ -234,7 +234,7 @@ def gdal_reproject_raster(inRst, outRst, inEPSG, outEPSG):
     """
     
     import sys
-    from gasp import exec_cmd
+    from gasp3 import exec_cmd
     
     cmd = (
         'gdalwarp -overwrite {inrst} {outrst} -s_srs EPSG:{inepsg} '

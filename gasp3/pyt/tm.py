@@ -17,7 +17,7 @@ def now_as_int():
     _now = _now.replace(':', '')
     _now = _now.split('.')[0]
     
-    return long(_now)
+    return int(_now)
 
 
 def day_to_intervals(interval_period):
