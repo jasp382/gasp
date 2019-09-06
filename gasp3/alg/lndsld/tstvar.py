@@ -10,11 +10,10 @@ def conditional_dependence(movs, indp):
     Estimate conditional dependence between several rasters
     """
     
-    import math
-    from decimal        import Decimal
-    from gasp.prop.feat import feat_count
-    from gasp.prop.rst  import get_cellsize, count_cells
-    from gasp.stats.rst import frequencies
+    import math; from decimal import Decimal
+    from gasp3.gt.prop.feat   import feat_count
+    from gasp3.gt.prop.rst    import get_cellsize, count_cells
+    from gasp3.gt.prop.rst    import frequencies
     
     def foundPredT(dic):
         PredT = 0.0
@@ -94,7 +93,7 @@ def MakeRasterPearsonCorrelationMatrix(indV, out):
     """
     
     import xlwt; import os
-    from gasp.stats.correlation import pearson_correlation
+    from gasp3.gt.stats.correlation import pearson_correlation
     
     # Open Report File
     report = xlwt.Workbook()

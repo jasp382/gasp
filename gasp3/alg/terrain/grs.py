@@ -15,14 +15,14 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
     * CONTOUR
     """
     
-    from gasp.oss      import get_filename
-    from gasp.session  import run_grass
-    from gasp.prop.rst import get_epsg_raster
+    from gasp3.pyt.oss     import get_filename
+    from gasp3.gt.wenv.grs import run_grass
+    from gasp3.gt.prop.prj import get_rst_epsg
     
     LOC_NAME = get_filename(data, forceLower=True)[:5] + "_loc"
     
     # Get EPSG From Raster
-    EPSG = get_epsg_raster(extent_template)
+    EPSG = get_rst_epsg(extent_template)
     
     # Create GRASS GIS Location
     grass_base = run_grass(grass_workspace, location=LOC_NAME, srs=EPSG)
@@ -33,9 +33,9 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
     gsetup.init(grass_base, grass_workspace, LOC_NAME, 'PERMANENT')
     
     # IMPORT GRASS GIS MODULES #
-    from gasp.to.rst     import rst_to_grs, grs_to_rst
-    from gasp.to.shp.grs import shp_to_grs
-    from gasp.prop.grs   import rst_to_region
+    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp3.dt.to.shp   import shp_to_grs
+    from gasp3.gt.wenv.grs import rst_to_region
     
     # Configure region
     rst_to_grs(extent_template, 'extent')
@@ -48,8 +48,8 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
     
     if method == "BSPLINE":
         # Convert to points
-        from gasp.cpu.grs.mng.feat import feat_vertex_to_pnt
-        from gasp.spanlst.interp   import bspline
+        from gasp3.gt.mng.feat      import feat_vertex_to_pnt
+        from gasp3.gt.spnlst.interp import bspline
         
         elev_pnt = feat_vertex_to_pnt(elv, "elev_pnt", nodes=None)
         
@@ -57,31 +57,31 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
     
     elif method == "SPLINE":
         # Convert to points
-        from gasp.cpu.grs.mng.feat import feat_vertex_to_pnt
-        from gasp.spanlst.interp   import surfrst
+        from gasp3.gt.mng.feat      import feat_vertex_to_pnt
+        from gasp3.gt.spnlst.interp import surfrst
         
         elev_pnt = feat_vertex_to_pnt(elv, "elev_pnt", nodes=None)
         
         outRst = surfrst(elev_pnt, field, OUTPUT_NAME, lyrN=1, ascmd=True)
     
     elif method == "CONTOUR":
-        from gasp.to.rst         import shp_to_raster
-        from gasp.spanlst.interp import surfcontour
+        from gasp3.dt.to.rst        import shp_to_rst
+        from gasp3.gt.spnlst.interp import surfcontour
         
         # Elevation (GRASS Vector) to Raster
-        elevRst = shp_to_raster(
+        elevRst = shp_to_rst(
             elv, field, None, None, 'rst_elevation', api="pygrass")
         
         # Run Interpolator
         outRst = surfcontour(elevRst, OUTPUT_NAME, ascmd=True)
     
     elif method == "IDW":
-        from gasp.spanlst.interp  import ridw
-        from gasp.spanlst.algebra import rstcalc
-        from gasp.to.rst          import shp_to_raster
+        from gasp3.gt.spnlst.interp import ridw
+        from gasp3.gt.spanlst.alg   import rstcalc
+        from gasp3.dt.to.rst        import shp_to_rst
         
         # Elevation (GRASS Vector) to Raster
-        elevRst = shp_to_raster(
+        elevRst = shp_to_rst(
             elv, field, None, None, 'rst_elevation', api='pygrass')
         # Multiply cells values by 100 000.0
         rstcalc('int(rst_elevation * 100000)', 'rst_elev_int', api='pygrass')

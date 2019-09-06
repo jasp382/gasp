@@ -95,7 +95,7 @@ def publish_raster_layer(layername, datastore, workspace, epsg_code, conf={
     import os;             import requests
     from gasp3             import random_str
     from gasp3.dt.to.Xml   import write_xml_tree
-    from gasp.pyt.oss      import create_folder, del_folder
+    from gasp3.pyt.oss     import create_folder, del_folder
     from gasp3.gt.prop.prj import epsg_to_wkt
     
     url = (

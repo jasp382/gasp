@@ -23,11 +23,10 @@ def places_by_query(bfShp, epsgIn, keyword=None, epsgOut=4326,
     buffer_shp = [x, y, r]
     """
     
-    import pandas
-    from shapely.geometry       import Polygon, Point
-    from geopandas              import GeoDataFrame
-    from gasp.anls.prox.bf      import getBufferParam
-    from gasp.web.dsn.fb.search import by_query
+    import pandas; from geopandas import GeoDataFrame
+    from shapely.geometry         import Polygon, Point
+    from gasp3.gt.prop.feat.bf    import getBufferParam
+    from gasp3.dt.dsn.fb.search   import by_query
     
     search_type = 'place'
     
@@ -84,9 +83,9 @@ def places_by_query(bfShp, epsgIn, keyword=None, epsgOut=4326,
     gdata = GeoDataFrame(data, crs={'init' : 'epsg:4326'}, geometry=geoms)
     
     if onlySearchAreaContained:
-        from shapely.wkt       import loads
-        from gasp.mng.prj      import project_geom
-        from gasp.anls.prox.bf import coord_to_buffer
+        from shapely.wkt           import loads
+        from gasp3.gt.mng.prj      import project_geom
+        from gasp3.gt.anls.prox.bf import coord_to_buffer
         
         # Check if all retrieve points are within the search area
         _x_center, _y_center, _dist = getBufferParam(
@@ -128,7 +127,7 @@ def places_to_shp(searchArea, epsgIn, epsgOut, outShp,
     File
     """
     
-    from gasp.to.shp import df_to_shp
+    from gasp3.dt.to.shp import df_to_shp
     
     places = places_by_query(
         searchArea, epsgIn, keyword=keyword_, epsgOut=epsgOut,

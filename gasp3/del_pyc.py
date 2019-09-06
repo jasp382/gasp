@@ -1,5 +1,5 @@
 if __name__ == "__main__":
-    from gasp.oss.ops import del_file_folder_tree
+    from gasp3.pyt.oss import del_file_folder_tree
     import os
     
     del_file_folder_tree(

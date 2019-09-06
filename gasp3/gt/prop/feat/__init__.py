@@ -45,8 +45,8 @@ def feat_count(shp, gisApi='pandas'):
     return fcnt
 
 
-def get_geom_type(shp, name=True, py_cls=None, geomCol="geometry",
-                  gisApi='pandas'):
+def get_gtype(shp, name=True, py_cls=None, geomCol="geometry",
+              gisApi='pandas'):
     """
     Return the Geometry Type of one Feature Class or GeoDataFrame
     
@@ -194,4 +194,65 @@ def lst_fld(shp):
         data.Destroy()
     
     return fields
+
+
+"""
+Geometric Properties
+"""
+
+def get_cntr_bnd(shp, isFile=None):
+    """
+    Return centroid (OGR Point object) of a Boundary (layer with a single
+    feature).
+    """
+    
+    from osgeo            import ogr
+    from gasp3.gt.prop.ff import drv_name
+    
+    if isFile:
+        shp = ogr.GetDriverByName(
+            drv_name(shp)).Open(shp, 0)
+    
+        lyr = shp.GetLayer()
+    
+        feat = lyr[0]; geom = feat.GetGeometryRef()
+    
+    else:
+        geom = shp
+    
+    centroid = geom.Centroid()
+    
+    cnt = ogr.CreateGeometryFromWkt(centroid.ExportToWkt())
+    
+    shp.Destroy()
+    
+    return cnt
+
+
+def area_to_dic(shp):
+    """
+    Return the following output:
+    
+    dic = {
+        id_feat: area,
+        ...,
+        id_feat: area
+    }
+    """
+    
+    from osgeo            import ogr
+    from gasp3.gt.prop.ff import drv_name
+    
+    o = ogr.GetDriverByName(drv_name(shp)).Open(shp, 0)
+    l = o.GetLayer()
+    d = {}
+    c = 0
+    for feat in l:
+        g = feat.GetGeometryRef()
+        area = g.GetArea()
+        d[c] = area
+        c += 1
+    del l
+    o.Destroy()
+    return d
 

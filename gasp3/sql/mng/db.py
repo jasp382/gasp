@@ -41,7 +41,7 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
         try:
             DB = os.path.join(lnk, newdb)
             if os.path.exists(DB) and overwrite:
-                from gasp.oss.ops import del_file
+                from gasp3.pyt.oss import del_file
                 del_file(os.path.join(DB))
             
             conn = sqlite3.connect(DB)
@@ -87,4 +87,23 @@ def drop_db(lnk, database):
         
     cursor.close()
     con.close()
+
+
+"""
+Dump Databases
+"""
+
+def dump_db(conPSQL, outSQL):
+    """
+    DB to SQL Script
+    """
+    
+    from gasp3 import exec_cmd
+    
+    outcmd = exec_cmd("pg_dump -U {} -h {} -p {} -w {} > {}".format(
+        conPSQL["USER"], conPSQL["HOST"], conPSQL["PORT"],
+        conPSQL["DATABASE"], outSQL      
+    ))
+    
+    return outSQL
 

@@ -3,7 +3,7 @@ Use Geoserver inside a Django Application
 """
 
 
-def get_feature_info(request, workspace, layer):
+def get_feature_info(request, workspace, layer, host, port, protocol):
     """
     Geoserver getFeatureInfo data to a Json Response
     """
@@ -12,7 +12,7 @@ def get_feature_info(request, workspace, layer):
     from django.http import JsonResponse
     
     url = (
-        'http://localhost:8888/geoserver/wms?&'
+        '{_pro}://{_host}:{_port}/geoserver/wms?&'
         'INFO_FORMAT=application/json&'
         'REQUEST=GetFeatureInfo&'
         'EXCEPTIONS=application/vnd.ogc.se_xml&'
@@ -25,6 +25,7 @@ def get_feature_info(request, workspace, layer):
         'TYPENAME={work}:{lyr}&'
         'CRS=EPSG:4326'
     ).format(
+        _pro=protocol, _host=host, _port=port,
         work=workspace, lyr=layer,
         width=request.GET['WIDTH'], height=request.GET['HEIGHT'],
         x=request.GET['X'], y=request.GET['Y'],

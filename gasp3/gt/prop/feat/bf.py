@@ -43,7 +43,7 @@ def get_buffer_radius(bfShp, isFile=None):
     return round(dist, 0)
 
 
-def buffer_properties(buffer_shp, epsg_in, isFile=None):
+def bf_prop(buffer_shp, epsg_in, isFile=None):
     """
     Return the centroid and radius distance of one buffer geometry
     
@@ -58,7 +58,7 @@ def buffer_properties(buffer_shp, epsg_in, isFile=None):
     }
     """
     
-    from gasp.prop.feat import get_centroid_boundary
+    from gasp3.gt.prop.feat import get_cntr_bnd
     
     if isFile:
         from gasp3.gt.anls.exct import geom_by_idx
@@ -81,7 +81,7 @@ def buffer_properties(buffer_shp, epsg_in, isFile=None):
         BUFFER_GEOM_R = BUFFER_GEOM
     
     dist   = get_buffer_radius(BUFFER_GEOM_R.ExportToWkt(), isFile=None)
-    center = get_centroid_boundary(BUFFER_GEOM, isFile=None)
+    center = get_cntr_bnd(BUFFER_GEOM, isFile=None)
     
     return {
         'X': center.GetX(), 'Y': center.GetY(), 'R': dist
@@ -123,7 +123,7 @@ def getBufferParam(inArea, inAreaSRS, outSRS=4326):
                     ).ExportToWkt()
                 
                 # Get x_center, y_center and radius
-                xyr = buffer_properties(BUFFER_GEOM, outSRS, isFile=None)
+                xyr = bf_prop(BUFFER_GEOM, outSRS, isFile=None)
                 x_center, y_center, dist = str(
                     xyr['X']), str(xyr['Y']), str(xyr['R'])
             

@@ -18,6 +18,7 @@ def create_point(x, y):
     
     return pnt
 
+
 def create_polygon(points, api='ogr'):
     """
     Return a OGR Polygon geometry object
@@ -35,6 +36,19 @@ def create_polygon(points, api='ogr'):
     polygon.AddGeometry(ring)
     
     return polygon
+
+def wkt_to_geom(wktTxt, withSpecialChar=None):
+    """
+    WKT to Geometry
+    """
+    
+    if withSpecialChar:
+        wktTxt = wktTxt.replace('v', ',').replace('e', ' ').replace(
+            'p', '.').replace('f', '(').replace('u', ')')
+    
+    geom = ogr.CreateGeometryFromWkt(wktTxt)
+    
+    return geom
 
 
 """
@@ -73,3 +87,15 @@ def df_to_geodf(df, colGeom, epsg):
         df, crs={'init' : 'epsg:{}'.format(epsg)},
         geometry=colGeom
     )
+
+def json_obj_to_geodf(json_obj, epsg):
+    """
+    Json Object to GeoDataFrame
+    """
+    
+    from geopandas import GeoDataFrame
+    
+    return GeoDataFrame.from_features(json_obj['features'], {
+        'init' : 'epsg:{}'.format(epsg)
+    })
+

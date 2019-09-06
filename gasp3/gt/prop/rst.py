@@ -150,6 +150,21 @@ def get_cellsize(rst, xy=False, bnd=None, gisApi='gdal'):
         raise ValueError('The api {} is not available'.format(gisApi))
 
 
+def get_cell_coord(line, column, xmin, ymax, cellwidth, cellheight):
+    """
+    Return x, y coordinates of one cell in a raster
+    
+    This method needs x, y of the top left corner because a numpy array
+    have indexes that increses from left to right and from top to bottom
+    """
+    
+    x = xmin + (column * cellwidth) + (cellwidth / 2)
+    
+    y = ymax - ( line * cellheight) - (cellheight / 2)
+    
+    return x, y
+
+
 def count_cells(raster, countNodata=None):
     """
     Return number of cells in a Raster Dataset
@@ -195,9 +210,128 @@ def get_nodata(r):
     
     return ndVal
 
+
+def rst_distinct(rst):
+    """
+    Export a list with the values of a raster
+    
+    API'S Available:
+    * gdal;
+    """
+    
+    import numpy
+    from gasp3.dt.fm.rst import rst_to_array
+    
+    v = numpy.unique(rst_to_array(rst, flatten=True, with_nodata=False))
+    
+    return list(v)
+
+
+def rst_dataType(rsts):
+    """
+    Get Raster dataType
+    
+    Only Available for GDAL
+    """
+    
+    from osgeo import gdal
+    
+    dataTypes = {
+        'Byte'    : gdal.GDT_Byte,
+        'Int16'   : gdal.GDT_Int16,
+        'UInt16'  : gdal.GDT_UInt16,
+        'Int32'   : gdal.GDT_Int32,
+        'UInt32'  : gdal.GDT_UInt32,
+        'Float32' : gdal.GDT_Float32,
+        'Float64' : gdal.GDT_Float64
+    }
+    
+    rsts = rsts if type(rsts) == list else rst.keys() if \
+        type(rsts) == dict else [rsts]
+    
+    types = []
+    for rst in rsts:
+        if type(rst) == gdal.Band:
+            band = rst
+        else:
+            src  = gdal.Open(rst)
+            band = src.GetRasterBand(1)
+    
+        dataType = gdal.GetDataTypeName(band.DataType)
+        
+        types.append(dataTypes[dataType])
+        
+        src  = None
+        band = None
+    
+    if len(types) == 1:
+        return types[0]
+    
+    else:
+        return types
+
 """
 Raster Statistics
 """
+
+def rst_stats(rst, bnd=None, api='gdal'):
+    """
+    Get Raster Statistics
+    
+    The output will be a dict with the following keys:
+    * Min - Minimum
+    * Max - Maximum
+    * Mean - Mean value
+    * StdDev - Standard Deviation
+    
+    API's Available:
+    * arcpy;
+    * gdal;
+    """
+    
+    if api == 'gdal':
+        """
+        Using GDAL, it will be very simple
+        """
+        
+        from osgeo import gdal
+        
+        r = gdal.Open(rst)
+        
+        bnd = r.GetRasterBand(1 if not bnd else bnd)
+        stats = bnd.GetStatistics(True, True)
+        
+        dicStats = {
+            'MIN' : stats[0], 'MAX' : stats[1], 'MEAN' : stats[2],
+            "STDEV" : stats[3]
+        }
+    
+    elif api == 'arcpy':
+        """
+        Do it with Arcpy
+        """
+        
+        import arcpy
+        from gasp.cpu.arcg.lyr import rst_lyr
+        
+        lyr = rst_lyr(rst)
+        
+        dicStats = {
+            'MIN'  : 'MINIMUM', 'MAX'   : 'MAXIMUM',
+            'MEAN' :    'MEAN', "STDEV" : "STD"
+        }
+        
+        for s in d:
+            stat = round(float(str(arcpy.GetRasterProperties_management(
+                lyr, s, "layer_1" if not bnd else bnd
+            )).replace(',', '.')), 4)
+            
+            dicStats[s] = stat
+        
+    else:
+        raise ValueError('Sorry, API {} is not available'.format(gisApi))
+    
+    return dicStats
 
 
 def frequencies(r):

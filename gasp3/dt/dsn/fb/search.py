@@ -21,10 +21,8 @@ def by_query(search_type,
     Returns an array with the id of the data in facebook
     """
     
-    import pandas
-    
-    from gasp     import goToList, unicode_to_str
-    from gasp.web import json_fm_httpget
+    import pandas; from gasp3 import goToList
+    from gasp3.dt.fm.web      import json_fm_httpget
     
     # Deal with spaces in the keyword expression and with special characters
     keyword = unicode_to_str(keyword) if type(keyword) == unicode \

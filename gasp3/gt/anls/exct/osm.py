@@ -19,34 +19,53 @@ def osmosis_extract(boundary, osmdata, wepsg, output):
     dtSrc = ogr.GetDriverByName(drv_name(boundary)).Open(boundary)
     lyr   = dtSrc.GetLayer()
     
-    for feat in lyr:
-        geom = feat.GetGeometryRef()
-        break
+    if os.path.isdir(output):
+        from gasp3.pyt.oss import get_filename
+        
+        geoms    = []
+        outFiles = []
+        
+        name_out = get_filename(osmdata)
+        for feat in lyr:
+            geoms.append(feat.GetGeometryRef())
+            
+            outFiles.append(os.path.join(output, "{}_{}.xml".format(
+                name_out, str(feat.GetFID())
+            )))
+        
+    else:
+        for feat in lyr:
+            geoms = [feat.GetGeometryRef()]
+            break
+        
+        outFiles = [output]
     
-    # Convert boundary to WGS84 -EPSG 4326
-    geom_wgs = project_geom(
-        geom, int(wepsg), 4326, api='ogr'
-    ) if int(wepsg) != 4326 else geom
+    for g in range(len(geoms)):
+        # Convert boundary to WGS84 -EPSG 4326
+        geom_wgs = project_geom(
+            geoms[g], int(wepsg), 4326, api='ogr'
+        ) if int(wepsg) != 4326 else geoms[g]
     
-    # Get boundary extent
-    left, right, bottom, top = geom_wgs.GetEnvelope()
+        # Get boundary extent
+        left, right, bottom, top = geom_wgs.GetEnvelope()
     
-    # Osmosis shell comand
-    osmExt = os.path.splitext(osmdata)[1]
-    osm_f  = 'enableDateParsing=no' if osmExt == '.xml' or osmExt == '.osm' else ''
+        # Osmosis shell comand
+        osmExt = os.path.splitext(osmdata)[1]
+        osm_f  = 'enableDateParsing=no' \
+            if osmExt == '.xml' or osmExt == '.osm' else ''
     
-    cmd = (
-        'osmosis --read-{_f} {p} file={_in} --bounding-box top={t} left={l}'
-        ' bottom={b} right={r} --write-{outext} file={_out}'
-    ).format(
-        _f = 'xml' if osmExt == '.xml' or osmExt == '.osm' else 'pbf',
-        p = osm_f, _in = osmdata,
-        t = str(top), l = str(left), b = str(bottom), r = str(right),
-        _out = output, outext=os.path.splitext(output)[1][1:]
-    )
+        cmd = (
+            'osmosis --read-{_f} {p} file={_in} --bounding-box top={t} left={l}'
+            ' bottom={b} right={r} --write-{outext} file={_out}'
+        ).format(
+            _f = 'xml' if osmExt == '.xml' or osmExt == '.osm' else 'pbf',
+            p = osm_f, _in = osmdata,
+            t = str(top), l = str(left), b = str(bottom), r = str(right),
+            _out = outFiles[g], outext=os.path.splitext(outFiles[g])[1][1:]
+        )
     
-    # Execute command
-    outcmd = exec_cmd(cmd)
+        # Execute command
+        outcmd = exec_cmd(cmd)
     
     return output
 

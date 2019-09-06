@@ -2,6 +2,30 @@
 Raster Management Tools
 """
 
+def rst_rotation(inFolder, template, outFolder, img_format='.tif'):
+    """
+    Invert raster data
+    """
+    
+    import os; from osgeo  import gdal
+    from gasp3.pyt.oss     import list_files
+    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.prop.rst import get_nodata
+    from gasp3.dt.to.rst   import array_to_raster
+    
+    rasters = list_files(inFolder, file_format=img_format)
+    
+    for rst in rasters:
+        a  = rst_to_array(rst)
+        nd = get_nodata(rst, gisApi='gdal')
+        
+        array_to_raster(
+            a[::-1],
+            os.path.join(outFolder, os.path.basename(rst)),
+            template, None, gdal.GDT_Float32, noData=nd,
+            gisApi='gdal'
+        )
+
 """
 Join Bands
 """
@@ -15,7 +39,7 @@ def comp_bnds(rsts, outRst):
     from gasp3.dt.fm.rst   import rst_to_array
     from gasp3.gt.prop.ff  import drv_name
     from gasp3.gt.prop.rst import get_nodata
-    from gasp3.gt.prop.prj import get_epsg_raster, epsg_to_wkt
+    from gasp3.gt.prop.prj import get_rst_epsg, epsg_to_wkt
     
     # Get Arrays
     _as = [rst_to_array(r) for r in rsts]
@@ -29,7 +53,7 @@ def comp_bnds(rsts, outRst):
     band = img_temp.GetRasterBand(1)
     dataType = gdal_array.NumericTypeCodeToGDALTypeCode(_as[0].dtype)
     rows, cols = _as[0].shape
-    epsg = get_epsg_raster(rsts[0])
+    epsg = get_rst_epsg(rsts[0])
     
     # Create Output
     drv = gdal.GetDriverByName(drv_name(outRst))

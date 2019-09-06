@@ -101,6 +101,26 @@ def obj_to_tbl(pyObj, outTbl, delimiter=None, wIndex=None,
     return outTbl
 
 
+def tbl_to_tbl(inTbl, outTbl, inSheet=None, txtDelimiter=None,
+               inTxtDelimiter=None, inEncoding='utf-8'):
+    """
+    Convert data format
+    """
+    
+    from gasp3.dt.fm import tbl_to_obj
+    
+    data = tbl_to_obj(
+        tblFile, sheet=inSheet,
+        #useFirstColAsIndex, _delimiter,
+        encoding_=inEncoding, _delimiter=inTxtDelimiter
+        #output, fields, geomCol, colsAsArray, geomAsWkt, srsTo
+    )
+    
+    outTbl = obj_to_tbl(data, outTbl, delimiter=txtDelimiter)
+    
+    return outTbl
+
+
 def db_to_tbl(conDB, tables, outTbl, txtDelimiter=None, dbAPI='psql',
               outTblF=None, sheetsNames=None):
     """
@@ -306,4 +326,171 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
         RTBL.append(_rtbl)
     
     return RTBL[0] if len(RTBL) == 1 else RTBL
+
+
+def db_to_db(conDBA, conDBB, typeDBA, typeDBB):
+    """
+    All tables in one Database to other database
+    
+    typesDB options:
+    * sqlite
+    * psql
+    """
+    
+    import os
+    from gasp3.dt.fm.sql  import query_to_df
+    from gasp3.sql.i      import lst_tbl
+    from gasp3.sql.mng.db import create_db
+    
+    # List Tables in DB A
+    tbls = lst_tbl(conDBA, excludeViews=True, api=typeDBA)
+    
+    # Create database B
+    if typeDBB == 'psql':
+        con_param = {
+            "HOST" : conDBB["HOST"], "USER" : conDBB["USER"],
+            "PORT" : conDBB["PORT"], "PASSWORD" : conDBB["PASSWORD"]
+        }
+        
+        if "TEMPLATE" in conDBB:
+            con_param["TEMPLATE"] = conDBB["TEMPLATE"]
+        
+        NEW_DB = conDBB["DATABASE"]
+    
+    else:
+        con_param = os.path.dirname(conDBB)
+        NEW_DB = os.path.basename(conDBB)
+    
+    db_b = create_db(con_param, NEW_DB, overwrite=False, api=typeDBB)
+    
+    # Table to Database B
+    for tbl in tbls:
+        df = query_to_df(
+            conDBA, "SELECT * FROM {}".format(tbl), db_api=typeDBA
+        )
+        
+        df_to_db(conDBB, df, tbl, append=None, api=typeDBB)
+
+
+def copy_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
+    """
+    Send PGSQL Tables from one database to other
+    """
+    
+    from gasp             import goToList
+    
+    api = 'pandas' if api != 'pandas' and api != 'psql' else api
+    
+    tables = goToList(tables)
+    
+    if api == 'pandas':
+        from gasp3.dt.fm.sql import query_to_df
+    
+        for table in tables:
+            if not qForTbl:
+                tblDf = query_to_df(conFromDb, "SELECT * FROM {}".format(
+                    table), db_api='psql')
+        
+            else:
+                if table not in qForTbl:
+                    tblDf = query_to_df(conFromDb, "SELECT * FROM {}".format(
+                        table), db_api='psql')
+            
+                else:
+                    tblDf = query_to_df(conFromDb, qForTbl[table], db_api='psql')
+        
+            df_to_db(conToDb, tblDf, table, api='psql')
+    
+    else:
+        import os
+        from gasp3.pyt.oss     import create_folder, del_folder
+        from gasp3.sql.mng.tbl import dump_table, restore_table
+        
+        tmpFolder = create_folder(
+            os.path.dirname(os.path.abspath(__file__)), randName=True
+        )
+        
+        for table in tables:
+            # Dump 
+            sqlScript = dump_table(conFromDb, table, os.path.join(
+                tmpFolder, table + ".sql"
+            ))
+            
+            # Restore
+            tblname = restore_table(conToDb, sqlScript, table)
+        
+        del_folder(tmpFolder)
+
+
+"""
+To XLS
+"""
+
+def dict_to_xls(dataDict, xlsout_path, outSheet):
+    """
+    Python Dict to a XLS File
+
+    dict = {
+        row_1 : {
+            col_1 : XXXXX,
+            col_2 : XXXXX,
+            ...
+            col_n : XXXXX
+        },
+        row_2 : {
+            col_1 : XXXXX,
+            col_2 : XXXXX,
+            ...
+            col_n : XXXXX
+        },
+        ...,
+        row_n : {
+            col_1 : XXXXX,
+            col_2 : XXXXX,
+            ...
+            col_n : XXXXX
+        }
+    }
+          | col_1 | col_2 | ... | col_n
+    row_1 | XXXXX | XXXXX | ... | XXXXX
+    row_2 | XXXXX | XXXXX | ... | XXXXX
+      ... | XXXXX | XXXXX | ... | XXXXX
+    row_n | XXXXX | XXXXX | ... | XXXXX
+    """
+
+    import xlwt
+
+    out_xls = xlwt.Workbook()
+    new_sheet = out_xls.add_sheet(outSheet)
+
+    # Write Columns Titles
+    new_sheet.write(0, 0, 'ID')
+    l = 0
+    COLUMNS_ORDER = []
+
+    for fid in dataDict:
+        if not l:
+            c = 1
+            for col in dataDict[fid]:
+                COLUMNS_ORDER.append(col)
+                new_sheet.write(l, c, col)
+                c+=1
+            l += 1
+        else:
+            break
+
+    # Write data - Columns are written by the same order
+    for fid in dataDict:
+        new_sheet.write(l, 0, fid)
+
+        c = 1
+        for col in COLUMNS_ORDER:
+            new_sheet.write(l, c, dataDict[fid][col])
+            c+=1
+        l+=1
+
+    # Save result
+    out_xls.save(xlsout_path)
+    
+    return xlsout_path
 

@@ -19,6 +19,48 @@ def merge_df(dfs, ignIndex=True):
     return result
 
 
+def col_list_val_to_row(pndDf, colWithLists, geomCol=None, epsg=None):
+    """
+    Convert a dataframe:
+    
+       | col_a | col_b | col_c
+     0 |   X   |   X   |   1
+     1 |   X   |   X   | [2,3]
+     
+    To:
+       | col_a | col_b | col_c
+     0 |   X   |   X   |   1
+     1 |   X   |   X   |   2
+     2 |   X   |   X   |   3
+    """
+    
+    def desmembrate(row, row_acc, target_col):
+        if type(row[target_col]) != list:
+            row_acc.append(row.to_dict())
+        
+        else:
+            for geom in row[target_col]:
+                new_row = row.to_dict()
+                new_row[target_col] = geom
+                row_acc.append(new_row)
+    
+    new_rows = []
+    pndDf.apply(lambda x: desmembrate(
+        x, new_rows, colWithLists), axis=1
+    )
+    
+    # Convert again to DataFrame
+    if geomCol and epsg:
+        from gasp3.dt.to.geom import df_to_geodf
+        
+        return df_to_geodf(new_rows, geomCol, epsg)
+    
+    else:
+        import pandas
+        
+        return pandas.DataFrame(new_rows)
+
+
 def df_cols_to_rows(inDf, TO_COLS, col_old_col_name, key_old_col_name, col_mantain):
     """
     Dataframe like:

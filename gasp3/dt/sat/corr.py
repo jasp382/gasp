@@ -8,15 +8,12 @@ def lnd8_dn_to_ref(folder, img_format, meta_json, outWorkspace, srs):
     Landsat8 digital numbers to surface reflectance
     """
     
-    import math
-    import json
-    import numpy
-    import os
-    
-    from gasp.oss      import list_files
-    from gasp.fm.rst   import rst_to_array
-    from gasp.prop.rst import get_cellsize, rst_stats
-    from gasp.to.rst   import array_to_raster
+    import math;           import json
+    import numpy;          import os
+    from gasp3.pyt.oss     import list_files
+    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.prop.rst import get_cellsize, rst_stats
+    from gasp3.dt.to.rst   import array_to_raster
     
     
     def Get_RTA(Ml, Qcalc, Al):

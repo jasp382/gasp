@@ -156,7 +156,7 @@ def get_epsg_shp(shp, returnIsProj=None):
 Raster Spatial Reference Systems
 """
 
-def get_epsg_raster(rst, returnIsProj=None):
+def get_rst_epsg(rst, returnIsProj=None):
     """
     Return the EPSG Code of the Spatial Reference System of a Raster
     """
@@ -207,7 +207,7 @@ def get_epsg(inFile):
     from gasp3.gt.prop.ff import check_isRaster, check_isShp
     
     if check_isRaster(inFile):
-        return get_epsg_raster(inFile)
+        return get_rst_epsg(inFile)
     else:
         if check_isShp(inFile):
             return get_epsg_shp(inFile)

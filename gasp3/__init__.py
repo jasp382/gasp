@@ -4,7 +4,7 @@ GASP Python Package
 
 def __import(full_path):
     """
-    For 'gasp.apis.module', return the 'module' object
+    For 'gasp3.gt.module', return the 'module' object
     """
     
     components = full_path.split('.')

@@ -64,7 +64,7 @@ def alchemy_engine(conParam, api='psql'):
         Return Alchemy Engine for SQLITE
         """
         
-        from gasp.oss   import os_name
+        from gasp3.pyt.oss import os_name
         
         if os_name() == 'Windows':
             constr = r'sqlite:///{}'.format(conParam)

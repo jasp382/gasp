@@ -83,7 +83,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
                 attr_colors = json.load(open(attr_colors, 'r'))
             
             elif ff == '.xlsx' or ff == '.xls':
-                from gasp.fm import tbl_to_obj
+                from gasp3.dt.fm import tbl_to_obj
                 
                 attr_colors = tbl_to_obj(
                     attr_colors, sheet=0, useFirstColAsIndex=None, output='array'

@@ -73,14 +73,14 @@ def elevation_to_pntshp(pnt_shp, epsg, fld_name='ELEVATION'):
     """
     
     from gasp.fm        import tbl_to_obj
-    from gasp.prop.feat import get_geom_type
+    from gasp.prop.feat import get_gtype
     from gasp.mng.prj   import project
     from gasp.mng.split import split_df
     from gasp.to.obj    import df_to_dict
     from gasp.to.shp    import df_to_shp
     
     # Check Geometries type - shapes should be of type point
-    geomt = get_geom_type(pnt_shp, name=True, gisApi='ogr')
+    geomt = get_gtype(pnt_shp, name=True, gisApi='ogr')
     if geomt != 'POINT' and geomt != 'MULTIPOINT':
         raise ValueError('All input geometry must be of type point')
     

@@ -1,0 +1,3 @@
+include gasp3/alg/osm2lulc/osmtolulc.sqlite
+include gasp3/alg/osm2lulc/con-postgresql.json
+include gasp3/alg/fmapi/apis.db3

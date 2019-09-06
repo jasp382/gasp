@@ -15,7 +15,7 @@ def match_cellsize_and_clip(rstBands, refRaster, outFolder,
     """
     
     import os
-    from gasp3.gt.prop.prj import get_epsg_raster
+    from gasp3.gt.prop.prj import get_rst_epsg
     from gasp3.gt.wenv.grs import run_grass
     from gasp3.pyt.oss     import get_filename, create_folder
     
@@ -24,7 +24,7 @@ def match_cellsize_and_clip(rstBands, refRaster, outFolder,
         create_folder(outFolder, overwrite=None)
     
     # Get EPSG from refRaster
-    epsg = get_epsg_raster(refRaster, returnIsProj=None)
+    epsg = get_rst_epsg(refRaster, returnIsProj=None)
     
     """
     Start GRASS GIS Session

@@ -38,21 +38,20 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
     TODO: Only works for Flickr and Facebook
     """
     
-    import os
-    from osgeo             import ogr
-    from gasp              import goToList
-    from gasp.sql.mng.db   import create_db
-    from gasp.sql.mng.qw   import ntbl_by_query
-    from gasp.to.sql       import shp_to_psql, geodf_to_psql
-    from gasp.to.shp       import df_to_shp
-    from gasp.to.shp       import psql_to_shp
-    from gasp.anls.prox.bf import get_sub_buffers, dic_buffer_array_to_shp
+    import os; from osgeo      import ogr
+    from gasp3                 import goToList
+    from gasp3.sql.mng.db      import create_db
+    from gasp3.sql.mng.tbl     import q_to_ntbl
+    from gasp3.dt.to.sql       import shp_to_psql
+    from gasp3.dt.to           import geodf_to_psql
+    from gasp3.dt.to.shp       import df_to_shp, psql_to_shp
+    from gasp3.gt.anls.prox.bf import get_sub_buffers, dic_buffer_array_to_shp
     
     if datasource == 'flickr':
-        from gasp.web.dsn.flickr import photos_location
+        from gasp3.dt.dsn.flickr import photos_location
     
     elif datasource == 'facebook':
-        from gasp.web.dsn.fb.places import places_by_query
+        from gasp3.dt.dsn.fb.places import places_by_query
     
     keywords = goToList(keywords)
     keywords = ["None"] if not keywords else keywords
@@ -65,9 +64,9 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         # Get Smaller Buffers
         if "path" in inBuffers[city]:
             # Get X, Y and Radius
-            from gasp.gdl.anls.prox.bfs import buffer_properties
+            from gasp3.gt.prop.feat.bf import bf_prop
             
-            __bfprop = buffer_properties(
+            __bfprop = bf_prop(
                 inBuffers[city]["path"], inBuffers[city]["epsg"], isFile=True
             )
             
@@ -159,7 +158,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
             api="shp2pgsql"
         )
         
-        inBuffers[city]["filter_table"] = ntbl_by_query(
+        inBuffers[city]["filter_table"] = q_to_ntbl(
             conParam, "filter_{}".format(inBuffers[city]["table"]), (
                 "SELECT srcdata.*, "
                 "array_agg(buffersg.cardeal ORDER BY buffersg.cardeal) "
@@ -180,7 +179,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
             ), api='psql'
         )
         
-        inBuffers[city]["outside_table"] = ntbl_by_query(
+        inBuffers[city]["outside_table"] = q_to_ntbl(
             conParam, "outside_{}".format(inBuffers[city]["table"]), (
                 "SELECT * FROM ("
                 "SELECT srcdata.*, "
@@ -204,7 +203,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         )
         
         # Union these two tables
-        inBuffers[city]["table"] = ntbl_by_query(
+        inBuffers[city]["table"] = q_to_ntbl(
             conParam, "data_{}".format(city), (
                 "SELECT * FROM {intbl} UNION ALL "
                 "SELECT {cols}, keyword, geom, extracted_buffer, "
@@ -228,7 +227,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         -> pnt_intersect_non_obtain = nr pontos que se intersectam mas nao 
         foram obtidos como buffer
         """
-        inBuffers[city]["pg_buffer"] = ntbl_by_query(
+        inBuffers[city]["pg_buffer"] = q_to_ntbl(
             conParam, "dt_{}".format(inBuffers[city]["pg_buffer"]), (
                 "SELECT main.*, get_obtidos.pnt_obtidos, "
                 "obtidos_fora.pnt_obtidos_fora, intersecting.pnt_intersect, "
@@ -283,7 +282,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         -> intersect_sem_obtido = n vezes que um ponto nao foi obtido apesar
         de se intersectar com o buffer
         """
-        inBuffers[city]["table"] = ntbl_by_query(
+        inBuffers[city]["table"] = q_to_ntbl(
             conParam, "info_{}".format(city), (
                 "SELECT {cols}, dt.keyword, dt.geom, "
                 "CAST(dt.extracted_buffer AS text) AS extracted_buffer, "
@@ -343,7 +342,7 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     from gasp.mng.gen           import merge_df
     from gasp.to.sql            import geodf_to_psql
     from gasp.to.shp            import psql_to_shp
-    from gasp.sql.mng.qw        import ntbl_by_query
+    from gasp.sql.mng.qw        import q_to_ntbl
     from gasp.to.shp            import psql_to_shp
     
     # Open GRID SHP
@@ -397,7 +396,7 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
         x != 'geom' and x != "grid_id"
     ] + ["geom"]
     
-    GRP_BY_TBL = ntbl_by_query(conpgsql, "{}_grpby".format(DATA_SOURCE), (
+    GRP_BY_TBL = q_to_ntbl(conpgsql, "{}_grpby".format(DATA_SOURCE), (
         "SELECT {cols}, CAST(array_agg(grid_id) AS text) AS grid_id "
         "FROM {dtsrc}_data GROUP BY {cols}"
     ).format(cols=", ".join(COLS), dtsrc=DATA_SOURCE), api='psql')

@@ -10,7 +10,7 @@ def conditions_by_position(lat, lng):
     Get Climatic conditions for sensor in some position
     """
     
-    from gasp.web import json_fm_httpget
+    from gasp3.dt.fm.web import json_fm_httpget
     
     URL = (
         "https://api.openweathermap.org/data/2.5/weather?lat={}&lon={}"

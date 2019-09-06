@@ -19,9 +19,9 @@ def array_to_raster(inArray, outRst, template, noData=None):
     if gisApi == 'gdal':
         from osgeo             import gdal, osr, gdal_array
         from gasp3.gt.prop.ff  import drv_name
-        from gasp3.gt.prop.prj import get_epsg_raster
+        from gasp3.gt.prop.prj import get_rst_epsg
         
-        epsg = get_epsg_raster(template)
+        epsg = get_rst_epsg(template)
     
         img_template  = gdal.Open(template)
         geo_transform = img_template.GetGeoTransform()
@@ -55,6 +55,24 @@ def array_to_raster(inArray, outRst, template, noData=None):
 """
 Conversion between formats
 """
+
+def rst_to_rst(inRst, outRst):
+    """
+    Convert a raster file to another raster format
+    """
+    
+    from gasp3            import exec_cmd
+    from gasp3.gt.prop.ff import drv_name
+    
+    outDrv = drv_name(outRst)
+    cmd = 'gdal_translate -of {drv} {_in} {_out}'.format(
+        drv=outDrv, _in=inRst, _out=outRst
+    )
+    
+    cmdout = exec_cmd(cmd)
+    
+    return outRst
+
 
 def rst_to_grs(rst, grsRst, lmtExt=None, as_cmd=None):
     """
@@ -172,6 +190,57 @@ def tif_to_grid(inFile, outFile):
     outcmd = exec_cmd(comand)
     
     return outFile
+
+
+def folder_nc_to_tif(inFolder, outFolder):
+    """
+    Convert all nc existing on a folder to GTiff
+    """
+    
+    import netCDF4;         import os
+    from gasp3.pyt.oss      import list_files
+    from gasp3.gt.mng.split import gdal_split_bands
+    
+    # List nc files
+    lst_nc = list_files(inFolder, file_format='.nc')
+    
+    # nc to tiff
+    for nc in lst_nc:
+        # Check the number of images in nc file
+        datasets = []
+        _nc = netCDF4.Dataset(nc, 'r')
+        for v in _nc.variables:
+            if v == 'lat' or v == 'lon':
+                continue
+            lshape = len(_nc.variables[v].shape)
+            if lshape >= 2:
+                datasets.append(v)
+        # if the nc has any raster
+        if len(datasets) == 0:
+            continue
+        # if the nc has only one raster
+        elif len(datasets) == 1:
+            output = os.path.join(
+                outFolder,
+                os.path.basename(os.path.splitext(nc)[0]) + '.tif'
+            )
+            rst_to_rst(nc, output)
+            gdal_split_bands(output, outFolder)
+        # if the nc has more than one raster
+        else:
+            for dts in datasets:
+                output = os.path.join(
+                    outFolder,
+                    '{orf}_{v}.tif'.format(
+                        orf = os.path.basename(os.path.splitext(nc)[0]),
+                        v = dts
+                    )
+                )
+                rst_to_rst(
+                    'NETCDF:"{n}":{v}'.format(n=nc, v=dts),
+                    output
+                )
+                gdal_split_bands(output, outFolder)
 
 
 """
@@ -299,3 +368,180 @@ def shp_to_rst(shp, inSource, cellsize, nodata, outRaster, epsg=None,
     
     return outRaster
 
+
+def shape_to_rst_wShapeCheck(inShp, maxCellNumber, desiredCellsizes, outRst,
+                             inEPSG):
+    """
+    Convert one Feature Class to Raster using the cellsizes included
+    in desiredCellsizes. For each cellsize, check if the number of cells
+    exceeds maxCellNumber. The raster with lower cellsize but lower than
+    maxCellNumber will be the returned raster
+    """
+    
+    import os; from gasp3  import goToList
+    from gasp3.gt.prop.rst import rst_shape
+    
+    desiredCellsizes = goToList(desiredCellsizes)
+    if not desiredCellsizes:
+        raise ValueError(
+            'desiredCellsizes does not have a valid value'
+        )
+    
+    workspace = os.path.dirname(outRst)
+    
+    RASTERS = [shp_to_rst(
+        inShp, cellsize, -1, os.path.join(
+            workspace, 'tst_cell_{}.tif'.format(cellSize)
+        ), inEPSG
+    ) for cellSize in desiredCellsizes]
+    
+    tstShape = rst_shape(RASTERS, gisApi='gdal')
+    
+    for rst in tstShape:
+        NCELLS = tstShape[rst][0] * tstShape[rst][1]
+        tstShape[rst] = NCELLS
+    
+    NICE_RASTER = None
+    for i in range(len(desiredCellsizes)):
+        if tstShape[RASTERS[i]] <= maxCellNumber:
+            NICE_RASTER = RASTERS[i]
+            break
+        
+        else:
+            continue
+    
+    if not NICE_RASTER:
+        return None
+    
+    else:
+        os.rename(NICE_RASTER, outRst)
+        
+        for rst in RASTERS:
+            if os.path.isfile(rst) and os.path.exists(rst):
+                os.remove(rst)
+        
+        return outRst
+
+
+def shpext_to_rst(inShp, outRaster, cellsize=None, epsg=None,
+                        invalidResultAsNone=None, outEpsg=None):
+    """
+    Extent to raster
+    
+    if invalidResultAsNone - if for some reason something went wrong, the 
+    result of this method will be a None Object if there is an error on the
+    numpy array creation. If False, an error will be raised.
+    """
+    
+    import os;             import numpy
+    from osgeo             import ogr, gdal
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.gt.prop.ext import get_ext
+        
+    cellsize = 10 if not cellsize else cellsize
+    
+    # Get extent
+    try:
+        left, right, bottom, top = get_ext(inShp, gisApi='ogr')
+    except:
+        left, right, bottom, top = inShp.GetEnvelope()
+    
+    if outEpsg and epsg and outEpsg != epsg:
+        from gasp3.dt.to.geom import create_point, create_polygon
+        from gasp3.gt.mng.prj import project_geom
+        
+        extGeom = project_geom(create_polygon([
+            create_point(left, top, api='ogr'),
+            create_point(right, top, api='ogr'),
+            create_point(right, bottom, api='ogr'),
+            create_point(left, bottom, api='ogr'),
+            create_point(left, top, api='ogr')
+        ]), epsg, outEpsg, api='ogr')
+        
+        left, right, bottom, top = extGeom.GetEnvelope()
+    
+    # Get row and cols number
+    rows = (float(top) - float(bottom)) / cellsize
+    cols = (float(right) - float(left)) / cellsize
+    
+    rows = int(rows) if rows == int(rows) else int(rows) + 1
+    cols = int(cols) if cols == int(cols) else int(cols) + 1
+    
+    if not invalidResultAsNone:
+        NEW_RASTER_ARRAY = numpy.zeros((rows, cols))
+    else:
+        try:
+            NEW_RASTER_ARRAY = numpy.zeros((rows, cols))
+        except:
+            return None
+        
+    # Create new raster
+    img = gdal.GetDriverByName(
+        drv_name(outRaster)).Create(
+            outRaster, cols, rows, 1,
+            #gdal.GDT_Int16
+            gdal.GDT_Byte
+        )
+    
+    img.SetGeoTransform((left, cellsize, 0, top, 0, -cellsize))
+    
+    band = img.GetRasterBand(1)
+    
+    band.WriteArray(NEW_RASTER_ARRAY)
+    
+    if epsg:
+        from osgeo import osr
+        
+        rstSrs = osr.SpatialReference()
+        rstSrs.ImportFromEPSG(epsg)
+        img.SetProjection(rstSrs.ExportToWkt())
+    
+    band.FlushCache()
+    
+    return outRaster
+
+
+
+def geomext_to_rst_wShapeCheck(inGeom, maxCellNumber, desiredCellsizes, outRst,
+                             inEPSG):
+    """
+    Convert one Geometry to Raster using the cellsizes included
+    in desiredCellsizes. For each cellsize, check if the number of cells
+    exceeds maxCellNumber. The raster with lower cellsize but lower than
+    maxCellNumber will be the returned raster
+    """
+    
+    import os; from gasp3 import goToList
+    
+    desiredCellsizes = goToList(desiredCellsizes)
+    if not desiredCellsizes:
+        raise ValueError(
+            'desiredCellsizes does not have a valid value'
+        )
+    
+    # Get geom extent
+    left, right, bottom, top = inGeom.GetEnvelope()
+    
+    # Check Rasters Shape for each desired cellsize
+    SEL_CELLSIZE = None
+    for cellsize in desiredCellsizes:
+        # Get Row and Columns Number
+        NROWS = int(round((top - bottom) / cellsize, 0))
+        NCOLS = int(round((right - left) / cellsize, 0))
+        
+        NCELLS = NROWS * NCOLS
+        
+        if NCELLS <= maxCellNumber:
+            SEL_CELLSIZE = cellsize
+            break
+    
+    if not SEL_CELLSIZE:
+        return None
+    
+    else:
+        shpext_to_rst(
+            inGeom, outRst, SEL_CELLSIZE, epsg=inEPSG,
+            invalidResultAsNone=True
+        )
+        
+        return outRst

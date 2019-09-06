@@ -17,7 +17,8 @@ setup(
         'gasp3',
         # ******************************************************************** #
         'gasp3.alg',
-        'gasp3.alg.hydro', 'gasp3.alg.lndsld', 'gasp3.alg.terrain',
+        'gasp3.alg.hydro', 'gasp3.alg.lndsld', 
+        'gasp3.alg.mob', 'gasp3.alg.osm2lulc', 'gasp3.alg.terrain',
         # ******************************************************************** #
         'gasp3.cons',
         # ******************************************************************** #
@@ -27,16 +28,19 @@ setup(
         'gasp3.dt.mob', 'gasp3.dt.sat', 'gasp3.dt.to', 'gasp3.dt.txtcls',
         # ******************************************************************** #
         'gasp3.gt',
-        'gasp3.gt.anls',
+        'gasp3.gt.anls', 'gasp3.gt.anls.exct', 'gasp3.gt.anls.ovlay',
+        'gasp3.gt.anls.prox',
         'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
-        'gasp3.gt.prop', 'gasp3.ft.prop.feat',
+        'gasp3.gt.mob', 'gasp3.gt.mob.api', 'gasp3.gt.mob.api.glg',
+        'gasp3.gt.mob.grstbx',
+        'gasp3.gt.prop', 'gasp3.gt.prop.feat',
         'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
         'gasp3.gt.stats', 'gasp3.gt.wenv',
         # ******************************************************************** #
-        'gasp3.pyt', 'gasp3.pyt.df',
+        'gasp3.pyt', 'gasp3.pyt.df', 'gasp3.pyt.xls',
         # ******************************************************************** #
         'gasp3.sql',
-        'gasp3.sql.mng',
+        'gasp3.sql.anls', 'gasp3.sql.charts', 'gasp3.sql.mng',
         # ******************************************************************** #
         'gasp3.web',
         'gasp3.web.djg', 'gasp3.web.djg.ff', 'gasp3.web.djg.mdl',

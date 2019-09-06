@@ -18,6 +18,234 @@ def df_to_shp(indf, outShp):
     return outShp
 
 
+def obj_to_shp(dd, geomkey, srs, outshp):
+    from gasp3.dt.to.geom import df_to_geodf as obj_to_geodf
+    
+    geodf = obj_to_geodf(dd, geomkey, srs)
+    
+    return df_to_shp(geodf, outshp)
+
+
+def array_to_shp(array_like, outFile, x='x', y='y', epsg=None):
+    """
+    Convert a array with geometric data into a file with geometry (GML, ESRI
+    Shapefile or others).
+    
+    Example of an array_like object:
+    data = [
+        {col_1: value, col_2: value, x: value, y: value},
+        {col_1: value, col_2: value, x: value, y: value},
+    ]
+    
+    This array must contain a 'x' and 'y' keys (or 
+    equivalent).
+    
+    TODO: Now works only for points
+    """
+    
+    import os; from osgeo  import ogr
+    from gasp3.dt.to.geom  import create_point
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.gt.prop.prj import get_sref_from_epsg
+    from gasp3.gt.prop.fld import map_pyType_fldCode
+    from gasp3.pyt.oss     import get_filename
+    
+    ogr.UseExceptions()
+    
+    # Create output file
+    shp = ogr.GetDriverByName(drv_name(outFile)).CreateDataSource(outFile)
+    
+    lyr = shp.CreateLayer(
+        get_filename(outFile),
+        None if not epsg else get_sref_from_epsg(epsg),
+        geom_type=ogr.wkbPoint,
+    )
+    
+    # Create fields of output file
+    fields = []
+    keys_fields = {}
+    for k in array_like[0]:
+        if k != x and k != y:
+            fld_name = k[:9]
+            if type(fld_name) == unicode:
+                fld_name = unicode_to_str(fld_name)
+            
+            if fld_name not in fields:
+                fields.append(fld_name)
+            
+            else:
+                # Get All similar fields in the fields list
+                tmp_fld = []
+                for i in fields:
+                    if i[:8] == fld_name[:8]:
+                        tmp_fld.append(i[:8])
+                
+                c = len(tmp_fld)
+                
+                fld_name = fld_name[:8] + '_{n}'.format(n=str(c))
+                
+                fields.append(fld_name)
+            
+            # TODO: Automatic mapping of filters types needs further testing
+            #fld_type = map_pyType_fldCode(array_like[0][k])
+            lyr.CreateField(
+                ogr.FieldDefn(fld_name, ogr.OFTString)
+            )
+            
+            keys_fields[k] = fld_name
+    
+    defn = lyr.GetLayerDefn()
+    
+    for i in range(len(array_like)):
+        feat = ogr.Feature(defn)
+        feat.SetGeometry(
+            create_point(array_like[i][x], array_like[i][y], api='ogr')
+        )
+        
+        for k in array_like[i]:
+            if k != x and k != y:
+                value = array_like[i][k]
+                if type(value) == unicode:
+                    value = unicode_to_str(value)
+                    if len(value) >= 254:
+                        value = value[:253]
+                
+                feat.SetField(
+                    keys_fields[k], value
+                )
+        
+        lyr.CreateFeature(feat)
+        
+        feat = None
+    
+    shp.Destroy()
+    
+    return outFile
+
+
+def shply_array_to_shp(arrayLike, outfile, geomType, epsg=None,
+                       fields=None, crsObj=None):
+    """
+    Convert a array with Shapely geometric data into a file
+    with geometry (GML, ESRI Shapefile or others).
+    
+    Example of an array_like object:
+    data = [
+        {col_1: value, col_2: value, geom: geomObj},
+        {col_1: value, col_2: value, geom: geomObj},
+    ]
+    """
+    
+    import os; from osgeo  import ogr
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.gt.prop.prj import get_sref_from_epsg
+    
+    # Create output file
+    shp = ogr.GetDriverByName(
+        drv_name(outfile)).CreateDataSource(outfile)
+    
+    lyr = shp.CreateLayer(
+        os.path.splitext(os.path.basename(outfile))[0],
+        get_sref_from_epsg(epsg) if epsg else crsObj if crsObj else \
+            None, geom_type=geomType
+    )
+    
+    # Create fields of output file
+    # TODO: Automatic mapping of filters types needs further testing
+    if fields:
+        for f in fields:
+            lyr.CreateField(ogr.FieldDefn(f, fields[f]))
+    
+    # Add features
+    defn = lyr.GetLayerDefn()
+    for feat in arrayLike:
+        newFeat = ogr.Feature(defn)
+        
+        newFeat.SetGeometry(
+            ogr.CreateGeometryFromWkb(feat['GEOM'].wkb)
+        )
+        
+        if len(fields):
+            for f in fields:
+                newFeat.SetField(f, feat[f])
+        
+        lyr.CreateFeature(newFeat)
+        
+        newFeat = None
+    
+    shp.Destroy()
+    
+    return outfile
+
+
+def shply_dict_to_shp(dictLike, outfile, geomType, epsg=None,
+                      fields=None, crsObj=None):
+    """
+    Dict with shapely Geometries to Feature Class
+    """
+    
+    import os; from osgeo  import ogr
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.gt.prop.prj import get_sref_from_epsg
+    from gasp3.pyt.oss     import get_filename
+    
+    # Create output file
+    shp = ogr.GetDriverByName(
+        drv_name(outfile)).CreateDataSource(outfile)
+    
+    lyr = shp.CreateLayer(get_filename(outfile),
+        get_sref_from_epsg(epsg) if epsg else crsObj if \
+            crsObj else None,
+        geom_type=geomType
+    )
+    
+    # Create fields of output file
+    if fields:
+        for f in fields:
+            lyr.CreateField(ogr.FieldDefn(f, fields[f]))
+    
+    # Add features
+    fids = dictLike.keys()
+    fids.sort()
+    defn = lyr.GetLayerDefn()
+    for fid in fids:
+        if type(dictLike[fid]["GEOM"]) == list:
+            for geom in dictLike[fid]["GEOM"]:
+                newFeat = ogr.Feature(defn)
+        
+                newFeat.SetGeometry(
+                    ogr.CreateGeometryFromWkb(geom.wkb)
+                )
+                
+                if len(fields):
+                    for f in fields:
+                        newFeat.SetField(f, dictLike[fid][f])
+                
+                lyr.CreateFeature(newFeat)
+                
+                newFeat = None
+        
+        else:
+            newFeat = ogr.Feature(defn)
+            
+            newFeat.SetGeometry(
+                ogr.CreateGeometryFromWkb(dictLike[fid]["GEOM"].wkb)
+            )
+            
+            if len(fields):
+                for f in fields:
+                    newFeat.SetField(f, dictLike[fid][f])
+                
+            lyr.CreateFeature(newFeat)
+            
+            newFeat = None
+    
+    del lyr
+    shp.Destroy()
+    
+    return outfile
+
+
 """
 File to SHP
 """
@@ -85,6 +313,52 @@ def foldershp_to_foldershp(inFld, outFld, destiny_file_format,
         )), gisApi=useApi)
     
     return outFld
+
+
+def osm_to_featurecls(xmlOsm, output, fileFormat='.shp', useXmlName=None):
+    """
+    OSM to ESRI Shapefile
+    """
+
+    import os
+    from gasp3.gt.anls.exct import sel_by_attr
+    
+    # Convert xml to sqliteDB
+    sqDB = ogr_btw_driver(xmlOsm, os.path.join(output, 'fresh_osm.sqlite'))
+
+    # sqliteDB to Feature Class
+    TABLES = ['points', 'lines', 'multilinestrings', 'multipolygons']
+    
+    for T in TABLES:
+        sel_by_attr(
+            sqDB, "SELECT * FROM {}".format(T),
+            os.path.join(output, "{}{}{}".format(
+                "" if not useXmlName else os.path.splitext(os.path.basename(xmlOsm))[0],
+                T, fileFormat if fileFormat[0] == '.' else "." + fileFormat
+            )), api_gis='ogr'
+        )
+
+    return output
+
+
+def getosm_to_featurecls(inBoundary, outVector, boundaryEpsg=4326,
+                         vectorFormat='.shp'):
+    """
+    Get OSM Data from the Internet and convert the file to regular vector file
+    """
+
+    import os
+    from gasp3.dt.osm import download_by_boundary
+
+    # Download data from the web
+    osmData = download_by_boundary(
+        inBoundary, os.path.join(outVector, 'fresh_osm.xml'), boundaryEpsg
+    )
+
+    # Convert data to regular vector file
+    return osm_to_featurecls(
+        osmData, outVector, fileFormat=vectorFormat
+    )
 
 
 """
@@ -315,6 +589,132 @@ def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
 Extent to Shape
 """
 
+def shpext_to_boundary(inShp, outShp, epsg=None):
+    """
+    Read one feature class extent and create a boundary with that
+    extent
+    
+    The outFile could be a Feature Class or one Raster Dataset
+    """
+    
+    import os; from osgeo  import ogr
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.pyt.oss     import get_filename
+    from gasp3.dt.to.geom  import create_point
+    from gasp3.gt.prop.ext import get_ext
+    
+    extent = get_ext(inShp)
+    
+    # Create points of the new boundary based on the extent
+    boundary_points = [
+        create_point(extent[0], extent[3], api='ogr'),
+        create_point(extent[1], extent[3], api='ogr'),
+        create_point(extent[1], extent[2], api='ogr'),
+        create_point(extent[0], extent[2], api='ogr'),
+        create_point(extent[0], extent[3], api='ogr')
+    ]
+    
+    # Get SRS for the output
+    if not epsg:
+        from gasp3.gt.prop.prj import get_shp_sref
+        
+        srs = get_shp_sref(inShp)
+    
+    else:
+        from gasp3.gt.prop.prj import get_sref_from_epsg
+        
+        srs= get_sref_from_epsg(epsg)
+    
+    # Write new file
+    shp = ogr.GetDriverByName(
+        drv_name(outShp)).CreateDataSource(outShp)
+    
+    lyr = shp.CreateLayer(
+        get_filename(outShp, forceLower=True),
+        srs, geom_type=ogr.wkbPolygon
+    )
+    
+    outDefn = lyr.GetLayerDefn()
+    
+    feat = ogr.Feature(outDefn)
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    
+    for pnt in boundary_points:
+        ring.AddPoint(pnt.GetX(), pnt.GetY())
+    
+    polygon = ogr.Geometry(ogr.wkbPolygon)
+    polygon.AddGeometry(ring)
+    
+    feat.SetGeometry(polygon)
+    lyr.CreateFeature(feat)
+    
+    feat.Destroy()
+    shp.Destroy()
+    
+    return outShp
+
+
+def pnts_to_boundary(pntShp, outBound, distMeters):
+    """
+    Create a boundary from Point using a tolerance in meters
+    """
+    
+    from osgeo             import ogr
+    from gasp3.pyt.oss     import get_filename
+    from gasp3.gt.prop.ff  import drv_name
+    from gasp3.dt.to.geom  import create_point
+    from gasp3.gt.prop.prj import get_shp_sref
+    
+    SRS = get_shp_sref(pntShp)
+    
+    shp = ogr.GetDriverByName(drv_name(pntShp)).Open(pntShp)
+    lyr = shp.GetLayer()
+    
+    outShp = ogr.GetDriverByName(drv_name(outBound)).CreateDataSource(outBound)
+    outLyr = outShp.CreateLayer(
+        get_filename(outBound, forceLower=True), SRS,
+        geom_type=ogr.wkbPolygon
+    )
+    
+    outDefn = outLyr.GetLayerDefn()
+    
+    for feat in lyr:
+        __feat = ogr.Feature(outDefn)
+        ring = ogr.Geometry(ogr.wkbLinearRing)
+        
+        geom = feat.GetGeometryRef()
+        X, Y = geom.GetX(), geom.GetY()
+        
+        boundary_points = [
+            create_point(X - distMeters, Y + distMeters, api='ogr'), # Topleft
+            create_point(X + distMeters, Y + distMeters, api='ogr'), # TopRight
+            create_point(X + distMeters, Y - distMeters, api='ogr'), # Lower Right
+            create_point(X - distMeters, Y - distMeters, api='ogr'), # Lower Left
+            create_point(X - distMeters, Y + distMeters, api='ogr')
+        ]
+        
+        for pnt in boundary_points:
+            ring.AddPoint(pnt.GetX(), pnt.GetY())
+        
+        polygon = ogr.Geometry(ogr.wkbPolygon)
+        polygon.AddGeometry(ring)
+        
+        __feat.SetGeometry(polygon)
+        
+        outLyr.CreateFeature(__feat)
+        
+        feat.Destroy()
+        
+        __feat  = None
+        ring    = None
+        polygon = None
+    
+    shp.Destroy()
+    outShp.Destroy()
+    
+    return outBound
+
+
 def rstext_to_shp(inRst, outShp, epsg=None):
     """
     Raster Extent to Feature Class
@@ -327,10 +727,109 @@ def rstext_to_shp(inRst, outShp, epsg=None):
     
     # Get EPSG
     if not epsg:
-        from gasp3.gt.prop.prj import get_epsg_raster
+        from gasp3.gt.prop.prj import get_rst_epsg
         
-        epsg = get_epsg_raster(inRst)
+        epsg = get_rst_epsg(inRst)
     
     # Create Boundary
     return coords_to_boundary((left, top), (right, bottom), epsg, outShp)
+
+
+"""
+Raster to Feature Class
+"""
+
+def rst_to_polyg(inRst, outShp, rstColumn=None, gisApi='gdal', epsg=None):
+    """
+    Raster to Polygon Shapefile
+    
+    Api's Available:
+    * gdal;
+    * qgis;
+    * pygrass;
+    * grasscmd
+    """
+    
+    if gisApi == 'gdal':
+        if not epsg:
+            raise ValueError((
+                'Using GDAL, you must specify the EPSG CODE of the '
+                'Spatial Reference System of input raster.'
+            ))
+        
+        import os; from osgeo import gdal, ogr, osr
+        from gasp3.gt.prop.ff import drv_name
+        from gasp3.pyt.oss    import get_filename
+        
+        src = gdal.Open(inRst)
+        bnd = src.GetRasterBand(1)
+        
+        output = ogr.GetDriverByName(drv_name(ouShp)).CreateDataSource(outShp)
+        
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(epsg)
+        
+        lyr = output.CreateLayer(get_filename(outShp, forceLower=True), srs)
+        
+        lyr.CreateField(ogr.FieldDefn('VALUE', ogr.OFTInteger))
+        gdal.Polygonize(bnd, None, lyr, 0, [], callback=None)
+        
+        output.Destroy()
+    
+    elif gisApi == 'qgis':
+        import processing
+        
+        processing.runalg(
+            "gdalogr:polygonize", inRst, "value", outShp
+        )
+    
+    elif gisApi == 'pygrass':
+        from grass.pygrass.modules import Module
+        
+        rstField = "value" if not rstColumn else rstColumn
+        
+        rtop = Module(
+            "r.to.vect", input=inRst, output=outShp, type="area",
+            column=rstField, overwrite=True, run_=False, quiet=True
+        )
+        rtop()
+    
+    elif gisApi == 'grasscmd':
+        from gasp3 import exec_cmd
+        
+        rstField = "value" if not rstColumn else rstColumn
+        
+        rcmd = exec_cmd((
+            "r.to.vect input={} output={} type=area column={} "
+            "--overwrite --quiet"
+        ).format(inRst, outShp, rstField))
+    
+    else:
+        raise ValueError('Sorry, API {} is not available'.format(gisApi))
+    
+    return outShp
+
+"""
+Excel to SHP
+"""
+
+def pointXls_to_shp(xlsFile, outShp, x_col, y_col, epsg, sheet=None):
+    """
+    Excel table with Point information to ESRI Shapefile
+    """
+    
+    from gasp3.dt.fm      import tbl_to_obj
+    from gasp3.dt.to.geom import pnt_dfwxy_to_geodf
+    from gasp3.dt.to.shp  import df_to_shp
+    
+    # XLS TO PANDAS DATAFRAME
+    dataDf = tbl_to_obj(xlsFile, sheet=sheet)
+    
+    # DATAFRAME TO GEO DATAFRAME
+    geoDataDf = pnt_dfwxy_to_geodf(dataDf, x_col, y_col, epsg)
+    
+    # GEODATAFRAME TO ESRI SHAPEFILE
+    df_to_shp(geoDataDf, outShp)
+    
+    return outShp
 

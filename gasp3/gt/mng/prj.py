@@ -99,7 +99,7 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         
         from osgeo                   import ogr
         from gasp3.gt.mng.fld.ogrfld import copy_flds
-        from gasp3.gt.prop.feat      import get_geom_type
+        from gasp3.gt.prop.feat      import get_gtype
         from gasp3.gt.prop.ff        import drv_name
         from gasp3.gt.prop.prj       import get_sref_from_epsg
         from gasp3.pyt.oss           import get_filename
@@ -130,7 +130,7 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         
         outlyr = out.CreateLayer(
             get_filename(outShp), get_sref_from_epsg(outEPSG),
-            geom_type=get_geom_type(
+            geom_type=get_gtype(
                 inShp, name=None, py_cls=True, gisApi='ogr'
             )
         )
@@ -228,7 +228,7 @@ def set_proj(rst, epsg):
     img.FlushCache()
 
 
-def gdal_reproject_raster(inRst, outRst, inEPSG, outEPSG):
+def reprj_rst(inRst, outRst, inEPSG, outEPSG):
     """
     Reproject Raster dataset using gdalwarp
     """

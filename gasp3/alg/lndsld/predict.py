@@ -12,13 +12,13 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
     from osgeo              import gdal
     from gasp3.dt.fm.rst    import rst_to_array
     from gasp3.dt.fm        import tbl_to_obj
-    from gasp3.gt.prop.feat import get_geom_type
+    from gasp3.gt.prop.feat import get_gtype
     from gasp3.gt.prop.rst  import rst_shape
     from gasp3.gt.prop.rst  import count_cells
     from gasp3.gt.prop.rst  import get_cellsize
     from gasp3.gt.prop.rst  import frequencies
     from gasp3.pyt.oss      import create_folder
-    from gasp.to.rst        import array_to_raster
+    from gasp3.dt.to.rst    import array_to_raster
     
     # Create Workspace for temporary files
     workspace = create_folder(os.path.join(
@@ -50,8 +50,8 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
         # Landslides are not Raster
         # Open as Feature Class
         # See if is Point or Polygon
-        land_df = tbl_to_obj(landslides)
-        geomType = get_geom_type(land_df, geomCol="geometry", gisApi='pandas')
+        land_df  = tbl_to_obj(landslides)
+        geomType = get_gtype(land_df, geomCol="geometry", gisApi='pandas')
         
         if geomType == 'Polygon' or geomType == 'MultiPolygon':
             # it will be converted to raster bellow
@@ -59,14 +59,16 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
         
         elif geomType == 'Point' or geomType == 'MultiPoint':
             # Do a Buffer
-            from gasp.anls.prox.bf import geodf_buffer_to_shp
+            from gasp3.gt.anls.prox.bf import geodf_buffer_to_shp
+            
             land_poly = geodf_buffer_to_shp(land_df, 100, os.path.join(
                 workspace, 'landslides_buffer.shp'
             ))
         
         # Convert To Raster
-        from gasp.to.rst import shp_to_raster
-        land_raster = shp_to_raster(
+        from gasp3.dt.to.rst import shp_to_rst
+        
+        land_raster = shp_to_rst(
             land_poly, None, get_cellsize(variables[0], gisApi='gdal'), -9999,
             os.path.join(workspace, 'landslides_rst.tif'),
             rst_template=variables[0], api='gdal'

@@ -175,12 +175,10 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         colnames = [desc[0] for desc in cursor.description]
     
         if sanitizeSpecialWords:
-            from gasp3.cons.psql import special_words
-            # Prepare one wayout for special words
-            special_words = special_words()
+            from gasp3.cons.psql import PG_SPECIAL_WORDS
     
             for i in range(len(colnames)):
-                if colnames[i] in special_words:
+                if colnames[i] in PG_SPECIAL_WORDS:
                     colnames[i] = '"{}"'.format(colnames[i])
     
     elif api == 'sqlite':
@@ -196,6 +194,32 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         raise ValueError('API {} is not available'.format(api))
     
     return colnames
+
+
+def cols_type(pgsqlDic, table, sanitizeColName=True, pyType=True):
+    """
+    Return columns names and types of a PostgreSQL table
+    """
+    
+    from gasp3.cons.psql import PG_SPECIAL_WORDS, map_psqltypes
+    
+    c = psqlcon(pgsqlDic)
+    
+    cursor = c.cursor()
+    cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
+    coltypes = {
+        desc[0]: map_psqltypes(
+            desc[1], python=pyType) for desc in cursor.description
+    }
+    
+    if sanitizeColName:
+        for name in coltypes:
+            if name in PG_SPECIAL_WORDS:
+                n = '"{}"'.format(name)
+                coltypes[n] = coltypes[name]
+                del coltypes[name]
+    
+    return coltypes
 
 
 """
@@ -232,7 +256,7 @@ def tbl_ext(conParam, table, geomCol):
     Return extent of the geometries in one pgtable
     """
     
-    from gasp.fm.sql import query_to_df
+    from gasp3.dt.fm.sql import query_to_df
     
     q = (
         "SELECT MIN(ST_X(pnt_geom)) AS eleft, MAX(ST_X(pnt_geom)) AS eright, "
