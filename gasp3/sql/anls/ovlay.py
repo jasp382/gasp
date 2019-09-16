@@ -10,9 +10,9 @@ def intersect_in_same_table(conParam, table, geomA, geomB, outtable,
     Intersect two Geometries in the same table
     """
     
-    from gasp            import goToList
-    from gasp.sql.c      import psqlcon
-    from gasp.sql.mng.qw import q_to_ntbl
+    from gasp3             import goToList
+    from gasp3.sql.c       import psqlcon
+    from gasp3.sql.mng.tbl import q_to_ntbl
     
     COLS = goToList(colsSel)
     
@@ -40,11 +40,11 @@ def del_topoerror_shps(conParam, shps, epsg, outfolder):
     """
     
     import os
-    from gasp             import goToList
-    from gasp.sql.mng.fld import cols_name
-    from gasp.sql.mng.qw  import q_to_ntbl
-    from gasp.to.sql      import shp_to_psql
-    from gasp.to.shp      import psql_to_shp
+    from gasp3             import goToList
+    from gasp3.sql.i       import cols_name
+    from gasp3.sql.mng.tbl import q_to_ntbl
+    from gasp3.dt.to.sql   import shp_to_psql
+    from gasp3.dt.to.shp   import psql_to_shp
     
     shps = goToList(shps)
     
@@ -81,7 +81,7 @@ def intersection(lnk, aShp, bShp, pk, aGeom, bGeom, output,
     priority argument.
     """
     
-    from gasp.sql.mng.fld import cols_name
+    from gasp3.sql.i import cols_name
 
     if priority == 'a':
         cols_tbl = cols_name(lnk, aShp)
@@ -175,20 +175,20 @@ def proj_clean_clip(con, dic_osm, boundary, srs, workspace):
     ]
     
     if os.path.splitext(boundary)[1] != '.shp':
-        from gasp.to.shp import shp_to_shp
+        from gasp3.dt.to.shp import shp_to_shp
         
         boundary = shp_to_shp(
             boundary, os.path.join(workspace, 'lmt.shp'),
             gisApi='ogr'
         )
     
-    from gasp.to.sql import shp_to_psql_tbl
+    from gasp3.dt.to.sql import shp_to_psql
     lmt_table = shp_to_psql(con, boundary, srs, api='shp2pgsql')
     lmt_geom = "geom"
     
-    from gasp.sql.mng.prj    import re_project
-    from gasp.sql.anls.ovlay import intersection
-    from gasp.sql.anls.ovlay import topologic_correction
+    from gasp3.sql.mng.prj    import re_project
+    from gasp3.sql.anls.ovlay import intersection
+    from gasp3.sql.anls.ovlay import del_topoerror_shps
     
     for k in dic_osm:
         proj_table, pk, geom = re_project(
@@ -196,7 +196,7 @@ def proj_clean_clip(con, dic_osm, boundary, srs, workspace):
             'proj_' + k, del_cols=irrevelant_cols
         )
         
-        clean_table, pk, geom = topologic_correction(
+        clean_table, pk, geom = del_topoerror_shps(
             con, proj_table, pk, geom, 'clean_' + k
         )
         
@@ -216,11 +216,10 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     """
     
     import os
-    
-    from gasp.sql.mng.db import create_db
-    from gasp.sql.mng.qw import q_to_ntbl
-    from gasp.to.sql     import shp_to_psql_tbl
-    from gasp.to.shp     import psql_to_shp
+    from gasp3.sql.mng.db  import create_db
+    from gasp3.sql.mng.tbl import q_to_ntbl
+    from gasp3.dt.to.sql   import shp_to_psql
+    from gasp3.dt.to.shp   import psql_to_shp
     
     create_db(conParam, conParam["DB"])
     conParam["DATABASE"] = conParam["DB"]
@@ -255,8 +254,8 @@ def pg_erase(conParam, inTbl, eraseTbl, inGeom, eraseGeom, outTbl):
     Erase
     """
     
-    from gasp.sql.mng.fld import cols_name
-    from gasp.sql.mng.qw import q_to_ntbl
+    from gasp3.sql.i       import cols_name
+    from gasp3.sql.mng.tbl import q_to_ntbl
     
     cols = ["mtbl.{}".format(
         x) for x in cols_name(conParam, inTbl, api='psql') if x != inGeom]
@@ -313,7 +312,7 @@ def intersect_point_with_polygon(sqDB, pntTbl, pntGeom,
     )
     
     if outTblIsFile:
-        from gasp.anls.exct import sel_by_attr
+        from gasp3.gt.anls.exct import sel_by_attr
         
         sel_by_attr(sqDB, sql, outTbl, api_gis='ogr')
     
@@ -357,7 +356,7 @@ def disjoint_polygons_rel_points(sqBD, pntTbl, pntGeom,
     )
     
     if outTblIsFile:
-        from gasp.anls.exct import sel_by_attr
+        from gasp3.gt.anls.exct import sel_by_attr
         
         sel_by_attr(sqBD, sql, outTbl, api_gis='ogr')
     
@@ -411,7 +410,7 @@ def sgbd_get_feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
     
     if apiToUse == "OGR_SPATIALITE":
         if outTblIsFile:
-            from gasp.anls.exct import sel_by_attr
+            from gasp3.gt.anls.exct import sel_by_attr
             
             sel_by_attr(conParam, Q, outTbl, api_gis='ogr')
         
@@ -422,7 +421,7 @@ def sgbd_get_feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
     
     elif apiToUse == 'POSTGIS':
         if outTblIsFile:
-            from gasp.to.shp import psql_to_shp
+            from gasp3.dt.to.shp import psql_to_shp
             
             psql_to_shp(
                 conParam, Q, outTbl, api="pgsql2shp",
@@ -453,7 +452,7 @@ def sgbd_get_feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl
     * POSTGIS.
     """
     
-    from gasp import goToList
+    from gasp3 import goToList
     
     Q = (
         "SELECT {selCols} FROM {tbl} AS in_tbl WHERE ("
@@ -472,7 +471,7 @@ def sgbd_get_feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl
     
     if apiToUse == "OGR_SPATIALITE":
         if outTblIsFile:
-            from gasp.anls.exct import sel_by_attr
+            from gasp3.gt.anls.exct import sel_by_attr
             
             sel_by_attr(dbcon, Q, outTbl, api_gis='ogr')
         
@@ -483,7 +482,7 @@ def sgbd_get_feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl
     
     elif apiToUse == "POSTGIS":
         if outTblIsFile:
-            from gasp.to.shp import psql_to_shp
+            from gasp3.dt.to.shp import psql_to_shp
             
             psql_to_shp(
                 dbcon, Q, outTbl, api='pgsql2shp',

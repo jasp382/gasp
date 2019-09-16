@@ -3,7 +3,7 @@ Rule 6
 """
 
 import os
-from gasp.osm2lulc.var import DB_SCHEMA
+from .var import DB_SCHEMA
 
 def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     """
@@ -13,15 +13,15 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     """
     
     import datetime
-    from gasp.sql.mng.tbl    import row_num as cnt_row
-    from gasp.fm.sql         import query_to_df
+    from gasp3.sql.i          import row_num as cnt_row
+    from gasp3.dt.fm.sql      import query_to_df
     if api_db == 'POSTGIS':
-        from gasp.to.shp.grs import psql_to_grs as db_to_shp
+        from gasp3.dt.to.shp  import psql_to_grs as db_to_shp
     else:
-        from gasp.to.shp.grs import sqlite_to_shp as db_to_shp
-    from gasp.sql.anls.ovlay import sgbd_get_feat_within
-    from gasp.sql.anls.ovlay import sgbd_get_feat_not_within
-    from gasp.to.rst         import shp_to_rst
+        from gasp3.dt.to.shp  import sqlite_to_grs as db_to_shp
+    from gasp3.sql.anls.ovlay import sgbd_get_feat_within
+    from gasp3.sql.anls.ovlay import sgbd_get_feat_not_within
+    from gasp3.dt.to.rst      import shp_to_rst
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     new_build = sgbd_get_feat_within(
@@ -124,15 +124,15 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp.sql.mng.tbl    import row_num as cnt_row
+    from gasp3.sql.i          import row_num as cnt_row
     if apidb != "POSTGIS":
-        from gasp.to.shp.grs import sqlite_to_shp as db_to_shp
+        from gasp3.dt.to.shp  import sqlite_to_grs as db_to_shp
     else:
-        from gasp.to.shp.grs import psql_to_grs as db_to_shp
-    from gasp.sql.anls.ovlay import sgbd_get_feat_within
-    from gasp.sql.anls.ovlay import sgbd_get_feat_not_within
-    from gasp.mng.genze      import dissolve
-    from gasp.mng.grstbl     import add_table
+        from gasp3.dt.to.shp  import psql_to_grs as db_to_shp
+    from gasp3.sql.anls.ovlay import sgbd_get_feat_within
+    from gasp3.sql.anls.ovlay import sgbd_get_feat_not_within
+    from gasp3.gt.mng.genze   import dissolve
+    from gasp3.gt.mng.grstbl  import add_table
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     new_build = sgbd_get_feat_within(
@@ -224,16 +224,15 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
     Only used for URBAN ATLAS and CORINE LAND COVER
     """
     
-    import datetime
-    from threading           import Thread
+    import datetime; from threading import Thread
     if apidb == 'SQLITE':
-        from gasp.anls.exct  import sel_by_attr
+        from gasp3.gt.anls.exct import sel_by_attr
     else:
-        from gasp.to.shp     import psql_to_shp as sel_by_attr
-    from gasp.sql.anls.ovlay import sgbd_get_feat_within
-    from gasp.sql.anls.ovlay import sgbd_get_feat_not_within
-    from gasp.fm.sql         import query_to_df
-    from gasp.to.rst         import shp_to_rst
+        from gasp3.dt.to.shp    import psql_to_shp as sel_by_attr
+    from gasp3.sql.anls.ovlay   import sgbd_get_feat_within
+    from gasp3.sql.anls.ovlay   import sgbd_get_feat_not_within
+    from gasp3.dt.fm.sql        import query_to_df
+    from gasp3.dt.to.rst        import shp_to_rst
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     build12 = sgbd_get_feat_within(

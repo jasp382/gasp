@@ -165,7 +165,8 @@ def points_to_list(pntShp, listVal='tuple', inEpsg=None, outEpsg=None):
     
     if inEpsg and outEpsg:
         if inEpsg != outEpsg:
-            from gasp.mng.prj import project
+            from gasp3.gt.mng.prj import project
+            
             geoDf = project(geoDf, None, outEpsg, gisApi='pandas')
     
     geoDf["x"] = geoDf.geometry.x.astype(float)

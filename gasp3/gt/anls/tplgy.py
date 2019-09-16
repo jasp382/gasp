@@ -229,7 +229,7 @@ def vedit_break(inShp, pntBreakShp,
     
     # Iterate over pntBreakShp to get all coords
     if os.path.isfile(pntBreakShp):
-        from gasp.fm import points_to_list
+        from gasp3.dt.fm import points_to_list
         lstPnt = points_to_list(pntBreakShp)
     else:
         from grass.pygrass.vector import VectorTopo

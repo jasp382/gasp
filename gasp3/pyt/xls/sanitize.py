@@ -28,9 +28,9 @@ def split_attr(xls_path, sheet, interest_column, rule, out_path, overwrite=None)
 	"""
     
     import xlrd
-    from gasp.oss.ops import del_file
-    from gasp.fm      import tbl_to_obj
-    from gasp.to      import dict_to_xls
+    from gasp3.dt.fm   import tbl_to_obj
+    from gasp3.pyt.oss import del_file
+    from gasp3.dt.to   import dict_to_xls
     
 	if overwrite:
 		del_file(out_path)
@@ -63,13 +63,11 @@ def replace_char(xls_path, interest_columns, charToReplace, _replacement, outXls
 	TODO: Use Pandas insted
 	"""
 	
-	import os
-	from gasp.fm          import tbl_to_obj
-    from gasp.to          import dict_to_xls
-    from gasp.mng.fld.xls import columns_by_order
+	import os; from gasp3.dt.fm import tbl_to_obj
+    from gasp3.dt.to            import dict_to_xls
+    from gasp3.pyt.xls.fld      import columns_by_order
 	
-	interest_columns = [interest_columns] if type(interest_columns) == str or \
-		type(interest_columns) == unicode else \
+	interest_columns = [interest_columns] if type(interest_columns) == str else \
 		interest_columns if type(interest_columns) == list else None
 	
 	if not interest_columns:
@@ -119,10 +117,8 @@ def identify_cells_with_char(xls, sheetname, col_id, col_interest,
 	Record these cells (ID and interest column) in a new file.
 	"""
 	
-	import xlrd
-	import xlwt
-	
-    from gasp.mng.fld.xls import get_columns_position
+	import xlrd;           import xlwt
+    from gasp3.pyt.xls.fld import get_columns_position
 	
 	__xls = xlrd.open_workbook(xls)
 	sheet = __xls.sheet_by_name(sheetname)

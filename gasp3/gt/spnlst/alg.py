@@ -15,7 +15,7 @@ def gdal_mapcalc(expression, exp_val_paths, outRaster, epsg, outNodata=-99999):
     from osgeo              import gdal, osr
     from gasp3.gt.prop.ff   import drv_name
     from py_expression_eval import Parser
-    from gasp.prop.rst      import rst_dataType
+    from gasp3.gt.prop.rst  import rst_dataType
     
     parser = Parser()
     
@@ -97,9 +97,9 @@ def rstcalc(expression, output, api='saga', grids=None):
         # Using SAGA GIS
         
         import os
-        from gasp3            import exec_cmd
-        from gasp3.pyt.oss    import get_filename
-        from gasp.to.rst.saga import saga_to_geotiff
+        from gasp3           import exec_cmd
+        from gasp3.pyt.oss   import get_filename
+        from gasp3.dt.to.rst import saga_to_tif
         
         SAGA_RASTER = os.path.join(
             os.path.dirname(output),
@@ -116,7 +116,7 @@ def rstcalc(expression, output, api='saga', grids=None):
         outcmd = exec_cmd(cmd)
         
         # Convert to tiff
-        saga_to_geotiff(SAGA_RASTER, output)
+        saga_to_tif(SAGA_RASTER, output)
     
     elif api == 'pygrass':
         from grass.pygrass.modules import Module

@@ -36,14 +36,12 @@ def frequencies_by_place(xls, entities_sheet, entities_id, entities_place,
     Filtering entities properties is possible
     """
 
-    from decimal import Decimal
-    import numpy
-    from gasp                 import unicode_to_str
-    from gasp.mng.fld.xls     import get_columns_position
-    from gasp.mng.xlstbx.summ import list_unique_values_column
-    from gasp.mng.xlstbx.summ import count_values_column
-    from gasp.mng.xlstbx.summ import count_values_column_if_entity_exists
-    from gasp.mng.xlstbx.summ import count_values_column_by_entity_property
+    import numpy; from decimal import Decimal
+    from gasp3.pyt.xls.fld     import get_columns_position
+    from gasp3.pyt.xls.summ    import list_unique_values_column
+    from gasp3.pyt.xls.summ    import count_values_column
+    from gasp3.pyt.xls.summ    import count_values_column_if_entity_exists
+    from gasp3.pyt.xls.summ    import count_values_column_by_entity_property
 
     """
     Aux method to estimate some generic statistics based on a "Dict Histogram"
@@ -66,7 +64,7 @@ def frequencies_by_place(xls, entities_sheet, entities_id, entities_place,
         denominator = 0
         std_sample = []
         for v in histogram:
-            if type(v) != unicode and type(v) != str:
+            if type(v) != str:
                 numerator += Decimal(v) * Decimal(histogram[v])
                 denominator += histogram[v]
                 std_sample += [v for x in range(histogram[v])]
@@ -123,7 +121,7 @@ def frequencies_by_place(xls, entities_sheet, entities_id, entities_place,
                 __filter = __entities_sheet.cell(
                     row, id_place_position[col_filter]).value
 
-                if unicode_to_str(__filter) != val_filter:
+                if __filter != val_filter:
                     c += 1
                     break
 
@@ -383,8 +381,7 @@ def frequencies_by_entity_attr(xls, entities_sheet, entities_id, attr_sheet,
     Number of students with a number of negatives
     """
     
-    from gasp.mng.fld.xls import get_columns_position
-    from gasp             import unicode_to_str
+    from gasp3.pyt.xls.fld import get_columns_position
 
     # Open file
     __xls = xlrd.open_workbook(xls, on_demand=True)
@@ -419,7 +416,7 @@ def frequencies_by_entity_attr(xls, entities_sheet, entities_id, attr_sheet,
                 __filter = __entities_sheet.cell(
                     row, cols_position[col_filter]).value
 
-                if unicode_to_str(__filter) != filters_map[col_filter]:
+                if __filter != filters_map[col_filter]:
                     c += 1
                     break
 
@@ -433,8 +430,7 @@ def frequencies_by_entity_attr(xls, entities_sheet, entities_id, attr_sheet,
 
 
     interest_values = interest_values if type(interest_values) == list else \
-        [interest_values] if type(interest_values) == str or \
-        type(interest_values) == unicode else 0
+        [interest_values] if type(interest_values) == str else 0
 
     if not interest_values: raise ValueError(
         'interest_values should be a list or string')
@@ -509,10 +505,9 @@ def frequencies_table(xls, data_sheet, output,
     It is possible filter entities and attribute values
     """
     
-    from gasp.mng.fld.xls     import get_columns_position
-    from gasp.mng.xlstbx.summ import count_values_column
-    from gasp.mng.xlstbx.summ import count_values_column_if_entity_exists
-    from gasp                 import unicode_to_str
+    from gasp3.pyt.xls.fld  import get_columns_position
+    from gasp3.pyt.xls.summ import count_values_column
+    from gasp3.pyt.xls.summ import count_values_column_if_entity_exists
 
     # Open file
     __xls = xlrd.open_workbook(xls, on_demand=True)
@@ -541,7 +536,7 @@ def frequencies_table(xls, data_sheet, output,
                 __filter = __entities_sheet.cell(
                     row, cols_position[col_filter]).value
 
-                if unicode_to_str(__filter) != filters_map[col_filter]:
+                if __filter != filters_map[col_filter]:
                     c += 1
                     break
 

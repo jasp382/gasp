@@ -59,13 +59,13 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp.mng.genze      import dissolve
-    from gasp.mng.grstbl     import add_table
-    from gasp.sql.mng.tbl    import row_num as cont_row
+    from gasp3.gt.mng.genze import dissolve
+    from gasp3.gt.mng.grstbl import add_table
+    from gasp3.sql.i import row_num as cont_row
     if apidb != 'POSTGIS':
-        from gasp.to.shp.grs import sqlite_to_shp as db_to_grs
+        from gasp3.dt.to.shp import sqlite_to_grs as db_to_grs
     else:
-        from gasp.to.shp.grs import psql_to_grs   as db_to_grs
+        from gasp3.dt.to.shp import psql_to_grs   as db_to_grs
     
     WHR = "selection IS NOT NULL"
     

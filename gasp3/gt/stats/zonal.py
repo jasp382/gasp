@@ -10,11 +10,14 @@ def statistics_by_line_feat(lines, raster, statistic, new_field):
     
     This method has an important problem - depends on the
     number of vertex of each features
+    
+    TODO: convert lines to raster and use the raster to get the statistics
+    of each line
     """
     
-    from osgeo                 import ogr, gdal
-    from gasp.prop.ff          import drv_name
-    from gasp.cpu.gdl.sampling import gdal_point_value_on_raster
+    from osgeo               import ogr, gdal
+    from gasp3.gt.prop.ff    import drv_name
+    from gasp3.gt.mng.sample import pnt_val_on_rst
     
     # Open feature class
     shp = ogr.GetDriverByName(
@@ -36,7 +39,7 @@ def statistics_by_line_feat(lines, raster, statistic, new_field):
         num_pnt = lnh.GetPointCount()
         for pnt in range(num_pnt):
             x, y, z = lnh.GetPoint(pnt)
-            cell = gdal_point_value_on_raster(x, y, band, geo_transform)
+            cell = pnt_val_on_rst(x, y, band, geo_transform)
             if not cell:
                 continue
             else:

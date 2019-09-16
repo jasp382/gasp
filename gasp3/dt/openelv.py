@@ -17,7 +17,7 @@ def locations_elev(locations):
     ]}
     """
     
-    from gasp3.dt.fm.web import data_from_post
+    from gasp3.pyt.web import data_from_post
     
     URL = 'https://api.open-elevation.com/api/v1/lookup'
     

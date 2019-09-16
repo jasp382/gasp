@@ -279,7 +279,7 @@ def onFolder_rename(fld, toBeReplaced, replacement, only_files=True,
     object 'replacement'
     """
     
-    from gasp.oss import list_files
+    from gasp3.pyt.oss import list_files
 
     if not only_files and not only_folders:
         files = list_folders_files(fld)

@@ -61,7 +61,7 @@ def run_query_for_values_in_col(conParam, query,
     
     from gasp3.dt.fm.sql import query_to_df
     from gasp3.sql.i     import cols_type
-    from gasp.dt.to      import obj_to_tbl
+    from gasp3.dt.to     import obj_to_tbl
     
     fields_types = cols_type(conParam, table_interest_col)
     
@@ -98,8 +98,8 @@ def get_rows_notin_query(conParam, tblA, tblB, joinCols, newTable,
     joinCols = {colTblA : colTblB}
     """
     
-    from gasp            import goToList
-    from gasp.sql.mng.qw import q_to_ntbl
+    from gasp3             import goToList
+    from gasp3.sql.mng.tbl import q_to_ntbl
     
     cols_to_mantain = goToList(cols_to_mantain)
     

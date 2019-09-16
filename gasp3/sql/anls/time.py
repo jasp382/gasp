@@ -34,10 +34,10 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
     """
     
     import pandas
-    from gasp             import goToList
-    from gasp.fm.sql      import query_to_df
-    from gasp.sql.mng.fld import cols_type
-    from gasp.to          import obj_to_tbl
+    from gasp3           import goToList
+    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.i     import cols_type
+    from gasp3.dt.to     import obj_to_tbl
     
     entity_field = goToList(entity_field)
     COLS = entity_field + [day_field, hour_field]

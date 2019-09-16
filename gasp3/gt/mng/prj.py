@@ -148,8 +148,6 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         """
         Transform SRS of any OGR Compilant Data. Save the transformed data
         in a new file
-    
-        TODO: DB - only works with sqlite
         """
         
         if not inEPSG:
@@ -159,11 +157,11 @@ def project(inShp, outShp, outEPSG, inEPSG=None, gisApi='ogr', sql=None):
         from gasp3.gt.prop.ff import drv_name
         
         cmd = (
-            'ogr2ogr -f "{}" {} {}{} -s_srs EPSG:{} -t_srs:{}'
+            'ogr2ogr -f "{}" {} {}{} -s_srs EPSG:{} -t_srs EPSG:{}'
         ).format(
             drv_name(outShp), outShp, inShp,
             '' if not sql else ' -dialect sqlite -sql "{}"'.format(sql),
-            str(inEpsg), str(outEpsg)
+            str(inEPSG), str(outEPSG)
         )
         
         outcmd = exec_cmd(cmd)

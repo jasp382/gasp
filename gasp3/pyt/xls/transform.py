@@ -48,8 +48,8 @@ def groups_to_lines(xls_data, xls_sheet,
     0 |    ATLA1   |     50      |        70         |    80   | ... |   10
     1 |    PTLA1   |     20      |        61         |    30   | ... |   12
     """
-
-    from gasp.mng.fld.xls import get_columns_position
+    
+    from gasp3.pyt.xls.fld import get_columns_position
 
     interest_columns = [group_column, cls_column, name_colum, interest_column]
 
@@ -285,10 +285,10 @@ def year_to_col_by_attr(data_file, data_spreadsheet,
     6 |  PT   | PT_03 | PTLA3 | val_y | val_y
     """
 
-    from gasp.mng.fld.xls     import get_columns_position
-    from gasp.mng.fld.xls     import get_columns_position_outside_options
-    from gasp.mng.xlstbx.summ import list_unique_values_column
-    from gasp.mng.xlstbx.summ import get_unit_attributes
+    from gasp3.pyt.xls.fld  import get_columns_position
+    from gasp3.pyt.xls.fld  import get_columns_position_outside_options
+    from gasp3.pyt.xls.summ import list_unique_values_column
+    from gasp3.dt.fm.xls    import get_unit_attributes
 
     # Open input
     xls_data = xlrd.open_workbook(data_file)

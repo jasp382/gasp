@@ -145,11 +145,11 @@ def polylines_from_points(points, polylines, POLYLINE_COLUMN,
         drv_name(polylines)).CreateDataSource(polylines)
     
     if not epsg:
-        from gasp.prop.prj import get_shp_sref
+        from gasp3.gt.prop.prj import get_shp_sref
         srs = get_shp_sref(points)
     
     else:
-        from gasp.prop.prj import get_sref_from_epsg
+        from gasp3.gt.prop.prj import get_sref_from_epsg
         srs = get_sref_from_epsg(epsg)
     
     lineLyr = lineSrc.CreateLayer(
@@ -160,7 +160,7 @@ def polylines_from_points(points, polylines, POLYLINE_COLUMN,
     # Create polyline id field
     fields_types = ogr_list_fields_defn(pntLyr)
     add_fields(
-        lineLyr, {POLYLINE_COLUMN : fields_types[POLYLINE_COLUMN].keys()[0]}
+        lineLyr, {POLYLINE_COLUMN : list(fields_types[POLYLINE_COLUMN].keys())[0]}
     )
     
     polLnhDefns = lineLyr.GetLayerDefn()
@@ -170,7 +170,7 @@ def polylines_from_points(points, polylines, POLYLINE_COLUMN,
         
         lnh = ogr.Geometry(ogr.wkbLineString)
         
-        pnt_order = lPnt[polyline].keys()
+        pnt_order = list(lPnt[polyline].keys())
         pnt_order.sort()
         
         for p in pnt_order:

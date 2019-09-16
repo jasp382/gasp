@@ -161,7 +161,7 @@ def shp_from_address(inTbl, idAddr, addrCol, outShp,
     
     # Reproject if user wants it
     if epsg_out != 4326:
-        from gasp.mng.prj import project
+        from gasp3.gt.mng.prj import project
         geoAdr = project(geoAdr, None, epsg_out, gisApi='pandas')
     
     # To Shapefile

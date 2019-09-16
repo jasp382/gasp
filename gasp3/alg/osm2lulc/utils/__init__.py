@@ -52,7 +52,7 @@ def record_time_consumed(timeData, outXls):
     
     # Produce detailed table - Time consumed inside rules
     timeInsideRule = []
-    timeDataKeys = timeData.keys()
+    timeDataKeys = list(timeData.keys())
     timeDataKeys.sort()
     
     for i in timeDataKeys:
@@ -67,7 +67,7 @@ def record_time_consumed(timeData, outXls):
             })
         
         elif len(timeData[i]) == 3:
-            taskKeys = timeData[i][2].keys()
+            taskKeys = list(timeData[i][2].keys())
             taskKeys.sort()
             for task in taskKeys:
                 if not timeData[i][2][task]:

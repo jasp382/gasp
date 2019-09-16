@@ -80,7 +80,7 @@ def splite_near(sqdb, tbl, nearTbl, tblGeom, nearGeom, output, whrNear=None,
     )
     
     if outIsFile:
-        from gasp.anls.exct import sel_by_attr
+        from gasp3.gt.anls.exct import sel_by_attr
         
         sel_by_attr(sqdb, Q, output, api_gis='ogr')
     
@@ -98,7 +98,7 @@ def st_buffer(conParam, inTbl, bfDist, geomCol, outTbl, bufferField="geometry",
     Using Buffer on PostGIS Data
     """
     
-    from gasp import goToList
+    from gasp3 import goToList
     
     dissolve = goToList(dissolve) if dissolve != "ALL" else "ALL"
     
@@ -128,7 +128,7 @@ def st_buffer(conParam, inTbl, bfDist, geomCol, outTbl, bufferField="geometry",
         
         outTbl = q_to_ntbl(conParam, outTbl, Q, api='psql')
     else:
-        from gasp.to.shp import psql_to_shp
+        from gasp3.dt.to.shp import psql_to_shp
         
         psql_to_shp(
             conParam, Q, outTbl, api='pgsql2shp',
@@ -172,7 +172,7 @@ def splite_buffer(db, table, dist, geomField, outTbl,
     )
     
     if outTblIsFile:
-        from gasp.anls.exct import sel_by_attr
+        from gasp3.gt.anls.exct import sel_by_attr
         
         sel_by_attr(db, sql, outTbl, api_gis='ogr')
     

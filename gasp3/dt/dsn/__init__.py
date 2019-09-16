@@ -334,16 +334,14 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     Search for data in DSN and other platforms by cell
     """
     
-    import time
-    from gasp3.dt.fm            import tbl_to_obj
-    from gasp.sql.mng.db        import create_db
-    from gasp.web.dsn.fb.places import places_by_query
-    from gasp.mng.prj           import project
-    from gasp.mng.gen           import merge_df
-    from gasp.to.sql            import geodf_to_psql
-    from gasp.to.shp            import psql_to_shp
-    from gasp.sql.mng.qw        import q_to_ntbl
-    from gasp.to.shp            import psql_to_shp
+    import time; from gasp3.dt.fm import tbl_to_obj
+    from gasp3.sql.mng.db         import create_db
+    from gasp3.dt.dsn.fb.places   import places_by_query
+    from gasp3.gt.mng.prj         import project
+    from gasp3.pyt.df.mng         import merge_df
+    from gasp3.dt.to.shp          import psql_to_shp
+    from gasp3.sql.mng.tbl        import q_to_ntbl
+    from gasp3.dt.to              import df_to_db
     
     # Open GRID SHP
     GRID_DF = tbl_to_obj(GRID_PNT)
@@ -385,7 +383,7 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     conpgsql["DATABASE"] = conpgsql["DB"]
     
     # Send Data to PostgreSQL
-    geodf_to_psql(
+    df_to_db(
         conpgsql, RESULTS_TABLE, "{}_data".format(DATA_SOURCE),
         EPSG, "POINT",
         colGeom='geometry' if 'geometry' in RT.columns.values else 'geom'

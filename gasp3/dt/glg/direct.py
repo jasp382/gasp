@@ -3,7 +3,7 @@ Google Maps Directions API methods to do things
 related with network analysis
 """
 
-from gasp.web import json_fm_httpget
+from gasp3.pyt.web import json_fm_httpget
 
 from . import select_api_key
 from . import record_api_utilization

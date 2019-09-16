@@ -2,7 +2,7 @@
 Google Maps Geocoding API Endpoints
 """
 
-from gasp.web import json_fm_httpget
+from gasp3.pyt.web import json_fm_httpget
 
 from . import select_api_key
 from . import record_api_utilization
@@ -28,27 +28,15 @@ def get_position(address, country=None, language=None, locality=None,
     Only one address is allowed
     """
     
-    from gasp import unicode_to_str
-    
     ADDRESS_SANITIZE = ','.join(address) if \
         type(address) == list else address if \
-        type(address) == str or type(address) == unicode else None
+        type(address) == str else None
     
     if not ADDRESS_SANITIZE:
         raise ValueError(('Given Address is not valid!'))
     
-    ADDRESS_SANITIZE = unicode(ADDRESS_SANITIZE) if ' ' not in ADDRESS_SANITIZE \
-        else unicode(ADDRESS_SANITIZE.replace(' ', '+'))
-    
-    ADDRESS_SANITIZE = unicode_to_str(ADDRESS_SANITIZE)
-    
-    if country:
-        try: country = unicode_to_str(country)
-        except: pass
-    
-    if locality:
-        try: locality = unicode_to_str(locality)
-        except: pass
+    ADDRESS_SANITIZE = ADDRESS_SANITIZE if ' ' not in ADDRESS_SANITIZE \
+        else ADDRESS_SANITIZE.replace(' ', '+')
         
     COUNTRY  = '' if not country else 'country:{}'.format(country)
     LOCALITY = '' if not locality else 'locality:{}'.format(locality)

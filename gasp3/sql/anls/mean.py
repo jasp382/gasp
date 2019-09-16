@@ -12,10 +12,9 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
     Day field must be of type text
     """
     
-    import os
-    import pandas
-    from gasp.fm.sql import query_to_df
-    from gasp.to     import obj_to_tbl
+    import os;           import pandas
+    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.dt.to     import obj_to_tbl
     
     # Get days
     VALUES = query_to_df(conParam, 
@@ -89,10 +88,9 @@ def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
     4 days.
     """
     
-    import pandas
-    from gasp        import goToList
-    from gasp.fm.sql import query_to_df
-    from gasp.to     import obj_to_tbl
+    import pandas; from gasp3 import goToList
+    from gasp3.dt.fm.sql      import query_to_df
+    from gasp3.dt.to          import obj_to_tbl
     
     entityField = goToList(entityField)
     mean_field  = "mean_rows" if not newMeanField else newMeanField
@@ -263,9 +261,9 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
     """
     
     import pandas
-    from gasp         import goToList
-    from gasp.fm.psql import query_to_df
-    from gasp.to      import obj_to_tbl
+    from gasp3           import goToList
+    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.dt.to     import obj_to_tbl
     
     def get_case(PTUPLE, PFIELD):
         return (
@@ -356,11 +354,11 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     """
     
     import os
-    from gasp.oss        import get_filename
-    from gasp.to.sql     import shp_to_psql
-    from gasp.sql.mng.db import create_db
-    from gasp.sql.mng.qw import q_to_ntbl
-    from gasp.to         import db_to_tbl
+    from gasp3.pyt.oss     import get_filename
+    from gasp3.dt.to.sql   import shp_to_psql
+    from gasp3.sql.mng.db  import create_db
+    from gasp3.sql.mng.tbl import q_to_ntbl
+    from gasp3.dt.to       import db_to_tbl
     
     db_name = get_filename(MATRIX_OD)
     create_db(conParam, db_name, overwrite=True)

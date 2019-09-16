@@ -26,16 +26,12 @@ def search_by_keyword(search_term, maxResults=20,
     """
     
     from apiclient.discovery import build
-    from gasp                import unicode_to_str
     
     youtube = build(
         YOUTUBE_API_SERVICE_NAME,
         YOUTUBE_API_VERSION,
         developerKey=GOOGLE_API_KEY
     )
-    
-    if type(search_term) == unicode:
-        search_term = unicode_to_str(search_term)
     
     # Call the search.list method to retrieve results matching the specified
     # query term

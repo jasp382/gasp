@@ -57,7 +57,7 @@ def get_columns_position_outside_options(sheet_obj, cols_name):
 def columns_by_order(xls_file, sheet_name=None, sheet_index=None):
     
     import xlrd
-    from gasp.mng.xlstbx.sheet import get_sheet_obj
+    from gasp3.pyt.xls.sheet import get_sheet_obj
     
     try:
         xls = xlrd.open_workbook(xls_file)

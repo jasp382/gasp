@@ -67,8 +67,6 @@ def array_to_shp(array_like, outFile, x='x', y='y', epsg=None):
     for k in array_like[0]:
         if k != x and k != y:
             fld_name = k[:9]
-            if type(fld_name) == unicode:
-                fld_name = unicode_to_str(fld_name)
             
             if fld_name not in fields:
                 fields.append(fld_name)
@@ -105,10 +103,9 @@ def array_to_shp(array_like, outFile, x='x', y='y', epsg=None):
         for k in array_like[i]:
             if k != x and k != y:
                 value = array_like[i][k]
-                if type(value) == unicode:
-                    value = unicode_to_str(value)
-                    if len(value) >= 254:
-                        value = value[:253]
+                
+                if len(value) >= 254:
+                    value = value[:253]
                 
                 feat.SetField(
                     keys_fields[k], value
@@ -451,7 +448,7 @@ def grs_to_shp(inLyr, outLyr, geomType, lyrN=1, asCMD=True, asMultiPart=None):
     return outLyr
 
 
-def sqlite_to_shp(db, table, out, where=None, notTable=None,
+def sqlite_to_grs(db, table, out, where=None, notTable=None,
                   filterByReg=None):
     """
     Execute a query on SQLITE DB and add data to GRASS GIS

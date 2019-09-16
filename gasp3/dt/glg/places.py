@@ -5,7 +5,7 @@ Google Places API Web Service
 from . import select_api_key
 from . import record_api_utilization
 
-from gasp.web import json_fm_httpget
+from gasp3.pyt.web import json_fm_httpget
 
 # ------------------------------ #
 """
@@ -27,21 +27,13 @@ def get_places_by_radius(lat, lng, radius, keyword=None,
         else:
             return str(coord)
     
-    from gasp import unicode_to_str
-    
     # Get Google Maps Key
     KEY_FID, GOOGLE_API_KEY, NR_REQUESTS = select_api_key()
     
     # Prepare URL
-    keyword = unicode_to_str(keyword) if type(keyword) == unicode else \
-        keyword
-    
     str_keyword = '' if not keyword else '&keyword={}'.format(
         keyword
     )
-    
-    _type = unicode_to_str(_type) if type(_type) == unicode else \
-        _type
     
     str_type = '' if not _type else '&type={}'.format(_type)
     
@@ -67,12 +59,12 @@ def find_places(inShp, epsg, radius, output, keyword=None, type=None):
     Extract places from Google Maps
     """
     
-    import pandas;           import time
-    from gasp.fm             import tbl_to_obj
-    from gasp.to.geom        import pnt_dfwxy_to_geodf
-    from gasp.mng.prj        import project
-    from gasp.mng.fld.df     import listval_to_newcols
-    from gasp.to.shp         import df_to_shp
+    import pandas;        import time
+    from gasp3.dt.fm      import tbl_to_obj
+    from gasp3.dt.to.geom import pnt_dfwxy_to_geodf
+    from gasp3.gt.mng.prj import project
+    from gasp3.pyt.df.fld import listval_to_newcols
+    from gasp3.dt.to.shp import df_to_shp
     
     pntDf = tbl_to_obj(inShp)
     pntDf = project(pntDf, None, 4326, gisApi='pandas') if epsg != 4326 else pntDf

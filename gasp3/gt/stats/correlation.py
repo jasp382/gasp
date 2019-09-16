@@ -34,7 +34,7 @@ def speraman_correlation(x, y):
     
     from scipy       import stats
     from decimal     import Decimal
-    from gasp.to.rst import rst_to_array
+    from gasp3.dt.fm.rst import rst_to_array
     
     vx = rst_to_array(x, flatten=True, with_nodata=False)
     vy = rst_to_array(y, flatten=True, with_nodata=False)

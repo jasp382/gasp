@@ -122,7 +122,6 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     from gasp3.gt.prop.rst     import get_rst_report_data
     from gasp3.dt.to.shp       import shp_to_grs, grs_to_shp
     from gasp3.dt.to.rst       import shp_to_rst
-    from gasp.to.rst           import shp_to_rst
     
     # Add data to GRASS GIS
     mainVector = shp_to_grs(

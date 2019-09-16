@@ -8,11 +8,10 @@ def export_cells_not_in(inTable, noTable, outTable, inSheet, noSheet, inFID,
     Export to a new file the cells of in Table not in noTable
     """
     
-    import xlrd;              import xlwt
-    from gasp.fm              import tbl_to_obj
-    from gasp.mng.fld.xls     import columns_by_order
-    from gasp.mng.fld.xls     import get_columns_position
-    from gasp.mng.xlstbx.summ import list_unique_values_column
+    import xlrd;            import xlwt
+    from gasp3.dt.fm        import tbl_to_obj
+    from gasp3.pyt.xls.fld  import columns_by_order, get_columns_position
+    from gasp3.pyt.xls.summ import list_unique_values_column
     
     # TODO: check if tables are xls
     

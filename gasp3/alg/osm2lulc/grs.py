@@ -20,23 +20,23 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Gasp dependencies #
     # ************************************************************************ #
-    from gasp.oss.ops            import create_folder
-    from gasp.prop.ff            import check_isRaster
-    from gasp.prop.rst           import get_rst_epsg
-    from gasp.session            import run_grass
+    from gasp3.pyt.oss                import create_folder
+    from gasp3.gt.prop.ff             import check_isRaster
+    from gasp3.gt.prop.prj            import get_rst_epsg
+    from gasp3.gt.wenv.grs            import run_grass
     if roadsAPI == 'POSTGIS':
-        from gasp.sql.mng.db     import create_db
-        from gasp.osm2lulc.utils import osm_to_pgsql
-        from gasp.osm2lulc.mod2  import roads_sqdb
+        from gasp3.sql.mng.db         import create_db
+        from gasp3.alg.osm2lulc.utils import osm_to_pgsql
+        from gasp3.alg.osm2lulc.mod2  import roads_sqdb
     else:
-        from gasp.osm2lulc.utils import osm_to_sqdb
-        from gasp.osm2lulc.mod2  import grs_rst_roads
-    from gasp.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat, osmlulc_rsttbl
-    from gasp.osm2lulc.utils     import get_ref_raster
-    from gasp.osm2lulc.mod1      import grs_rst
-    from gasp.osm2lulc.m3_4      import rst_area
-    from gasp.osm2lulc.mod5      import basic_buffer
-    from gasp.osm2lulc.mod6      import rst_pnt_to_build
+        from gasp3.alg.osm2lulc.utils import osm_to_sqdb
+        from gasp3.alg.osm2lulc.mod2  import grs_rst_roads
+    from gasp3.alg.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat, osmlulc_rsttbl
+    from gasp3.alg.osm2lulc.utils     import get_ref_raster
+    from gasp3.alg.osm2lulc.mod1      import grs_rst
+    from gasp3.alg.osm2lulc.m3_4      import rst_area
+    from gasp3.alg.osm2lulc.mod5      import basic_buffer
+    from gasp3.alg.osm2lulc.mod6      import rst_pnt_to_build
     # ************************************************************************ #
     # Global Settings #
     # ************************************************************************ #
@@ -78,7 +78,7 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # Get Ref Raster
     refRaster, epsg = get_ref_raster(refRaster, workspace, cellsize=2)
     
-    from gasp.osm2lulc.var import PRIORITIES, osmTableData, LEGEND
+    from gasp3.alg.osm2lulc.var import PRIORITIES, osmTableData, LEGEND
     
     __priorites = PRIORITIES[nomenclature]
     __legend    = LEGEND[nomenclature]
@@ -123,10 +123,9 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # IMPORT SOME GASP MODULES FOR GRASS GIS #
     # ************************************************************************ #
-    from gasp.to.rst          import rst_to_grs, grs_to_rst
-    from gasp.cpu.grs.spanlst import mosaic_raster
-    from gasp.prop.grs        import rst_to_region
-    
+    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp3.gt.mng.rst  import mosaic_raster
+    from gasp3.gt.wenv.grs import rst_to_region
     # ************************************************************************ #
     # SET GRASS GIS LOCATION EXTENT #
     # ************************************************************************ #
@@ -319,7 +318,7 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # Ceck if lulc Rst has an valid format
     outIsRst = check_isRaster(lulcRst)
     if not outIsRst:
-        from gasp.oss import get_filename
+        from gasp3.pyt.oss import get_filename
         lulcRst = os.path.join(
             os.path.dirname(lulcRst), get_filename(lulcRst) + '.tif')
     
@@ -372,25 +371,23 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     # ************************************************************************ #
     # GASP dependencies #
     # ************************************************************************ #
-    from gasp.oss               import get_filename, get_fileformat
-    from gasp.oss.ops           import create_folder
-    from gasp.session           import run_grass
+    from gasp3.pyt.oss                import get_filename, get_fileformat, create_folder
+    from gasp3.gt.wenv.grs            import run_grass
     if RoadsAPI == 'POSTGIS':
-        from gasp.sql.mng.db     import create_db
-        from gasp.osm2lulc.utils import osm_to_pgsql
+        from gasp3.sql.mng.db         import create_db
+        from gasp3.alg.osm2lulc.utils import osm_to_pgsql
     else:
-        from gasp.osm2lulc.utils import osm_to_sqdb
-    from gasp.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat
-    from gasp.osm2lulc.utils     import get_ref_raster
-    from gasp.mng.gen            import merge_feat
-    from gasp.osm2lulc.mod1      import grs_vector
+        from gasp3.alg.osm2lulc.utils import osm_to_sqdb
+    from gasp3.alg.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat, get_ref_raster
+    from gasp3.gt.mng.gen             import merge_feat
+    from gasp3.alg.osm2lulc.mod1      import grs_vector
     if RoadsAPI == 'SQLITE' or RoadsAPI == 'POSTGIS':
-        from gasp.osm2lulc.mod2  import roads_sqdb
+        from gasp3.alg.osm2lulc.mod2  import roads_sqdb
     else:
-        from gasp.osm2lulc.mod2  import grs_vec_roads
-    from gasp.osm2lulc.m3_4      import grs_vect_selbyarea
-    from gasp.osm2lulc.mod5      import grs_vect_bbuffer
-    from gasp.osm2lulc.mod6      import vector_assign_pntags_to_build
+        from gasp3.alg.osm2lulc.mod2  import grs_vec_roads
+    from gasp3.alg.osm2lulc.m3_4      import grs_vect_selbyarea
+    from gasp3.alg.osm2lulc.mod5      import grs_vect_bbuffer
+    from gasp3.alg.osm2lulc.mod6      import vector_assign_pntags_to_build
     # ************************************************************************ #
     # Global Settings #
     # ************************************************************************ #
@@ -433,7 +430,7 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     # Get Reference Raster
     refRaster, epsg = get_ref_raster(refRaster, workspace, cellsize=10)
     
-    from gasp.osm2lulc.var import osmTableData, PRIORITIES, LEGEND
+    from gasp3.alg.osm2lulc.var import osmTableData, PRIORITIES, LEGEND
     
     __priorities = PRIORITIES[nomenclature]
     __legend     = LEGEND[nomenclature]
@@ -480,12 +477,13 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     # ************************************************************************ #
     # IMPORT SOME GASP MODULES FOR GRASS GIS #
     # ************************************************************************ #
-    from gasp.anls.ovlay import erase
-    from gasp.prop.grs   import rst_to_region
-    from gasp.mng.genze  import dissolve
-    from gasp.mng.grstbl import add_and_update, reset_table, update_table, add_field
-    from gasp.to.shp.grs import shp_to_grs, grs_to_shp
-    from gasp.to.rst     import rst_to_grs
+    from gasp3.gt.anls.ovlay     import erase
+    from gasp3.gt.wenv.grs       import rst_to_region
+    from gasp3.gt.mng.genze      import dissolve
+    from gasp3.gt.mng.grstbl     import add_and_update, reset_table, update_table
+    from gasp3.gt.mng.fld.grsfld import add_field
+    from gasp3.dt.to.shp         import shp_to_grs, grs_to_shp
+    from gasp3.dt.to.rst         import rst_to_grs
     # ************************************************************************ #
     # SET GRASS GIS LOCATION EXTENT #
     # ************************************************************************ #
@@ -583,8 +581,7 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     """
     Get Shps with all geometries related with one class - One Shape for Classe
     """
-    
-    from gasp.mng.gen import same_attr_to_shp
+    from gasp3.gt.mng.gen import same_attr_to_shp
     
     _osmShps = []
     for i in range(len(osmShps)):

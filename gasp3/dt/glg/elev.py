@@ -6,7 +6,7 @@ from . import select_api_key
 from . import record_api_utilization
 from . import check_result
 
-from gasp.web import json_fm_httpget
+from gasp3.pyt.web import json_fm_httpget
 # ------------------------------ #
 """
 Global Variables
@@ -72,12 +72,12 @@ def elevation_to_pntshp(pnt_shp, epsg, fld_name='ELEVATION'):
     Add an elevation attribute to a point feature class
     """
     
-    from gasp.fm        import tbl_to_obj
-    from gasp.prop.feat import get_gtype
-    from gasp.mng.prj   import project
-    from gasp.mng.split import split_df
-    from gasp.to.obj    import df_to_dict
-    from gasp.to.shp    import df_to_shp
+    from gasp3.dt.fm        import tbl_to_obj
+    from gasp3.gt.prop.feat import get_gtype
+    from gasp3.gt.mng.prj   import project
+    from gasp3.pyt.df.split import split_df
+    from gasp3.dt.to.obj    import df_to_dict
+    from gasp3.dt.to.shp    import df_to_shp
     
     # Check Geometries type - shapes should be of type point
     geomt = get_gtype(pnt_shp, name=True, gisApi='ogr')

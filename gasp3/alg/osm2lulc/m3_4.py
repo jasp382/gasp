@@ -71,15 +71,14 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp.mng.genze      import dissolve
-    from gasp.mng.grstbl     import add_table
-    from gasp.osm2lulc.var   import GEOM_AREA
-    from gasp.sql.mng.tbl    import row_num as cnt_row
+    from gasp3.gt.mng.genze import dissolve
+    from gasp3.gt.mng.grstbl import add_table
+    from gasp3.alg.osm2lulc.var import GEOM_AREA
+    from gasp3.sql.i import row_num as cnt_row
     if apidb != 'POSTGIS':
-        from gasp.to.shp.grs import sqlite_to_shp as db_to_shp
+        from gasp3.dt.to.shp import sqlite_to_grs as db_to_shp
     else:
-        from gasp.to.shp.grs import psql_to_grs as db_to_shp
-        
+        from gasp3.dt.to.shp import psql_to_grs as db_to_shp
     
     OPERATOR  = ">" if UPPER else "<"
     DIRECTION = "upper" if UPPER else "lower"

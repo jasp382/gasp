@@ -337,7 +337,7 @@ def tweets_to_df(keyword=None, inGeom=None, epsg=None, LANG='pt',
         raise ValueError('inGeom implies epsg')
     
     if inGeom:
-        from gasp.anls.prox.bf import getBufferParam
+        from gasp3.gt.prop.feat.bf import getBufferParam
         
         x, y, dist = getBufferParam(inGeom, epsg, outSRS=4326)
         

@@ -12,8 +12,8 @@ def search_places(lat, lng, radius):
     """
     
     import pandas
-    from gasp.web        import data_from_get
-    from gasp.mng.fld.df import listval_to_newcols
+    from gasp3.pyt.web    import data_from_get
+    from gasp3.pyt.df.fld import listval_to_newcols
     
     data = data_from_get(
         'https://api.foursquare.com/v2/venues/search', dict(
@@ -77,11 +77,10 @@ def venues_by_query(radialShp, epsgIn, epsgOut=4326, onlySearchAreaContained=Tru
     buffer_shp = [x, y, r]
     """
     
-    import pandas
-    from shapely.geometry   import Polygon, Point
-    from geopandas          import GeoDataFrame
-    from gasp.anls.prox.bf  import getBufferParam
-    from gasp.fm.api.foursq import search_places
+    import pandas; from geopandas import GeoDataFrame
+    from shapely.geometry         import Polygon, Point
+    from gasp3.gt.prop.feat.bf    import getBufferParam
+    from gasp3.dt.dsn.foursq      import search_places
     
     x, y, radius = getBufferParam(radialShp, epsgIn, outSRS=4326)
     
@@ -100,12 +99,12 @@ def venues_by_query(radialShp, epsgIn, epsgOut=4326, onlySearchAreaContained=Tru
     gdata = GeoDataFrame(data, crs={'init' : 'epsg:4326'}, geometry=geoms)
     
     if onlySearchAreaContained:
-        from shapely.wkt       import loads
-        from gasp.mng.prj      import project_geom
-        from gasp.anls.prox.bf import coord_to_buffer
+        from shapely.wkt           import loads
+        from gasp3.gt.mng.prj      import project_geom
+        from gasp3.gt.anls.prox.bf import xy_to_buffer
         
         _x, _y, _radius = getBufferParam(radialShp, epsgIn, outSRS=3857)
-        searchArea = coord_to_buffer(float(_x), float(_y), float(_radius))
+        searchArea = xy_to_buffer(float(_x), float(_y), float(_radius))
         searchArea = project_geom(searchArea, 3857, 4326, api='ogr')
         searchArea = loads(searchArea.ExportToWkt())
         
@@ -117,7 +116,7 @@ def venues_by_query(radialShp, epsgIn, epsgOut=4326, onlySearchAreaContained=Tru
         gdata.drop('tst_geom', axis=1, inplace=True)
     
     if epsgOut != 4326:
-        from gasp.mng.prj import project
+        from gasp3.gt.mng.prj import project
         gdata = project(gdata, None, epsgOut, gisApi='pandas')
     
     return gdata
@@ -127,7 +126,7 @@ def venues_to_shp(inShp, inEpsg, outShp, outSRS=4326, onlyInsidePnt=None):
     FourSquare Venues to ESRI Shapefile
     """
     
-    from gasp.to.shp import df_to_shp
+    from gasp3.dt.to.shp import df_to_shp
     
     df = venues_by_query(
         inShp, inEpsg, epsgOut=outSRS, onlySearchAreaContained=onlyInsidePnt

@@ -3,7 +3,7 @@ Rule 5 - Basic buffer
 """
 
 import os
-from gasp.osm2lulc.var   import DB_SCHEMA
+from gasp3.alg.osm2lulc.var import DB_SCHEMA
 
 def basic_buffer(osmLink, lineTable, dataFolder, apidb='SQLITE'):
     """
@@ -11,13 +11,13 @@ def basic_buffer(osmLink, lineTable, dataFolder, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp.fm.sql            import query_to_df
+    from gasp3.dt.fm.sql import query_to_df
     if apidb == 'POSTGIS':
-        from gasp.sql.anls.prox import st_buffer
+        from gasp3.sql.anls.prox import st_buffer
     else:
-        from gasp.sql.anls.prox import splite_buffer as st_buffer
-    from gasp.to.rst            import shp_to_rst
-    from gasp.to.shp.grs        import shp_to_grs
+        from gasp3.sql.anls.prox import splite_buffer as st_buffer
+    from gasp3.dt.to.rst         import  shp_to_rst
+    from gasp3.dt.to.shp         import shp_to_grs
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     lulcCls = query_to_df(osmLink, (
@@ -74,14 +74,14 @@ def grs_vect_bbuffer(osmdata, lineTbl, api_db='SQLITE'):
     """
     
     import datetime
-    from gasp.anls.prox.bf   import _buffer
-    from gasp.mng.genze      import dissolve
-    from gasp.mng.grstbl     import add_table
-    from gasp.sql.mng.tbl    import row_num as cnt_row
+    from gasp3.gt.anls.prox.bf import _buffer
+    from gasp3.gt.mng.genze    import dissolve
+    from gasp3.gt.mng.grstbl   import add_table
+    from gasp3.sql.i           import row_num as cnt_row
     if api_db != 'POSTGIS':
-        from gasp.to.shp.grs import sqlite_to_shp as db_to_shp
+        from gasp3.dt.to.shp   import sqlite_to_grs as db_to_shp
     else:
-        from gasp.to.shp.grs import psql_to_grs   as db_to_shp
+        from gasp3.dt.to.shp   import psql_to_grs   as db_to_shp
     
     WHR = "basic_buffer IS NOT NULL"
     
@@ -122,14 +122,13 @@ def num_base_buffer(osmLink, lineTbl, folder, cells, srscode, rtemplate,
     Data from Lines to Polygons
     """
     
-    import datetime
-    from threading              import Thread
-    from gasp.fm.sql            import query_to_df
+    import datetime; from threading import Thread
+    from gasp3.dt.fm.sql            import query_to_df
     if api=='SQLITE':
-        from gasp.sql.anls.prox import splite_buffer as st_buffer
+        from gasp3.sql.anls.prox    import splite_buffer as st_buffer
     else:
-        from gasp.sql.anls.prox import st_buffer
-    from gasp.to.rst            import shp_to_rst
+        from gasp3.sql.anls.prox    import st_buffer
+    from gasp3.dt.to.rst            import shp_to_rst
     
     # Get LULC Classes to be selected
     time_a = datetime.datetime.now().replace(microsecond=0)

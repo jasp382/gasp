@@ -40,7 +40,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     
     # Check if folder exists, if not create it
     if not os.path.exists(OUT_FOLDER):
-        from gasp.pyt.oss import create_folder
+        from gasp3.pyt.oss import create_folder
         create_folder(OUT_FOLDER, overwrite=None)
     else:
         raise ValueError('{} already exists!'.format(OUT_FOLDER))

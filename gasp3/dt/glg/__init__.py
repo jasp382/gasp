@@ -32,7 +32,7 @@ def get_keys():
     Return available keys for this API
     """
     
-    from gasp.fm.sql import query_to_df
+    from gasp3.dt.fm.sql import query_to_df
     
     keys = query_to_df(APIS_DB, (
         "SELECT fid, key, date, nrqst FROM google "
@@ -77,7 +77,7 @@ def select_api_key():
     Select the API Key to use
     """
     
-    from gasp.fm.sql import query_to_df
+    from gasp3.dt.fm.sql import query_to_df
     
     GOOGLE_KEYS_ = query_to_df(
         APIS_DB, "SELECT fid, key, date, nrqst FROM google", db_api='sqlite'
@@ -121,7 +121,7 @@ def record_api_utilization(FID_KEY, API_REQUESTS):
     One API Key was used, so record that utilization
     """
     
-    from gasp.sql.mng.qw import update_query
+    from gasp3.sql.mng.tbl import update_query
     
     update_query(
         APIS_DB, "google",

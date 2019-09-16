@@ -91,9 +91,7 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
     
     # Export tags not being used to new shapefile
     def to_regular_str(row):
-        from gasp import unicode_to_str
-        
-        san_str = unicode_to_str(row.whr)
+        san_str = row.whr
         
         row["whr_san"] = san_str
         

@@ -106,7 +106,7 @@ def get_cellsize(rst, xy=False, bnd=None, gisApi='gdal'):
                     return [xs, xy]
             
             elif os.path.isdir(rst):
-                from gasp.oss import list_files
+                from gasp3.pyt.oss import list_files
                 
                 rsts = list_files(rst, file_format=gdal_drivers().keys())
                 
@@ -305,28 +305,6 @@ def rst_stats(rst, bnd=None, api='gdal'):
             'MIN' : stats[0], 'MAX' : stats[1], 'MEAN' : stats[2],
             "STDEV" : stats[3]
         }
-    
-    elif api == 'arcpy':
-        """
-        Do it with Arcpy
-        """
-        
-        import arcpy
-        from gasp.cpu.arcg.lyr import rst_lyr
-        
-        lyr = rst_lyr(rst)
-        
-        dicStats = {
-            'MIN'  : 'MINIMUM', 'MAX'   : 'MAXIMUM',
-            'MEAN' :    'MEAN', "STDEV" : "STD"
-        }
-        
-        for s in d:
-            stat = round(float(str(arcpy.GetRasterProperties_management(
-                lyr, s, "layer_1" if not bnd else bnd
-            )).replace(',', '.')), 4)
-            
-            dicStats[s] = stat
         
     else:
         raise ValueError('Sorry, API {} is not available'.format(gisApi))

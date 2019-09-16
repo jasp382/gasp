@@ -76,7 +76,7 @@ def copy_sheet_to_file(srcFile, destFile, sheets, newNames=None):
     # Check if destFile exists
     # Create it if not exists
     if not os.path.exists(destFile):
-        from gasp.xls import create_empty_file
+        from gasp3.pyt.xls import create_empty_file
         destFile = create_empty_file(destFile, engine="openpyxl")
     
     excelApp = Dispatch("Excel.Application")

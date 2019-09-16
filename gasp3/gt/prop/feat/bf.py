@@ -110,10 +110,10 @@ def getBufferParam(inArea, inAreaSRS, outSRS=4326):
         # Check if exists
         if os.path.exists(inArea):
             if os.path.isfile(inArea):
-                from gasp.anls.exct import get_geom_by_index
+                from gasp3.gt.anls.exct import geom_by_idx
                 
                 # Get Geometry object
-                BUFFER_GEOM = get_geom_by_index(inArea, 0)
+                BUFFER_GEOM = geom_by_idx(inArea, 0)
                 
                 # To outSRS
                 if int(inAreaSRS) != outSRS:

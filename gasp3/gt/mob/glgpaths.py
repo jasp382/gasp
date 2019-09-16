@@ -78,17 +78,17 @@ def dist_onedest_network(pntShp, pntRouteId, networkShp, netRouteId,
     associado a cada ponto deve constar na tabela dos pontos.
     """
     
-    import pandas; import time
+    import pandas;           import time
     from geopandas           import GeoDataFrame
-    from gasp.fm             import tbl_to_obj
+    from gasp3.dt.fm         import tbl_to_obj
     from gasp3.dt.glg.direct import pnt_to_pnt_duration
-    from gasp.to.geom        import regulardf_to_geodf, pnt_dfwxy_to_geodf
-    from gasp.mng.df         import df_groupBy
-    from gasp.mng.prj        import project
-    from gasp.fm.geom        import geom_endpoints_to_cols, pointxy_to_cols
-    from gasp.mng.fld.df     import distinct_of_distinct
-    from gasp.to.obj         import df_to_dict, dict_to_df
-    from gasp.to.shp         import df_to_shp
+    from gasp3.dt.to.geom    import df_to_geodf, pnt_dfwxy_to_geodf
+    from gasp3.pyt.df.agg    import df_groupBy
+    from gasp3.gt.mng.prj    import project
+    from gasp3.pyt.df.fld    import geom_endpoints_to_cols, pointxy_to_cols
+    from gasp3.pyt.df.fld    import distinct_of_distinct
+    from gasp3.dt.to.shp     import df_to_shp
+    from gasp3.dt.to.obj     import df_to_dict, dict_to_df
     
     netDataFrame = tbl_to_obj(networkShp)
     pntDataFrame = tbl_to_obj(pntShp)
@@ -175,7 +175,7 @@ def dist_onedest_network(pntShp, pntRouteId, networkShp, netRouteId,
     # Save result
     pntRelStops_gp.drop(["geometry_y"], axis=1, inplace=True)
     
-    gd = regulardf_to_geodf(pntRelStops_gp, "geometry_x", 4326)
+    gd = df_to_geodf(pntRelStops_gp, "geometry_x", 4326)
     
     if srs != 4326:
         gd = project(gd, None, srs, gisApi='pandas')

@@ -332,8 +332,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     
     numpy.place(resultSum, resultSum==0, 1)
     array_to_raster(
-        resultSum, lulcRst, refRaster, epsg, gdal.GDT_Byte, noData=1,
-        gisApi='gdal'
+        resultSum, lulcRst, refRaster, noData=1
     )
     
     osmlulc_rsttbl(nomenclature + "_NUMPY", os.path.join(
