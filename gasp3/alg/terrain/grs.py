@@ -33,8 +33,8 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
     gsetup.init(grass_base, grass_workspace, LOC_NAME, 'PERMANENT')
     
     # IMPORT GRASS GIS MODULES #
-    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
-    from gasp3.dt.to.shp   import shp_to_grs
+    from gasp3.gt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp3.gt.to.shp   import shp_to_grs
     from gasp3.gt.wenv.grs import rst_to_region
     
     # Configure region
@@ -65,7 +65,7 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
         outRst = surfrst(elev_pnt, field, OUTPUT_NAME, lyrN=1, ascmd=True)
     
     elif method == "CONTOUR":
-        from gasp3.dt.to.rst        import shp_to_rst
+        from gasp3.gt.to.rst        import shp_to_rst
         from gasp3.gt.spnlst.interp import surfcontour
         
         # Elevation (GRASS Vector) to Raster
@@ -78,7 +78,7 @@ def make_DEM(grass_workspace, data, field, output, extent_template,
     elif method == "IDW":
         from gasp3.gt.spnlst.interp import ridw
         from gasp3.gt.spanlst.alg   import rstcalc
-        from gasp3.dt.to.rst        import shp_to_rst
+        from gasp3.gt.to.rst        import shp_to_rst
         
         # Elevation (GRASS Vector) to Raster
         elevRst = shp_to_rst(

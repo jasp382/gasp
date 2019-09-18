@@ -78,8 +78,8 @@ def merge_feat(shps, outShp, api="ogr2ogr"):
         Merge SHP using pandas
         """
         
-        from gasp3.dt.fm     import tbl_to_obj
-        from gasp3.dt.to.shp import df_to_shp
+        from gasp3.fm        import tbl_to_obj
+        from gasp3.gt.to.shp import df_to_shp
         
         if type(shps) != list:
             raise ValueError('shps should be a list with paths for Feature Classes')
@@ -110,9 +110,9 @@ def same_attr_to_shp(inShps, interestCol, outFolder, basename="data_",
     """
     
     import os; from gasp3 import goToList
-    from gasp3.dt.fm      import tbl_to_obj
+    from gasp3.fm         import tbl_to_obj
     from gasp3.pyt.df.mng import merge_df
-    from gasp3.dt.to.shp  import df_to_shp
+    from gasp3.gt.to.shp  import df_to_shp
     
     EXT = os.path.splitext(inShps[0])[1]
     

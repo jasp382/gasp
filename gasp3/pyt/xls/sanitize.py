@@ -28,9 +28,9 @@ def split_attr(xls_path, sheet, interest_column, rule, out_path, overwrite=None)
 	"""
     
     import xlrd
-    from gasp3.dt.fm   import tbl_to_obj
+    from gasp3.fm      import tbl_to_obj
     from gasp3.pyt.oss import del_file
-    from gasp3.dt.to   import dict_to_xls
+    from gasp3.to      import dict_to_xls
     
 	if overwrite:
 		del_file(out_path)
@@ -63,9 +63,9 @@ def replace_char(xls_path, interest_columns, charToReplace, _replacement, outXls
 	TODO: Use Pandas insted
 	"""
 	
-	import os; from gasp3.dt.fm import tbl_to_obj
-    from gasp3.dt.to            import dict_to_xls
-    from gasp3.pyt.xls.fld      import columns_by_order
+	import os; from gasp3.fm import tbl_to_obj
+    from gasp3.to            import dict_to_xls
+    from gasp3.pyt.xls.fld   import col_name
 	
 	interest_columns = [interest_columns] if type(interest_columns) == str else \
 		interest_columns if type(interest_columns) == list else None
@@ -81,7 +81,7 @@ def replace_char(xls_path, interest_columns, charToReplace, _replacement, outXls
     )
 	
 	# Get Order Values
-	COLUMNS_BY_ORDER = columns_by_order(xls_path, sheet_name=sheet)
+	COLUMNS_BY_ORDER = col_name(xls_path, sheet_name=sheet)
 	
 	# Store and map changes
 	changes = {}

@@ -110,7 +110,7 @@ def polylines_from_points(points, polylines, POLYLINE_COLUMN,
     
     import os; from osgeo        import ogr
     from gasp3.gt.prop.ff        import drv_name
-    from gasp3.gt.mng.prj        import ogr_def_proj
+    from gasp3.gt.prj            import ogr_def_proj
     from gasp3.gt.prop.fld       import ogr_list_fields_defn
     from gasp3.gt.mng.fld.ogrfld import add_fields
     

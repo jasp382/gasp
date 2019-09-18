@@ -9,9 +9,10 @@ def show_duplicates_in_xls(conParam, table, pkCols, outFile,
     Find duplicates and write these objects in a table
     """
     
-    import pandas; from gasp3 import goToList
-    from gasp3.dt.fm.sql      import query_to_df
-    from gasp3.dt.to          import obj_to_tbl
+    import pandas
+    from gasp3        import goToList
+    from gasp3.sql.fm import Q_to_df
+    from gasp3.to     import obj_to_tbl
     
     pkCols = goToList(pkCols)
     
@@ -46,7 +47,7 @@ def show_duplicates_in_xls(conParam, table, pkCols, outFile,
             ])
         )
     
-    data = query_to_df(conParam, q, db_api='psql')
+    data = Q_to_df(conParam, q, db_api='psql')
     
     obj_to_tbl(data, outFile)
     

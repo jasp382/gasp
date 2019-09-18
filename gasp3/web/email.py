@@ -15,9 +15,9 @@ def email_exists_old(email):
 def email_exists(email):
     """
     Verify if a email exists using MailBoxLayer API
-    
-    
     """
+    
+    from gasp3.pyt.web import http_to_json
     
     API_KEY = "b7bee0fa2b3ceb3408bd8245244b1479"
     
@@ -26,7 +26,7 @@ def email_exists(email):
         "smtp=1&format=1"
     ).format(API_KEY, str(email))
     
-    jsonArray = json_fm_httpget(URL)
+    jsonArray = http_to_json(URL)
     
     return jsonArray["smtp_check"]
 

@@ -128,10 +128,9 @@ def st_buffer(conParam, inTbl, bfDist, geomCol, outTbl, bufferField="geometry",
         
         outTbl = q_to_ntbl(conParam, outTbl, Q, api='psql')
     else:
-        from gasp3.dt.to.shp import psql_to_shp
+        from gasp3.gt.to.shp import dbtbl_to_shp
         
-        psql_to_shp(
-            conParam, Q, outTbl, api='pgsql2shp',
+        dbtbl_to_shp(conParam, Q, outTbl, api='pgsql2shp',
             geom_col=bufferField, tableIsQuery=True
         )
     

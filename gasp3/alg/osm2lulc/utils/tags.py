@@ -8,9 +8,9 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
     OSM2LULC procedure
     """
     
-    import os; from gasp3.dt.to   import obj_to_tbl
+    import os; from gasp3.to      import obj_to_tbl
     from gasp3.gt.anls.exct       import sel_by_attr
-    from gasp3.dt.fm.sql          import query_to_df
+    from gasp3.sql.fm             import Q_to_df
     from gasp3.pyt.oss            import get_filename
     from gasp3.alg.osm2lulc.utils import osm_to_sqdb
     
@@ -32,7 +32,7 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
     )
     
     # Get Features we are considering
-    ourOSMFeatures = query_to_df(OSM_TAG_MAP["DB"], (
+    ourOSMFeatures = Q_to_df(OSM_TAG_MAP["DB"], (
         "SELECT {key} AS key_y, {value} AS value_y, {geom} AS geom_y "
         "FROM {tbl}"
     ).format(
@@ -65,7 +65,7 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
         ) for c in TABLES_TAGS[table]]) for table in TABLES_TAGS
     ]
     
-    fileOSMFeatures = query_to_df(sqdb, (
+    fileOSMFeatures = Q_to_df(sqdb, (
         "SELECT key, value, geom FROM ({}) AS foo "
         "GROUP BY key, value, geom"
     ).format(" UNION ALL ".join(Qs)), db_api='sqlite')
@@ -107,9 +107,8 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
         elif t == 'multipolygons':
             filterDf = newTags[newTags.geom == 'Polygon']
         
-        Q = unicode("SELECT * FROM {} WHERE {}", 'utf-8').format(unicode(
-            t, 'utf-8'), filterDf.whr.str.cat(sep=" OR "), 'utf-8'
-        )
+        Q = "SELECT * FROM {} WHERE {}".format(
+            t, filterDf.whr.str.cat(sep=" OR "))
         
         try:
             shp = sel_by_attr(

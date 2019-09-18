@@ -288,7 +288,7 @@ def year_to_col_by_attr(data_file, data_spreadsheet,
     from gasp3.pyt.xls.fld  import get_columns_position
     from gasp3.pyt.xls.fld  import get_columns_position_outside_options
     from gasp3.pyt.xls.summ import list_unique_values_column
-    from gasp3.dt.fm.xls    import get_unit_attributes
+    from gasp3.pyt.xls.fm   import get_unit_attributes
 
     # Open input
     xls_data = xlrd.open_workbook(data_file)
@@ -394,9 +394,9 @@ def transpose_groups_in_sheets(excel, datasheet, group, _id, output):
     1 | variable_2 |          |   V2_B1   |   V2_B2
     """
     
-    import xlrd;          import xlwt
-    from gasp.mng.fld.xls import get_columns_position
-    from gasp.mng.fld.xls import get_columns_position_outside_options
+    import xlrd;           import xlwt
+    from gasp3.pyt.xls.fld import get_columns_position
+    from gasp3.pyt.xls.fld import get_columns_position_outside_options
     
     # Get data from excel
     xls = xlrd.open_workbook(excel)
@@ -513,9 +513,8 @@ def split_col_by_year(dataFile, sheetName, codeCol, yearCol, out_file):
     """
     
     import codecs
-    from gasp.mng.fld.xls   import get_columns_position
-    from gasp.mng.fld.xls   import get_columns_position_outside_options
-    from gasp.mng.xlstbx.summarize import list_unique_values_column
+    from gasp3.pyt.xls.fld import get_columns_position, get_columns_position_outside_options
+    from gasp3.pyt.xls.summ import list_unique_values_column
     
     # Open input
     xls = xlrd.open_workbook(dataFile)

@@ -18,11 +18,11 @@ def gdl_mean_time_wByPop(unities, unities_groups, population_field,
     """
     
     import os; from osgeo        import ogr
-    from gasp3.dt.fm             import points_to_list
-    from gasp3.dt.glg.direct     import get_time_pnt_destinations
+    from gasp3.fm                import points_to_list
+    from gasp3.adv.glg.direct    import get_time_pnt_destinations
     from gasp3.gt.prop.ff        import drv_name
     from gasp3.gt.mng.feat       import feat_to_pnt
-    from gasp3.gt.mng.prj        import project_geom
+    from gasp3.gt.prj            import proj
     from gasp3.gt.mng.fld.ogrfld import add_fields
     from gasp3.gt.mng.genze      import dissolve
     
@@ -64,7 +64,8 @@ def gdl_mean_time_wByPop(unities, unities_groups, population_field,
         if unities_epsg == 4326:
             originGeom = geom
         else:
-            originGeom = project_geom(geom, unities_epsg, 4326, api='ogr')
+            originGeom = proj(
+                geom, None, 4326, inEPSG=unities_epsg, gisApi='OGRGeom')
         
         _id, duration, distance = get_time_pnt_destinations(
             originGeom, lst_destinies

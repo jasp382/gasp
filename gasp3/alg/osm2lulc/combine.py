@@ -16,9 +16,9 @@ def update_globe_land_cover(
     """
     
     import os; import numpy as np
-    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.fm.rst   import rst_to_array
     from gasp3.gt.prop.rst import get_cellsize, get_nodata
-    from gasp3.dt.to.rst   import array_to_raster
+    from gasp3.gt.to.rst   import obj_to_rst
     
     # ############################# #
     # Convert images to numpy array #
@@ -139,16 +139,14 @@ def update_globe_land_cover(
         )
     )
     # Create Updated Globe Cover 30
-    array_to_raster(
-        update_array, updated_globe_raster, original_globe_raster, epsg,
-        gdal.GDT_Int32, noData=int(nodata_glob_original),
-        gisApi='gdal'
+    obj_to_rst(
+        update_array, updated_globe_raster, original_globe_raster,
+        noData=int(nodata_glob_original)
     )
     # Create Updated Globe Cover 30 meta
-    array_to_raster(
-        update_meta_array, updated_meta, original_globe_raster, epsg,
-        gdal.GDT_Int32, noData=int(nodata_glob_original),
-        gisApi='gdal'
+    obj_to_rst(
+        update_meta_array, updated_meta, original_globe_raster,
+        noData=int(nodata_glob_original)
     )
     
     # ################################################# #
@@ -204,10 +202,9 @@ def update_globe_land_cover(
     np.place(detailed_meta_array, np_ua_osm==30, 2)
     
     # Create Detailed Globe Cover 30
-    array_to_raster(
-        detailed_array, detailed_globe_raster, original_globe_raster, epsg,
-        gdal.GDT_Int32, noData=0,
-        gisApi='gdal'
+    obj_to_rst(
+        detailed_array, detailed_globe_raster, original_globe_raster,
+        noData=0
     )
     
     # Create Detailed Globe Cover 30 meta
@@ -218,9 +215,8 @@ def update_globe_land_cover(
             e = os.path.splitext(os.path.basename(detailed_meta))[1]
         )
     )
-    array_to_raster(
-        detailed_meta_array, detailed_meta, original_globe_raster, epsg,
-        gdal.GDT_Int32, noData=0,
-        gisApi='gdal'
+    obj_to_rst(
+        detailed_meta_array, detailed_meta, original_globe_raster,
+        noData=0
     )
 

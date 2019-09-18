@@ -250,12 +250,12 @@ def get_random_point(minX, maxX, minY, maxY):
     """
     
     import random
-    from gasp3.dt.to.geom import create_point
+    from gasp3.gt.to.geom import new_pnt
     
     x = minX + (random.random() * (maxX - minX))
     y = minY + (random.random() * (maxY - minY))
     
-    pnt = create_point(x, y, api='ogr')
+    pnt = new_pnt(x, y)
     
     return pnt
 

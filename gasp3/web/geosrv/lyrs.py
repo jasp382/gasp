@@ -3,15 +3,17 @@ Tools for Geoserver layers management
 """
 
 
-def list_layers(conf={
+def lst_lyr(conf={
     'USER':'admin', 'PASSWORD': 'geoserver',
     'HOST':'localhost', 'PORT': '8080'
-    }, protocol='http'):
+    }):
     """
     List all layers in the geoserver
     """
 
     import requests
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL'] 
 
     url = '{pro}://{host}:{port}/geoserver/rest/layers'.format(
         host=conf['HOST'], port=conf['PORT'], pro=protocol
@@ -27,18 +29,20 @@ def list_layers(conf={
     return [l['name'] for l in layers['layers']['layer']]
 
 
-def publish_postgis_layer(workspace, store, pg_table, title=None, gs_con={
+def pub_pglyr(workspace, store, pg_table, title=None, gs_con={
         'USER':'admin', 'PASSWORD': 'geoserver',
         'HOST':'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     Publish PostGIS table in geoserver
     """
     
-    import os;           import requests
-    from gasp3           import random_str
-    from gasp3.dt.to.Xml import write_xml_tree
-    from gasp3.pyt.oss   import create_folder, del_folder
+    import os;          import requests
+    from gasp3.pyt.char import random_str
+    from gasp3.pyt.Xml  import write_xml_tree
+    from gasp3.pyt.oss  import create_folder, del_folder
+    
+    protocol = 'http' if 'PROTOCOL' not in gs_con else gs_con['PROTOCOL']
     
     # Create folder to write xml
     wTmp = create_folder(
@@ -84,19 +88,21 @@ def publish_postgis_layer(workspace, store, pg_table, title=None, gs_con={
     return r
 
 
-def publish_raster_layer(layername, datastore, workspace, epsg_code, conf={
+def pub_rst_lyr(layername, datastore, workspace, epsg_code, conf={
         'USER': 'admin', 'PASSWORD': 'geoserver',
         'HOST': 'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     Publish a Raster layer
     """
     
     import os;             import requests
-    from gasp3             import random_str
-    from gasp3.dt.to.Xml   import write_xml_tree
+    from gasp3.pyt.char    import random_str
+    from gasp3.pyt.Xml     import write_xml_tree
     from gasp3.pyt.oss     import create_folder, del_folder
     from gasp3.gt.prop.prj import epsg_to_wkt
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/'
@@ -144,12 +150,14 @@ def publish_raster_layer(layername, datastore, workspace, epsg_code, conf={
 def del_lyr(lyr, conf={
         'USER':'admin', 'PASSWORD': 'geoserver',
         'HOST':'localhost', 'PORT': '8080'
-    }, protocol='http'):
+    }):
     """
     Delete some layer
     """
     
     import requests
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = '{}://{}:{}/geoserver/rest/layers/{}'.format(
         protocol, conf["HOST"], conf["PORT"], lyr

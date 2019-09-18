@@ -46,9 +46,9 @@ def lst_views(conParam, schema='public'):
     List Views in database
     """
     
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.fm import Q_to_df
     
-    views = query_to_df(conParam, (
+    views = Q_to_df(conParam, (
         "SELECT table_name FROM information_schema.views "
         "WHERE table_schema='{}'"
     ).format(schema), db_api='psql')
@@ -66,9 +66,9 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
     """
     
     if api == 'psql':
-        from gasp3.dt.fm.sql import query_to_df
+        from gasp3.sql.fm import Q_to_df
     
-        tbls = query_to_df(conObj, (
+        tbls = Q_to_df(conObj, (
             "SELECT table_name FROM information_schema.tables "
             "WHERE table_schema='{}'"
         ).format(schema), db_api='psql')
@@ -143,7 +143,7 @@ def row_num(conObj, table, where=None, api='psql'):
     * sqlite;
     """
     
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.fm import Q_to_df
     
     if not table.startswith('SELECT '):
         Q = "SELECT COUNT(*) AS nrows FROM {}{}".format(
@@ -153,7 +153,7 @@ def row_num(conObj, table, where=None, api='psql'):
     else:
         Q = "SELECT COUNT(*) AS nrows FROM ({}) AS foo".format(table)
     
-    d = query_to_df(conObj, Q, db_api=api)
+    d = Q_to_df(conObj, Q, db_api=api)
     
     return int(d.iloc[0].nrows)
 
@@ -235,11 +235,11 @@ def check_last_id(lnk, pk, table):
     TODO: Do this with Pandas
     """
     
-    from gasp3.sql.c     import psqlcon
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.c  import psqlcon
+    from gasp3.sql.fm import Q_to_df
     
     q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)
-    d = query_to_df(lnk, q, db_api='psql').fid.tolist()
+    d = Q_to_df(lnk, q, db_api='psql').fid.tolist()
     
     if not d[0]:
         return 0
@@ -256,7 +256,7 @@ def tbl_ext(conParam, table, geomCol):
     Return extent of the geometries in one pgtable
     """
     
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.fm import Q_to_df
     
     q = (
         "SELECT MIN(ST_X(pnt_geom)) AS eleft, MAX(ST_X(pnt_geom)) AS eright, "
@@ -267,7 +267,7 @@ def tbl_ext(conParam, table, geomCol):
         ") AS foo"
     ).format(tbl=table, geomcol=geomCol)
     
-    ext = query_to_df(conParam, q, db_api='psql').to_dict(orient='index')[0]
+    ext = Q_to_df(conParam, q, db_api='psql').to_dict(orient='index')[0]
     
     return [
         ext['eleft'], ext['bottom'], ext['eright'], ext['top']

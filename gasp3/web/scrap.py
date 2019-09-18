@@ -17,10 +17,9 @@ def get_text_in_html(url, tags=['h1', 'h2', 'h3', 'p']):
     soup = BeautifulSoup(html_doc, 'html.parser')
     
     txtData = {
-        tag : [unicode(
-            re.sub('<[^>]+>', '', str(x)).strip('\n'),
-            'utf-8'
-        ) for x in soup.find_all(tag)] for tag in tags
+        tag : [re.sub(
+            '<[^>]+>', '', str(x)
+        ).strip('\n') for x in soup.find_all(tag)] for tag in tags
     }
     
     return txtData
@@ -52,9 +51,7 @@ def get_text_in_CssClass(url, classTag, cssCls, texTags=['p']):
         for t in texTags:
             chld = node.findChildren(t, recursive=False)
             
-            l = [unicode(
-                re.sub('<[^>]+>', '', str(x)).strip('\n'), 'utf-8'
-            ) for x in chld]
+            l = [re.sub('<[^>]+>', '', str(x)).strip('\n') for x in chld]
             
             if t not in rslt:
                 rslt[t] = l

@@ -10,10 +10,12 @@ def run_sql_script(lnk, database, sqlfile):
     
     from gasp3 import exec_cmd
     
-    cmd = 'psql -h {host} -U {usr} -p {port} -w {db} < {sql_script}'.format(
-        host = lnk['HOST'], usr = lnk['USER'], port = lnk['PORT'],
-        db  = database    , sql_script = sqlfile
+    cmd = 'psql -h {} -U {} -p {} -w {} < {}'.format(
+        lnk['HOST'], lnk['USER'], lnk['PORT'],
+        database, sqlfile
     )
     
     outcmd = exec_cmd(cmd)
+    
+    return database
 

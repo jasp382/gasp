@@ -114,8 +114,8 @@ def pnd_dissolve(shp, field, outShp):
     Dissolve using GeoPandas
     """
     
-    from gasp3.dt.fm     import tbl_to_obj
-    from gasp3.dt.to.shp import df_to_shp
+    from gasp3.fm        import tbl_to_obj
+    from gasp3.gt.to.shp import df_to_shp
     
     df = tbl_to_obj(shp)
     

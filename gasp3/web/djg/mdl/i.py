@@ -133,22 +133,6 @@ def list_tables_without_foreignk(tables, proj_path=None):
     return result
 
 
-def update_model(model, data):
-    """
-    Update Model Data
-    """
-    
-    from gasp3 import __import
-    
-    djangoCls = __import(model)
-    __model = djangoCls()
-    
-    for row in data:
-        for k in row:
-            setattr(__model, k, row[k])
-        __model.save()
-
-
 def lst_mdl_proj(path, thereIsApp=None):
     """
     List Django Models in Project

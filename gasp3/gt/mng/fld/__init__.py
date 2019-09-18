@@ -7,11 +7,11 @@ def add_filename_to_field(tables, new_field, table_format='.dbf'):
     Update a table with the filename in a new field
     """
     
-    from gasp3.pyt.oss import list_files
+    from gasp3.pyt.oss import lst_ff
     from .ogrfld       import add_fields
     
     if os.path.isdir(tables):
-        __tables = list_files(tables, file_format=table_format)
+        __tables = lst_ff(tables, file_format=table_format)
     
     else:
         __tables = [tables]

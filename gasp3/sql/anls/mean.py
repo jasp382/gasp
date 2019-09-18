@@ -12,12 +12,12 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
     Day field must be of type text
     """
     
-    import os;           import pandas
-    from gasp3.dt.fm.sql import query_to_df
-    from gasp3.dt.to     import obj_to_tbl
+    import os;        import pandas
+    from gasp3.sql.fm import Q_to_df
+    from gasp3.to     import obj_to_tbl
     
     # Get days
-    VALUES = query_to_df(conParam, 
+    VALUES = Q_to_df(conParam, 
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=DAY_FIELD, t=pgtable
         ), db_api='psql'
@@ -38,7 +38,7 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
             table=pgtable, dayF=DAY_FIELD, d=day[0]
         )
         
-        countTbl = query_to_df(conParam, QUERY, db_api='psql')
+        countTbl = Q_to_df(conParam, QUERY, db_api='psql')
         
         tableArray.append(countTbl)
     
@@ -89,8 +89,8 @@ def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
     """
     
     import pandas; from gasp3 import goToList
-    from gasp3.dt.fm.sql      import query_to_df
-    from gasp3.dt.to          import obj_to_tbl
+    from gasp3.sql.fm         import Q_to_df
+    from gasp3.to             import obj_to_tbl
     
     entityField = goToList(entityField)
     mean_field  = "mean_rows" if not newMeanField else newMeanField
@@ -122,7 +122,7 @@ def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
         getD=ndaysQ
     )
     
-    data = query_to_df(conParam, q, db_api='psql')
+    data = Q_to_df(conParam, q, db_api='psql')
     
     obj_to_tbl(data, out_file)
     
@@ -140,12 +140,12 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     At the end, calculate the mean between every day for each period.
     """
     
-    import os;               import pandas
-    from gasp3.pyt.tm import day_to_intervals
-    from gasp3.pyt.df.joins import combine_dfs
-    from gasp3.dt.fm.sql import query_to_df
-    from gasp3.sql.i    import cols_type
-    from gasp3.dt.to             import obj_to_tbl
+    import os;                import pandas
+    from gasp3.pyt.tm         import day_to_intervals
+    from gasp3.pyt.df.joins   import combine_dfs
+    from gasp3.sql.fm         import Q_to_df
+    from gasp3.sql.i          import cols_type
+    from gasp3.to             import obj_to_tbl
     from gasp3.sql.anls.count import count_by_period_entity
     
     if not PERIODS and not PERIODS_INTERVAL:
@@ -158,7 +158,7 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     INTERVALS = day_to_intervals(PERIODS_INTERVAL) if not PERIODS else PERIODS
     
     # Get unique values
-    VALUES = query_to_df(conParam,
+    VALUES = Q_to_df(conParam,
         "SELECT {col} FROM {t} GROUP BY {col}".format(col=DAY_FIELD, t=pgtable)
     )[DAY_FIELD].tolist()
     
@@ -261,9 +261,9 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
     """
     
     import pandas
-    from gasp3           import goToList
-    from gasp3.dt.fm.sql import query_to_df
-    from gasp3.dt.to     import obj_to_tbl
+    from gasp3        import goToList
+    from gasp3.sql.fm import Q_to_df
+    from gasp3.to     import obj_to_tbl
     
     def get_case(PTUPLE, PFIELD):
         return (
@@ -330,7 +330,7 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
         getND=ndaysQ
     )
     
-    data = query_to_df(conParam, q, db_api='psql')
+    data = Q_to_df(conParam, q, db_api='psql')
     
     obj_to_tbl(data, outFile)
     
@@ -355,10 +355,10 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     
     import os
     from gasp3.pyt.oss     import get_filename
-    from gasp3.dt.to.sql   import shp_to_psql
+    from gasp3.sql.to      import shp_to_psql
     from gasp3.sql.mng.db  import create_db
     from gasp3.sql.mng.tbl import q_to_ntbl
-    from gasp3.dt.to       import db_to_tbl
+    from gasp3.to          import db_to_tbl
     
     db_name = get_filename(MATRIX_OD)
     create_db(conParam, db_name, overwrite=True)

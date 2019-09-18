@@ -11,8 +11,8 @@ def generate_json_asset_from_shapefile(rqst, field_tag, epsg_field, storing):
     
     import os
     from gasp3.web.djg.ff import save_file
-    from gasp3.dt.to.shp  import shp_to_shp
-    from gasp3.gt.mng.prj import project
+    from gasp3.gt.to.shp  import shp_to_shp
+    from gasp3.gt.prj     import proj
     
     files = rqst.FILES.getlist(field_tag)
     
@@ -34,14 +34,9 @@ def generate_json_asset_from_shapefile(rqst, field_tag, epsg_field, storing):
     
     # Boundary to json
     if int(str(rqst.POST[epsg_field])) != 4326:
-        shp = os.path.join(
+        shp = proj(str(shape), os.path.join(
             os.path.dirname(str(shape)), 'wgs_shape.shp'
-        )
-        
-        project(
-            str(shape), shp, 4326,
-            inEPSG=int(str(rqst.POST[epsg_field])), gisApi='ogr'
-        )
+        ), 4326, inEPSG=int(str(rqst.POST[epsg_field])), gisApi='ogr')
     
     else:
         shp = str(shape)

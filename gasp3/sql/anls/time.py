@@ -34,10 +34,10 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
     """
     
     import pandas
-    from gasp3           import goToList
-    from gasp3.dt.fm.sql import query_to_df
-    from gasp3.sql.i     import cols_type
-    from gasp3.dt.to     import obj_to_tbl
+    from gasp3        import goToList
+    from gasp3.sql.fm import Q_to_df
+    from gasp3.sql.i  import cols_type
+    from gasp3.to     import obj_to_tbl
     
     entity_field = goToList(entity_field)
     COLS = entity_field + [day_field, hour_field]
@@ -54,7 +54,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
             else:
                 whr.append("{}={}".format(c, row[c]))
         
-        hourRows = query_to_df(conParam,
+        hourRows = Q_to_df(conParam,
             "SELECT {} FROM {} WHERE {}".format(
                 hour_decimal_field, table,
                 " AND ".join(whr)
@@ -79,7 +79,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
         return row
     
     # Count entity occourrences for one day and hour
-    countsByEntityTime = query_to_df(conParam, (
+    countsByEntityTime = Q_to_df(conParam, (
         "SELECT {scols}, conta FROM "
         "(SELECT {scols}, COUNT({ent}) AS conta FROM {tbl} "
         "GROUP BY {scols}) AS foo WHERE conta > 1"

@@ -8,10 +8,10 @@ def get_distinct_values(lnk, pgtable, column):
     Get distinct values in one column of one pgtable
     """
     
-    from gasp3           import goToList
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3        import goToList
+    from gasp3.sql.fm import Q_to_df
     
-    data = query_to_df(lnk,
+    data = Q_to_df(lnk,
         "SELECT {col} FROM {t} GROUP BY {col};".format(
             col=", ".join(goToList(column)), t=pgtable
         ), db_api='psql'
@@ -59,14 +59,14 @@ def run_query_for_values_in_col(conParam, query,
     be iterated one by one
     """
     
-    from gasp3.dt.fm.sql import query_to_df
-    from gasp3.sql.i     import cols_type
-    from gasp3.dt.to     import obj_to_tbl
+    from gasp3.sql.fm import Q_to_df
+    from gasp3.sql.i  import cols_type
+    from gasp3.to     import obj_to_tbl
     
     fields_types = cols_type(conParam, table_interest_col)
     
     # Get  unique values
-    VALUES = query_to_df(conParam,
+    VALUES = Q_to_df(conParam,
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=interest_col, t=table_interest_col
         ), db_api='psql'
@@ -75,9 +75,8 @@ def run_query_for_values_in_col(conParam, query,
     # Aplly query for every value in VALUES
     # Write data in excel
     for value in VALUES:
-        data = query_to_df(conParam, query.format(
-            str(value[0]) if fields_types[interest_col] != str \
-            and fields_types[interest_col] != unicode else \
+        data = Q_to_df(conParam, query.format(
+            str(value[0]) if fields_types[interest_col] != str else \
             "'{}'".format(str(value[0]))
         ), db_api='psql')
         

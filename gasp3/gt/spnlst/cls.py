@@ -7,11 +7,10 @@ def k_means(imgFiles, out, n_cls=8):
     K-Means implementation
     """
     
-    import os
-    from osgeo             import gdal, gdal_array
-    import numpy           as np
-    from sklearn           import cluster
-    from gasp3.dt.to.rst   import array_to_raster
+    import os; from osgeo import gdal, gdal_array
+    import numpy          as np
+    from sklearn          import cluster
+    from gasp3.gt.to.rst  import obj_to_rst
     
     gdal.UseExceptions()
     gdal.AllRegister()
@@ -92,7 +91,7 @@ def k_means(imgFiles, out, n_cls=8):
     
     np.place(X_cluster, tmp==ndVal, 255)
     
-    return array_to_raster(
+    return obj_to_rst(
         X_cluster, out,
         imgFiles if type(imgFiles) != list else imgFiles[0],
         noData=255

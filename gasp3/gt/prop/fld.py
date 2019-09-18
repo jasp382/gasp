@@ -50,8 +50,6 @@ def map_pyType_fldCode(pyObj):
         return 12
     elif type(pyObj) == str:
         return 4
-    elif type(pyObj) == unicode:
-        return 4
     else:
         raise ValueError((
             "Type of the given pyObj hasn't correspondence to a field code"

@@ -8,16 +8,13 @@ def grs_rst(osmLink, polyTbl, api='SQLITE'):
     """
     
     import datetime
-    from gasp3.dt.fm.sql     import query_to_df
-    if api == 'POSTGIS':
-        from gasp3.dt.to.shp import psql_to_grs as db_to_grs
-    else:
-        from gasp3.dt.to.shp import sqlite_to_shp as db_to_grs
-    from gasp3.dt.to.rst     import shp_to_rst
+    from gasp3.sql.fm    import Q_to_df
+    from gasp3.gt.to.shp import dbtbl_to_shp as db_to_grs
+    from gasp3.gt.to.rst import shp_to_rst
     
     # Get Classes 
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = query_to_df(osmLink, (
+    lulcCls = Q_to_df(osmLink, (
         "SELECT selection FROM {} "
         "WHERE selection IS NOT NULL "
         "GROUP BY selection"
@@ -33,8 +30,9 @@ def grs_rst(osmLink, polyTbl, api='SQLITE'):
         time_x = datetime.datetime.now().replace(microsecond=0)
         grsVect = db_to_grs(
             osmLink, polyTbl, "rule1_{}".format(str(cls)),
+            inDB='psql' if api == 'POSTGIS' else 'sqlite',
             where="selection = {}".format(str(cls)), notTable=True,
-            filterByReg=True
+            filterByReg=True, outShpIsGRASS=True
         )
         time_y = datetime.datetime.now().replace(microsecond=0)
         
@@ -59,13 +57,10 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp3.gt.mng.genze import dissolve
+    from gasp3.gt.mng.genze  import dissolve
     from gasp3.gt.mng.grstbl import add_table
-    from gasp3.sql.i import row_num as cont_row
-    if apidb != 'POSTGIS':
-        from gasp3.dt.to.shp import sqlite_to_grs as db_to_grs
-    else:
-        from gasp3.dt.to.shp import psql_to_grs   as db_to_grs
+    from gasp3.sql.i         import row_num as cont_row
+    from gasp3.gt.to.shp     import dbtbl_to_shp as db_to_grs
     
     WHR = "selection IS NOT NULL"
     
@@ -80,7 +75,9 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     
     # Data to GRASS GIS
     grsVect = db_to_grs(
-        dbcon, polyTable, "sel_rule", where=WHR, filterByReg=True
+        dbcon, polyTable, "sel_rule", where=WHR, filterByReg=True,
+        inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
+        outShpIsGRASS=True
     )
     time_c = datetime.datetime.now().replace(microsecond=0)
     
@@ -108,13 +105,13 @@ def num_selection(osmcon, polyTbl, folder,
     if api == 'SQLITE':
         from gasp3.gt.anls.exct import sel_by_attr
     else:
-        from gasp3.dt.to.shp    import psql_to_shp as sel_by_attr
-    from gasp3.dt.fm.sql        import query_to_df
-    from gasp3.dt.to.rst        import shp_to_rst
+        from gasp3.gt.to.shp    import dbtbl_to_shp as sel_by_attr
+    from gasp3.sql.fm           import Q_to_df
+    from gasp3.gt.to.rst        import shp_to_rst
     
     # Get classes in data
     time_a = datetime.datetime.now().replace(microsecond=0)
-    classes = query_to_df(osmcon, (
+    classes = Q_to_df(osmcon, (
         "SELECT selection FROM {} "
         "WHERE selection IS NOT NULL "
         "GROUP BY selection"

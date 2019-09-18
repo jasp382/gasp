@@ -8,8 +8,8 @@ def grs_rst_roads(osmdb, lineTbl, polyTbl, dataFolder, LULC_CLS):
     """
     
     import os;               import datetime
-    from gasp3.dt.to.shp     import shp_to_grs, sqlite_to_grs
-    from gasp3.dt.to.rst     import shp_to_rst
+    from gasp3.gt.to.shp     import shp_to_grs, dbtbl_to_shp
+    from gasp3.gt.to.rst     import shp_to_rst
     from gasp3.sql.anls.prox import splite_buffer
     from gasp3.sql.i         import row_num
     
@@ -28,7 +28,10 @@ def grs_rst_roads(osmdb, lineTbl, polyTbl, dataFolder, LULC_CLS):
     time_c = datetime.datetime.now().replace(microsecond=0)
     
     #roadGrs = shp_to_grs(roadFile, "bf_roads", filterByReg=True, asCMD=True)
-    roadGrs = sqlite_to_grs(osmdb, "bfu_roads", 'bf_roads', notTable=True)
+    roadGrs = dbtbl_to_shp(
+        osmdb, "bfu_roads", 'bf_roads', notTable=True, outShpIsGRASS=True,
+        inDB='sqlite'
+    )
     time_d = datetime.datetime.now().replace(microsecond=0)
     roadRst = shp_to_rst(
         roadGrs, int(LULC_CLS), None, None, "rst_roads", api="grass"
@@ -43,9 +46,9 @@ def grs_rst_roads(osmdb, lineTbl, polyTbl, dataFolder, LULC_CLS):
         from gasp3.gt.spnlst.alg   import rstcalc
         from gasp3.gt.mng.rst.rcls import set_null, null_to_value
         
-        buildsShp = sqlite_to_grs(
+        buildsShp = dbtbl_to_shp(
             osmdb, polyTbl, "all_builds", where="building IS NOT NULL",
-            notTable=True
+            notTable=True, outShpIsGRASS=True, inDB='sqlite'
         )
         time_g = datetime.datetime.now().replace(microsecond=0)
         
@@ -96,7 +99,7 @@ def grs_vec_roads(osmdb, lineTbl, polyTbl):
     
     import datetime
     from gasp3.sql.i           import row_num
-    from gasp3.dt.to.shp       import sqlite_to_grs
+    from gasp3.gt.to.shp       import dbtbl_to_shp
     from gasp3.gt.anls.prox.bf import _buffer
     from gasp3.gt.mng.genze    import dissolve
     from gasp3.gt.mng.grstbl   import add_table
@@ -108,8 +111,9 @@ def grs_vec_roads(osmdb, lineTbl, polyTbl):
     
     if not NR: return None, {0 : ('count_rows_roads', time_b - time_a)}
     
-    roadsVect = sqlite_to_grs(
-        osmdb, lineTbl, "all_roads", where="roads IS NOT NULL"
+    roadsVect = dbtbl_to_shp(
+        osmdb, lineTbl, "all_roads", where="roads IS NOT NULL",
+        inDB='sqlite', outShpIsGRASS=True
     )
     time_c = datetime.datetime.now().replace(microsecond=0)
     
@@ -121,9 +125,9 @@ def grs_vec_roads(osmdb, lineTbl, polyTbl):
         from gasp3.gt.anls.prox  import grs_near as near
         from gasp3.gt.mng.grstbl import update_table
         
-        builds = sqlite_to_grs(
+        builds = dbtbl_to_shp(
             osmdb, polyTbl, "all_builds", where="building IS NOT NULL",
-            filterByReg=True
+            filterByReg=True, inDB='sqlite', outShpIsGRASS=True
         )
         time_e = datetime.datetime.now().replace(microsecond=0)
         
@@ -171,12 +175,11 @@ def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
     
     import datetime
     from gasp3.sql.i             import row_num as cnt_rows
+    from gasp3.gt.to.shp         import dbtbl_to_shp as db_to_shp
     if apidb=='SQLITE':
         from gasp3.sql.anls.prox import splite_buffer as st_buffer
-        from gasp3.dt.to.shp     import sqlite_to_grs as db_to_shp
     else:
         from gasp3.sql.anls.prox import st_buffer
-        from gasp3.dt.to.shp     import psql_to_grs as db_to_shp
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     NR = cnt_rows(osmcon, lnhTbl, where="roads IS NOT NULL",
@@ -255,12 +258,14 @@ def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
     
     # Send data to GRASS GIS
     roadsGrs = db_to_shp(
-        osmcon, bfTbl, "froads", notTable=None, filterByReg=True
+        osmcon, bfTbl, "froads", notTable=None, filterByReg=True,
+        inDB="psql" if apidb == 'POSTGIS' else 'sqlite',
+        outShpIsGRASS=True
     )
     time_g = datetime.datetime.now().replace(microsecond=0)
     
     if asRst:
-        from gasp3.dt.to.rst import shp_to_rst
+        from gasp3.gt.to.rst import shp_to_rst
         
         roadsGrs = shp_to_rst(
             roadsGrs, int(asRst), None, None, "rst_roads", api="grass"
@@ -290,10 +295,10 @@ def num_roads(osmdata, nom, lineTbl, polyTbl, folder, cellsize, srs, rstTemplate
     import numpy             as np
     from osgeo               import gdal
     from threading           import Thread
-    from gasp3.dt.fm.rst     import rst_to_array
+    from gasp3.gt.fm.rst     import rst_to_array
     from gasp3.gt.anls.exct  import sel_by_attr
     from gasp3.sql.anls.prox import splite_buffer
-    from gasp3.dt.to.rst     import shp_to_rst, array_to_raster
+    from gasp3.gt.to.rst     import shp_to_rst, obj_to_rst
     from gasp3.sql.i         import row_num
     
     time_a = datetime.datetime.now().replace(microsecond=0)
@@ -381,10 +386,9 @@ def num_roads(osmdata, nom, lineTbl, polyTbl, folder, cellsize, srs, rstTemplate
     rst_array = rst_to_array(bfShps[0], with_nodata=True)
     np.place(rst_array, BUILD_ARRAY==1, 0)
         
-    newRaster = array_to_raster(
+    newRaster = obj_to_rst(
         rst_array, os.path.join(folder, 'fin_roads.tif'),
-        rstTemplate, srs, gdal.GDT_Byte, noData=-1,
-        gisApi='gdal'
+        rstTemplate, noData=-1
     )
     
     time_z = datetime.datetime.now().replace(microsecond=0)
@@ -404,7 +408,7 @@ def pg_num_roads(osmLink, nom, lnhTbl, polyTbl, folder, cellsize, srs, rstT):
     from osgeo               import gdal
     from gasp3.sql.i         import row_num
     from gasp3.sql.anls.prox import st_buffer
-    from gasp3.dt.to.rst     import shp_to_rst
+    from gasp3.gt.to.rst     import shp_to_rst
     
     # There are roads?
     time_a = datetime.datetime.now().replace(microsecond=0)

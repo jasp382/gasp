@@ -12,12 +12,9 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
     """
     
     import datetime
-    from gasp3.dt.fm.sql        import query_to_df
-    if api == 'POSTGIS':
-        from gasp3.dt.to.shp    import psql_to_grs as db_to_grs
-    else:
-        from gasp3.dt.to.shp    import sqlite_to_shp as db_to_grs
-    from gasp3.dt.to.rst        import shp_to_rst
+    from gasp3.sql.fm           import Q_to_df
+    from gasp3.gt.to.shp        import dbtbl_to_shp as db_to_grs
+    from gasp3.gt.to.rst        import shp_to_rst
     from gasp3.alg.osm2lulc.var import GEOM_AREA
     
     RULE_COL = 'area_upper' if UPPER else 'area_lower'
@@ -27,7 +24,7 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
     
     # Get Classes
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = query_to_df(osmLink, (
+    lulcCls = Q_to_df(osmLink, (
         "SELECT {r} FROM {tbl} WHERE {ga} {op} t_{r} GROUP BY {r}"
     ).format(
          r=RULE_COL, tbl=polygonTable, ga=GEOM_AREA, op=OPERATOR
@@ -43,9 +40,10 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
         time_x = datetime.datetime.now().replace(microsecond=0)
         grsVect = db_to_grs(
             osmLink, polygonTable, "{}_{}".format(RULE_COL, cls),
+            inDB="psql" if api == 'POSTGIS' else 'sqlite',
             where=WHR.format(
                 op=OPERATOR, r=RULE_COL, ga=GEOM_AREA, cls_=cls
-            ), notTable=True, filterByReg=True
+            ), notTable=True, filterByReg=True, outShpIsGRASS=True
         )
         time_y = datetime.datetime.now().replace(microsecond=0)
         timeGasto[tk] = ('import_{}'.format(cls), time_y - time_x)
@@ -71,14 +69,11 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp3.gt.mng.genze import dissolve
-    from gasp3.gt.mng.grstbl import add_table
+    from gasp3.gt.mng.genze     import dissolve
+    from gasp3.gt.mng.grstbl    import add_table
     from gasp3.alg.osm2lulc.var import GEOM_AREA
-    from gasp3.sql.i import row_num as cnt_row
-    if apidb != 'POSTGIS':
-        from gasp3.dt.to.shp import sqlite_to_grs as db_to_shp
-    else:
-        from gasp3.dt.to.shp import psql_to_grs as db_to_shp
+    from gasp3.sql.i            import row_num as cnt_row
+    from gasp3.gt.to.shp        import dbtbl_to_shp as db_to_shp
     
     OPERATOR  = ">" if UPPER else "<"
     DIRECTION = "upper" if UPPER else "lower"
@@ -99,7 +94,8 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     # Data to GRASS GIS
     grsVect = db_to_shp(
         osmcon, polyTbl, "area_{}".format(DIRECTION), where=WHR,
-        filterByReg=True
+        inDB='psql' if apidb == 'POSTGIS' else 'sqlite', filterByReg=True,
+        outShpIsGRASS=True
     )
     time_c = datetime.datetime.now().replace(microsecond=0)
     
@@ -128,12 +124,12 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
     
     import datetime;            import os
     from threading              import Thread
-    from gasp3.dt.fm.sql        import query_to_df
+    from gasp3.sql.fm           import Q_to_df
     if api == 'SQLITE':
         from gasp3.gt.anls.exct import sel_by_attr
     else:
-        from gasp3.dt.to.shp    import psql_to_shp as sel_by_attr
-    from gasp3.dt.to.rst        import shp_to_rst
+        from gasp3.gt.to.shp    import dbtbl_to_shp as sel_by_attr
+    from gasp3.gt.to.rst        import shp_to_rst
     from gasp3.alg.osm2lulc.var import GEOM_AREA
     
     # Get OSM Features to be selected for this rule
@@ -143,7 +139,7 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
     
     # Get Classes
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = query_to_df(osmLink, (
+    lulcCls = Q_to_df(osmLink, (
         "SELECT {r} FROM {tbl} WHERE {ga} {op} t_{r} GROUP BY {r}"
     ).format(
         r=RULE_COL, tbl=polyTbl, ga=GEOM_AREA, op=OPERATOR

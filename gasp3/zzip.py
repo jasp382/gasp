@@ -38,9 +38,9 @@ def zip_files(lst_files, zip_file):
 
 
 def zip_folder(folder, zip_file):
-    from gasp3.pyt.oss import list_files
+    from gasp3.pyt.oss import lst_ff
     
-    files = list_files(folder)
+    files = lst_ff(folder)
     
     zip_files(files, zip_file)
 

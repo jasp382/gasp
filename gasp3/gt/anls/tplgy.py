@@ -37,8 +37,8 @@ def snap_points_to_near_line(lineShp, pointShp, epsg, workGrass,
         from geopandas         import GeoDataFrame
         from gasp3.pyt.oss     import get_filename
         from gasp3.gt.wenv.grs import run_grass
-        from gasp3.dt.fm       import tbl_to_obj as shp_to_df
-        from gasp3.dt.to.shp   import df_to_shp
+        from gasp3.fm          import tbl_to_obj as shp_to_df
+        from gasp3.gt.to.shp   import df_to_shp
     
         # Create GRASS GIS Location
         grassBase = run_grass(workGrass, location=location, srs=epsg)
@@ -50,7 +50,7 @@ def snap_points_to_near_line(lineShp, pointShp, epsg, workGrass,
         # Import some GRASS GIS tools
         from gasp3.gt.anls.prox import grs_near as near
         from gasp3.gt.mng.tbl   import geomattr_to_db
-        from gasp3.dt.to.shp    import shp_to_grs, grs_to_shp
+        from gasp3.gt.to.shp    import shp_to_grs, grs_to_shp
     
         # Import data into GRASS GIS
         grsLines = shp_to_grs(
@@ -158,10 +158,10 @@ def break_lines_on_points(lineShp, pointShp, lineIdInPntShp,
     
     from shapely.ops      import split
     from shapely.geometry import Point, LineString
-    from gasp3.dt.fm      import tbl_to_obj
+    from gasp3.fm         import tbl_to_obj
     from gasp3.pyt.df.mng import col_list_val_to_row
-    from gasp3.dt.to.shp  import df_to_shp
-    from gasp3.dt.to.obj  import dict_to_df
+    from gasp3.gt.to.shp  import df_to_shp
+    from gasp3.pyt.df.to  import dict_to_df
     
     # Sanitize line geometry
     def fix_line(line, point):
@@ -229,7 +229,7 @@ def vedit_break(inShp, pntBreakShp,
     
     # Iterate over pntBreakShp to get all coords
     if os.path.isfile(pntBreakShp):
-        from gasp3.dt.fm import points_to_list
+        from gasp3.fm import points_to_list
         lstPnt = points_to_list(pntBreakShp)
     else:
         from grass.pygrass.vector import VectorTopo
@@ -259,8 +259,8 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     """
     
     import os
-    from gasp3.dt.to.sql   import shp_to_psql
-    from gasp3.dt.to.shp   import psql_to_shp
+    from gasp3.sql.to      import shp_to_psql
+    from gasp3.gt.to.shp   import dbtbl_to_shp
     from gasp3.gt.wenv.grs import run_grass
     from gasp3.pyt.oss     import get_filename
     from gasp3.sql.mng.db  import create_db
@@ -275,7 +275,7 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     
     gsetup.init(gbase, workspace, loc, 'PERMANENT')
     
-    from gasp3.dt.to.shp import shp_to_grs, grs_to_shp
+    from gasp3.gt.to.shp import shp_to_grs, grs_to_shp
     
     grsLine = shp_to_grs(
         lineShp, get_filename(lineShp, forceLower=True)
@@ -324,12 +324,12 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
         conParam, "{}_not_corr".format(LINES_TABLE), Q, api='psql'
     )
     
-    psql_to_shp(
+    dbtbl_to_shp(
         conParam,  CORR_LINES, out_correct,
         api="pgsql2shp", geom_col="geom"
     )
     
-    psql_to_shp(
+    dbtbl_to_shp(
         conParam, ERROR_LINES, out_tocorrect,
         api="pgsql2shp", geom_col="geom"
     )
@@ -348,8 +348,8 @@ def orig_dest_to_polyline(srcPoints, srcField,
     
     from geopandas        import GeoDataFrame
     from shapely.geometry import LineString
-    from gasp3.dt.fm      import tbl_to_obj
-    from gasp3.dt.to.shp  import df_to_shp
+    from gasp3.fm         import tbl_to_obj
+    from gasp3.gt.to.shp  import df_to_shp
     
     srcPnt = tbl_to_obj(srcPoints)
     desPnt = tbl_to_obj(destPoints)

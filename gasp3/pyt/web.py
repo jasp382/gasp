@@ -3,21 +3,19 @@ Get web responses
 """
 
 
-def json_fm_httpget(url):
+def http_to_json(url):
     """
     Return a json object with the json data available in a URL
     """
     
-    import urllib2
-    import json
+    import urllib3; import json
     
-    web_response = urllib2.urlopen(url)
+    http = urllib3.PoolManager()
+    resp = http.request('GET', url)
     
-    read_page = web_response.read()
+    js = json.loads(resp.data.decode('utf-8'))
     
-    json_data = json.loads(read_page)
-    
-    return json_data
+    return js
 
 
 def data_from_get(url, getParams):

@@ -8,22 +8,20 @@ def rst_rotation(inFolder, template, outFolder, img_format='.tif'):
     """
     
     import os; from osgeo  import gdal
-    from gasp3.pyt.oss     import list_files
-    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.pyt.oss     import lst_ff
+    from gasp3.gt.fm.rst   import rst_to_array
     from gasp3.gt.prop.rst import get_nodata
-    from gasp3.dt.to.rst   import array_to_raster
+    from gasp3.gt.to.rst   import obj_to_rst
     
-    rasters = list_files(inFolder, file_format=img_format)
+    rasters = lst_ff(inFolder, file_format=img_format)
     
     for rst in rasters:
         a  = rst_to_array(rst)
         nd = get_nodata(rst, gisApi='gdal')
         
-        array_to_raster(
-            a[::-1],
+        obj_to_rst(a[::-1],
             os.path.join(outFolder, os.path.basename(rst)),
-            template, None, gdal.GDT_Float32, noData=nd,
-            gisApi='gdal'
+            template, noData=nd
         )
 
 """
@@ -36,7 +34,7 @@ def comp_bnds(rsts, outRst):
     """
     
     from osgeo             import gdal, gdal_array
-    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.fm.rst   import rst_to_array
     from gasp3.gt.prop.ff  import drv_name
     from gasp3.gt.prop.rst import get_nodata
     from gasp3.gt.prop.prj import get_rst_epsg, epsg_to_wkt
@@ -191,7 +189,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     # ************************************************************************ #
     # GRASS MODULES #
     # ************************************************************************ #
-    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp3.gt.to.rst   import rst_to_grs, grs_to_rst
     from gasp3.gt.wenv.grs import rst_to_region
     # ************************************************************************ #
     # SET GRASS GIS LOCATION EXTENT #

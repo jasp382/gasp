@@ -24,11 +24,12 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Dependencies #
     # ************************************************************************ #
-    from gasp3.dt.fm.rst              import rst_to_array
+    from gasp3.gt.fm.rst              import rst_to_array
     from gasp3.gt.prop.ff             import check_isRaster
     from gasp3.gt.prop.rst            import get_cellsize
     from gasp3.gt.prop.prj            import get_rst_epsg
     from gasp3.pyt.oss                import create_folder, copy_file
+    from gasp3.pyt.oss                import get_filename
     if roadsAPI == 'POSTGIS':
         from gasp3.sql.mng.db         import create_db
         from gasp3.alg.osm2lulc.utils import osm_to_pgsql
@@ -43,7 +44,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     from gasp3.alg.osm2lulc.m3_4      import num_selbyarea
     from gasp3.alg.osm2lulc.mod5      import num_base_buffer
     from gasp3.alg.osm2lulc.mod6      import num_assign_builds
-    from gasp3.dt.to.rst              import array_to_raster
+    from gasp3.gt.to.rst              import obj_to_rst
     # ************************************************************************ #
     # Global Settings #
     # ************************************************************************ #
@@ -92,8 +93,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # Convert OSM file to SQLITE DB or to POSTGIS DB #
     # ************************************************************************ #
     if roadsAPI == 'POSTGIS':
-        conPGSQL["DATABASE"] = create_db(conPGSQL, os.path.splitext(
-            os.path.basename(osmdata))[0], overwrite=True)
+        conPGSQL["DATABASE"] = create_db(conPGSQL, get_filename(
+            osmdata, forceLower=True), overwrite=True)
         osm_db = osm_to_pgsql(osmdata, conPGSQL)
     
     else:
@@ -331,9 +332,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         )
     
     numpy.place(resultSum, resultSum==0, 1)
-    array_to_raster(
-        resultSum, lulcRst, refRaster, noData=1
-    )
+    obj_to_rst(resultSum, lulcRst, refRaster, noData=1)
     
     osmlulc_rsttbl(nomenclature + "_NUMPY", os.path.join(
         os.path.dirname(lulcRst), os.path.basename(lulcRst) + '.vat.dbf'

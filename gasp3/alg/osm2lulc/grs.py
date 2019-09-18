@@ -20,7 +20,7 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Gasp dependencies #
     # ************************************************************************ #
-    from gasp3.pyt.oss                import create_folder
+    from gasp3.pyt.oss                import create_folder, get_filename
     from gasp3.gt.prop.ff             import check_isRaster
     from gasp3.gt.prop.prj            import get_rst_epsg
     from gasp3.gt.wenv.grs            import run_grass
@@ -88,8 +88,8 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # Convert OSM file to SQLITE DB or to POSTGIS DB #
     # ************************************************************************ #
     if roadsAPI == 'POSTGIS':
-        conPGSQL["DATABASE"] = create_db(conPGSQL, os.path.splitext(
-            os.path.basename(osmdata))[0], overwrite=True)
+        conPGSQL["DATABASE"] = create_db(conPGSQL, get_filename(
+            osmdata, forceLower=True), overwrite=True)
         osm_db = osm_to_pgsql(osmdata, conPGSQL)
     else:
         osm_db = osm_to_sqdb(osmdata, os.path.join(workspace, 'osm.sqlite'))
@@ -123,7 +123,7 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # IMPORT SOME GASP MODULES FOR GRASS GIS #
     # ************************************************************************ #
-    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp3.gt.to.rst   import rst_to_grs, grs_to_rst
     from gasp3.gt.mng.rst  import mosaic_raster
     from gasp3.gt.wenv.grs import rst_to_region
     # ************************************************************************ #
@@ -444,8 +444,8 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
         osm_db = osm_to_sqdb(osmdata, os.path.join(workspace, 'osm.sqlite'))
     else:
         # Convert OSM file to POSTGRESQL DB #
-        conPGSQL["DATABASE"] = create_db(conPGSQL, os.path.splitext(
-            os.path.basename(osmdata))[0], overwrite=True)
+        conPGSQL["DATABASE"] = create_db(conPGSQL, get_filename(
+            osmdata, forceLower=True), overwrite=True)
         osm_db = osm_to_pgsql(osmdata, conPGSQL)
     time_c = datetime.datetime.now().replace(microsecond=0)
     # ************************************************************************ #
@@ -482,8 +482,8 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     from gasp3.gt.mng.genze      import dissolve
     from gasp3.gt.mng.grstbl     import add_and_update, reset_table, update_table
     from gasp3.gt.mng.fld.grsfld import add_field
-    from gasp3.dt.to.shp         import shp_to_grs, grs_to_shp
-    from gasp3.dt.to.rst         import rst_to_grs
+    from gasp3.gt.to.shp         import shp_to_grs, grs_to_shp
+    from gasp3.gt.to.rst         import rst_to_grs
     # ************************************************************************ #
     # SET GRASS GIS LOCATION EXTENT #
     # ************************************************************************ #

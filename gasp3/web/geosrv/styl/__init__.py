@@ -3,15 +3,17 @@ Tools for Geoserver styles management
 """
 
 
-def list_styles(conf={
+def lst_styles(conf={
         'USER':'admin', 'PASSWORD': 'geoserver',
         'HOST':'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     List Styles in Geoserver
     """
     
     import requests
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = '{pro}://{host}:{port}/geoserver/rest/styles'.format(
         host=conf['HOST'], port=conf['PORT'], pro=protocol
@@ -34,13 +36,14 @@ def list_styles(conf={
 def del_style(name, conf={
         'USER':'admin', 'PASSWORD': 'geoserver',
         'HOST':'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     Delete a specific style
     """
     
-    import requests
-    import json
+    import requests; import json
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = ('{pro}://{host}:{port}/geoserver/rest/styles/{stl}?'
            'recurse=true').format(
@@ -55,13 +58,15 @@ def del_style(name, conf={
 def create_style(name, sld, conf={
         'USER':'admin', 'PASSWORD': 'geoserver',
         'HOST':'localhost', 'PORT': '8888'
-    }, overwrite=None, protocol='http'):
+    }, overwrite=None):
     """
     Import SLD into a new Geoserver Style
     """
 
     import os
     import requests
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     if overwrite:
         GEO_STYLES = list_styles(conf=conf, protocol=protocol)

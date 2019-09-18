@@ -9,15 +9,15 @@ def export_cells_not_in(inTable, noTable, outTable, inSheet, noSheet, inFID,
     """
     
     import xlrd;            import xlwt
-    from gasp3.dt.fm        import tbl_to_obj
-    from gasp3.pyt.xls.fld  import columns_by_order, get_columns_position
+    from gasp3.fm           import tbl_to_obj
+    from gasp3.pyt.xls.fld  import col_name, get_columns_position
     from gasp3.pyt.xls.summ import list_unique_values_column
     
     # TODO: check if tables are xls
     
     # Get Data
     inData  = tbl_to_obj(inTable, sheet=inSheet, output='array')
-    COLUMNS = columns_by_order(inTable, sheet_name=inSheet)
+    COLUMNS = col_name(inTable, sheet_name=inSheet)
     
     # From noDATA, get IDS that will not be in the outTable
     noXls = xlrd.open_workbook(noTable)

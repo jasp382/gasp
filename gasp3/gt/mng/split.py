@@ -55,7 +55,7 @@ def gdal_split_bands(inRst, outFolder):
     
     import numpy;          import os
     from osgeo             import gdal
-    from gasp3.dt.to.rst   import array_to_raster
+    from gasp3.gt.to.rst   import obj_to_rst
     from gasp3.gt.prop.rst import get_nodata
     
     
@@ -74,18 +74,11 @@ def gdal_split_bands(inRst, outFolder):
         else:
             # Convert to array
             array = numpy.array(src_band.ReadAsArray())
-            array_to_raster(
-                array,
-                os.path.join(
-                    outFolder,
-                    '{r}_{b}.tif'.format(
-                        r=os.path.basename(os.path.splitext(inRst)[0]),
-                        b=str(band)
-                    )
-                ),
-                inRst,
-                None,
-                gdal.GDT_Float32, noData=nodata, gisApi='gdal'
+            obj_to_rst(array, os.path.join(
+                outFolder, '{r}_{b}.tif'.format(
+                    r=os.path.basename(os.path.splitext(inRst)[0]),
+                    b=str(band)
+                )), inRst, noData=nodata
             )
 
 """
@@ -104,10 +97,10 @@ def split_table_by_number(xlsTable, row_number, output,
     """
     
     import xlrd;           import xlwt
-    from gasp3.dt.fm       import tbl_to_obj
-    from gasp3.pyt.xls.fld import columns_by_order
+    from gasp3.fm          import tbl_to_obj
+    from gasp3.pyt.xls.fld import col_name
     
-    COLUMNS_ORDER = columns_by_order(
+    COLUMNS_ORDER = col_name(
         xlsTable, sheet_name=sheetName, sheet_index=sheetIndex
     )
     

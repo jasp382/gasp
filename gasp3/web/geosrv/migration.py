@@ -90,14 +90,14 @@ def pgtables_to_layer_withStyle_by_col(
     
     import os
     from gasp3                        import goToList
-    from gasp3.dt.fm                  import tbl_to_obj
+    from gasp3.fm                     import tbl_to_obj
     from gasp3.pyt.oss                import create_folder
     from gasp3.sql.i                  import cols_name
-    from gasp3.web.geosrv.wspace      import create_workspace
-    from gasp3.web.geosrv.stores      import create_psqlstore
-    from gasp3.web.geosrv.lyrs        import publish_postgis_layer
+    from gasp3.web.geosrv.ws          import create_ws
+    from gasp3.web.geosrv.stores      import create_pgstore
+    from gasp3.web.geosrv.lyrs        import pub_pglyr
     from gasp3.web.geosrv.styl        import create_style
-    from gasp3.web.geosrv.styl        import list_styles
+    from gasp3.web.geosrv.styl        import lst_styles
     from gasp3.web.geosrv.styl        import del_style
     from gasp3.web.geosrv.styl.assign import assign_style_to_layer
     from gasp3.web.geosrv.styl.sld    import write_sld
@@ -167,13 +167,11 @@ def pgtables_to_layer_withStyle_by_col(
         pgsql_con['DATABASE']
     ) if not workName else workName
     
-    create_workspace(workName, conf=geoserver_con, overwrite=True)
+    create_ws(workName, conf=geoserver_con, overwrite=True)
     
     # Create Store
     storeName = pgsql_con['DATABASE'] if not storeName else storeName
-    create_psqlstore(
-        storeName, workName, pgsql_con, gs_con=geoserver_con
-    )
+    create_pgstore(storeName, workName, pgsql_con, gs_con=geoserver_con)
     
     # Create folder for sld's
     wTmp = create_folder(os.path.join(
@@ -181,16 +179,13 @@ def pgtables_to_layer_withStyle_by_col(
     )) if not pathToSLDfiles else pathToSLDfiles
     
     # List styles in geoserver
-    STYLES = list_styles(conf=geoserver_con)
+    STYLES = lst_styles(conf=geoserver_con)
     
     # For each table in PGTABLES
     for PGTABLE in pgtables:
         # Publish Postgis table
         TITLE = None if not LYR_DESIGNATION else LYR_DESIGNATION[PGTABLE][0]
-        publish_postgis_layer(
-            workName, storeName, PGTABLE,
-            title=TITLE, gs_con=geoserver_con
-        )
+        pub_pglyr(workName, storeName, PGTABLE, title=TITLE, gs_con=geoserver_con)
         
         # List PGTABLE columns
         pgCols = cols_name(pgsql_con, PGTABLE)
@@ -266,11 +261,11 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
     
     import os
     from gasp3.sql.i                  import lst_tbl_basename
-    from gasp3.web.geosrv.wspace      import create_workspace
-    from gasp3.web.geosrv.stores      import create_psqlstore
-    from gasp3.web.geosrv.lyrs        import publish_postgis_layer
+    from gasp3.web.geosrv.ws          import create_workspace
+    from gasp3.web.geosrv.stores      import create_pgstore
+    from gasp3.web.geosrv.lyrs        import pub_pglyr
     from gasp3.web.geosrv.styl        import create_style
-    from gasp3.web.geosrv.styl        import list_styles
+    from gasp3.web.geosrv.styl        import lst_styles
     from gasp3.web.geosrv.styl        import del_style
     from gasp3.web.geosrv.styl.assign import assign_style_to_layer
     
@@ -283,10 +278,10 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
     
     # Create a new store
     storeName = pgsql_con['DATABASE'] if not storeName else storeName
-    create_psqlstore(storeName, workName, pgsql_con, gs_con=geoserver_con)
+    create_pgstore(storeName, workName, pgsql_con, gs_con=geoserver_con)
     
     # List styles
-    STYLES = list_styles(conf=geoserver_con)
+    STYLES = lst_styles(conf=geoserver_con)
     
     # For each group:
     for group in groups_of_tables:
@@ -306,9 +301,7 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
         # - Assign style
         for table in tables:
             TITLE = 'lyr_{}'.format(table)
-            publish_postgis_layer(
-                workName, storeName, table, title=TITLE, gs_con=geoserver_con
-            )
+            pub_pglyr(workName, storeName, table, title=TITLE, gs_con=geoserver_con)
             
             assign_style_to_layer(STYLE_NAME, table, conf=geoserver_con)
         

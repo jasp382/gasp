@@ -16,7 +16,7 @@ def select_using_excel_refs(conParam, excel_file, sheet_name,
     TODO: Check if it's works. 
     """
     
-    from gasp3.dt.fm       import tbl_to_obj
+    from gasp3.fm          import tbl_to_obj
     from gasp3.sql.i       import cols_type
     from gasp3.sql.mng.tbl import q_to_ntbl
     

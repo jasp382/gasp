@@ -43,8 +43,8 @@ def del_topoerror_shps(conParam, shps, epsg, outfolder):
     from gasp3             import goToList
     from gasp3.sql.i       import cols_name
     from gasp3.sql.mng.tbl import q_to_ntbl
-    from gasp3.dt.to.sql   import shp_to_psql
-    from gasp3.dt.to.shp   import psql_to_shp
+    from gasp3.sql.to      import shp_to_psql
+    from gasp3.gt.to.shp   import dbtbl_to_shp
     
     shps = goToList(shps)
     
@@ -61,7 +61,7 @@ def del_topoerror_shps(conParam, shps, epsg, outfolder):
     ) for t in range(len(TABLES))]
     
     for t in range(len(NTABLE)):
-        psql_to_shp(
+        dbtbl_to_shp(
             conParam, NTABLE[t],
             os.path.join(outfolder, TABLES[t]), tableIsQuery=None,
             api='pgsql2shp', geom_col="geom"
@@ -175,18 +175,18 @@ def proj_clean_clip(con, dic_osm, boundary, srs, workspace):
     ]
     
     if os.path.splitext(boundary)[1] != '.shp':
-        from gasp3.dt.to.shp import shp_to_shp
+        from gasp3.gt.to.shp import shp_to_shp
         
         boundary = shp_to_shp(
             boundary, os.path.join(workspace, 'lmt.shp'),
             gisApi='ogr'
         )
     
-    from gasp3.dt.to.sql import shp_to_psql
+    from gasp3.sql.to import shp_to_psql
     lmt_table = shp_to_psql(con, boundary, srs, api='shp2pgsql')
     lmt_geom = "geom"
     
-    from gasp3.sql.mng.prj    import re_project
+    from gasp3.sql.prj        import re_project
     from gasp3.sql.anls.ovlay import intersection
     from gasp3.sql.anls.ovlay import del_topoerror_shps
     
@@ -218,8 +218,8 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     import os
     from gasp3.sql.mng.db  import create_db
     from gasp3.sql.mng.tbl import q_to_ntbl
-    from gasp3.dt.to.sql   import shp_to_psql
-    from gasp3.dt.to.shp   import psql_to_shp
+    from gasp3.sql.to      import shp_to_psql
+    from gasp3.gt.to.shp   import dbtbl_to_shp
     
     create_db(conParam, conParam["DB"])
     conParam["DATABASE"] = conParam["DB"]
@@ -244,7 +244,7 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     resultTable = os.path.splitext(os.path.basename(outOverlaps))[0]
     q_to_ntbl(conParam, resultTable, q, api='psql')
     
-    psql_to_shp(conParam, resultTable, outOverlaps, api='pandas', epsg=epsg)
+    dbtbl_to_shp(conParam, resultTable, outOverlaps, api='psql', epsg=epsg)
     
     return outOverlaps
 
@@ -421,9 +421,9 @@ def sgbd_get_feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
     
     elif apiToUse == 'POSTGIS':
         if outTblIsFile:
-            from gasp3.dt.to.shp import psql_to_shp
+            from gasp3.gt.to.shp import dbtbl_to_shp
             
-            psql_to_shp(
+            dbtbl_to_shp(
                 conParam, Q, outTbl, api="pgsql2shp",
                 geom_col=None, tableIsQuery=True)
         
@@ -482,9 +482,9 @@ def sgbd_get_feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl
     
     elif apiToUse == "POSTGIS":
         if outTblIsFile:
-            from gasp3.dt.to.shp import psql_to_shp
+            from gasp3.gt.to.shp import dbtbl_to_shp
             
-            psql_to_shp(
+            dbtbl_to_shp(
                 dbcon, Q, outTbl, api='pgsql2shp',
                 geom_col=None, tableIsQuery=True
             )

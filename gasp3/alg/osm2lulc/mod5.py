@@ -11,16 +11,16 @@ def basic_buffer(osmLink, lineTable, dataFolder, apidb='SQLITE'):
     """
     
     import datetime
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.fm            import Q_to_df
     if apidb == 'POSTGIS':
         from gasp3.sql.anls.prox import st_buffer
     else:
         from gasp3.sql.anls.prox import splite_buffer as st_buffer
-    from gasp3.dt.to.rst         import  shp_to_rst
-    from gasp3.dt.to.shp         import shp_to_grs
+    from gasp3.gt.to.rst         import  shp_to_rst
+    from gasp3.gt.to.shp         import shp_to_grs
     
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = query_to_df(osmLink, (
+    lulcCls = Q_to_df(osmLink, (
         "SELECT basic_buffer FROM {} WHERE basic_buffer IS NOT NULL "
         "GROUP BY basic_buffer"
     ).format(
@@ -78,10 +78,7 @@ def grs_vect_bbuffer(osmdata, lineTbl, api_db='SQLITE'):
     from gasp3.gt.mng.genze    import dissolve
     from gasp3.gt.mng.grstbl   import add_table
     from gasp3.sql.i           import row_num as cnt_row
-    if api_db != 'POSTGIS':
-        from gasp3.dt.to.shp   import sqlite_to_grs as db_to_shp
-    else:
-        from gasp3.dt.to.shp   import psql_to_grs   as db_to_shp
+    from gasp3.gt.to.shp       import dbtbl_to_shp as db_to_shp
     
     WHR = "basic_buffer IS NOT NULL"
     
@@ -95,7 +92,9 @@ def grs_vect_bbuffer(osmdata, lineTbl, api_db='SQLITE'):
     if not N: return None, {0 : ('count_rows_roads', time_b - time_a)}
     
     grsVect = db_to_shp(
-        osmdata, lineTbl, "bb_lnh", where=WHR, filterByReg=True
+        osmdata, lineTbl, "bb_lnh", where=WHR, filterByReg=True,
+        inDB='psql' if api_db == 'POSTGIS' else 'sqlite',
+        outShpIsGRASS=True
     )
     time_c = datetime.datetime.now().replace(microsecond=0)
     
@@ -123,16 +122,16 @@ def num_base_buffer(osmLink, lineTbl, folder, cells, srscode, rtemplate,
     """
     
     import datetime; from threading import Thread
-    from gasp3.dt.fm.sql            import query_to_df
+    from gasp3.sql.fm               import Q_to_df
     if api=='SQLITE':
         from gasp3.sql.anls.prox    import splite_buffer as st_buffer
     else:
         from gasp3.sql.anls.prox    import st_buffer
-    from gasp3.dt.to.rst            import shp_to_rst
+    from gasp3.gt.to.rst            import shp_to_rst
     
     # Get LULC Classes to be selected
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = query_to_df(osmLink, (
+    lulcCls = Q_to_df(osmLink, (
         "SELECT basic_buffer FROM {} WHERE basic_buffer IS NOT NULL "
         "GROUP BY basic_buffer"
     ).format(

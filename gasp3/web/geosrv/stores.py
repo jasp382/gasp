@@ -5,14 +5,15 @@ Tools for Geoserver datastores management
 
 def shape_to_store(shape, store_name, workspace, conf={
         'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }, protocol='http'):
+        'HOST':'localhost', 'PORT': '8888'}):
     """
     Create a new datastore
     """
 
     import os;         import requests
-    from gasp3.pyt.oss import list_files
+    from gasp3.pyt.oss import lst_ff
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
 
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/datastores/'
@@ -23,9 +24,9 @@ def shape_to_store(shape, store_name, workspace, conf={
         )
 
     if os.path.splitext(shape)[1] != '.zip':
-        from gasp import zip_files
+        from gasp3.zzip import zip_files
 
-        shapefiles = list_files(
+        shapefiles = lst_ff(
             os.path.dirname(shape),
             filename=os.path.splitext(os.path.basename(shape))[0]
         )
@@ -53,6 +54,8 @@ def import_datafolder(path_folder, store_name, workspace, conf={
     """
 
     import requests
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
 
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/datastores/'
@@ -72,16 +75,18 @@ def import_datafolder(path_folder, store_name, workspace, conf={
     return r
 
 
-def list_stores(workspace, conf={
+def lst_stores(workspace, conf={
         'USER': 'admin', 'PASSWORD': 'geoserver',
         'HOST': 'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     List all stores in a Workspace
     """
     
     import requests
     import json
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/datastores'.format(
         host=conf['HOST'], port=conf['PORT'], work=workspace, pro=protocol
@@ -102,13 +107,15 @@ def list_stores(workspace, conf={
 def del_store(workspace, name, conf={
         'USER': 'admin', 'PASSWORD': 'geoserver',
         'HOST': 'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     Delete an existing Geoserver datastore
     """
     
     import requests
     import json
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/'
@@ -123,19 +130,19 @@ def del_store(workspace, name, conf={
     return r
 
 
-def add_raster_store(raster, store_name, workspace, conf={
+def add_rst_store(raster, store_name, workspace, conf={
         'USER': 'admin', 'PASSWORD': 'geoserver',
         'HOST': 'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     Create a new store with a raster layer
     """
     
-    import os
-    import requests
+    import os;         import requests
+    from gasp3.pyt.oss import del_file
+    from gasp3.pyt.Xml import write_xml_tree
     
-    from gasp3.pyt.oss   import del_file
-    from gasp3.dt.to.Xml import write_xml_tree
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/'
@@ -186,18 +193,20 @@ PostGIS stores creation
 """
 
 
-def create_psqlstore(store, workspace, pg_con, gs_con={
+def create_pgstore(store, workspace, pg_con, gs_con={
         'USER':'admin', 'PASSWORD': 'geoserver',
         'HOST':'localhost', 'PORT': '8888'
-    }, protocol='http'):
+    }):
     """
     Create a store for PostGIS data
     """
     
-    import os;           import requests
-    from gasp3           import random_str
-    from gasp3.dt.to.Xml import write_xml_tree
-    from gasp3.pyt.oss   import create_folder, del_folder
+    import os;          import requests
+    from gasp3.pyt.char import random_str
+    from gasp3.pyt.Xml  import write_xml_tree
+    from gasp3.pyt.oss  import create_folder, del_folder
+    
+    protocol = 'http' if 'PROTOCOL' not in gs_con else gs_con['PROTOCOL']
     
     # Create folder to write xml
     wTmp = create_folder(

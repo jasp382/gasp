@@ -23,13 +23,13 @@ def shp_from_address(inTbl, idAddr, addrCol, outShp,
     # TODO: Some of the rows could not have Geometry
     """
     
-    from gasp3.dt.glg.geocod import get_position
-    from gasp3.dt.fm         import tbl_to_obj
-    from gasp3.dt.to.geom    import pnt_dfwxy_to_geodf
-    from gasp3.pyt.oss       import get_fileformat
-    from gasp3.pyt.df.fld    import fld_types
-    from gasp3.dt.to.obj     import df_to_dict, dict_to_df
-    from gasp3.dt.to.shp     import df_to_shp
+    from gasp3.adv.glg.geocod import get_position
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.gt.to.geom     import pnt_dfwxy_to_geodf
+    from gasp3.pyt.oss        import get_fileformat
+    from gasp3.pyt.df.fld     import fld_types
+    from gasp3.pyt.df.to      import df_to_dict, dict_to_df
+    from gasp3.gt.to.shp      import df_to_shp
     
     # Get Addresses
     tblFormat = get_fileformat(inTbl)
@@ -43,68 +43,65 @@ def shp_from_address(inTbl, idAddr, addrCol, outShp,
             if f not in tblAdr.columns.values:
                 raise ValueError("{} column not in {}".format(f, inTbl))
     
-    # Convert numeric fields to unicode
+    # Convert numeric fields to str
     colTypes = fld_types(tblAdr)
     for col in colTypes:
         if colTypes[col] != 'object':
             if colTypes[col] == 'float32' or colTypes[col] == 'float64':
                 tblAdr[col] = tblAdr[col].astype(int)
             
-        tblAdr[col] = tblAdr[col].astype(unicode, 'utf-8')
+        tblAdr[col] = tblAdr[col].astype(str)
     
     # Create search field
     if not useComponents:
         if doorNumber and zip4 and zip3 and city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[doorNumber].astype(unicode, "utf-8") + unicode(",", "utf-8") + \
-                tblAdr[zip4] + unicode("-", "utf-8") + \
-                tblAdr[zip3] + unicode(",", "utf-8") + tblAdr[city]
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
+                tblAdr[doorNumber].astype(str) + "," + \
+                tblAdr[zip4] + "-" + \
+                tblAdr[zip3] + "," + tblAdr[city]
     
         elif not doorNumber and zip4 and zip3 and city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[zip4] + unicode("-", "utf-8") + \
-                tblAdr[zip3] + unicode(",", "utf-8") + tblAdr[city]
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
+                tblAdr[zip4] + "-" + \
+                tblAdr[zip3] + "," + tblAdr[city]
     
         elif doorNumber and not zip4 and not zip3 and not city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
                 tblAdr[doorNumber]
     
         elif not doorNumber and not zip4 and not zip3 and not city:
             tblAdr["search"] = tblAdr[addrCol]
     
         elif doorNumber and zip4 and not zip3 and city:
-            tblAdr = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[doorNumber] + unicode(",", "utf-8") + \
-                tblAdr[zip4] + unicode(",", "utf-8") + tblAdr[city]
+            tblAdr = tblAdr[addrCol] + "," + \
+                tblAdr[doorNumber] + "," + \
+                tblAdr[zip4] + "," + tblAdr[city]
     
         elif doorNumber and not zip4 and not zip3 and city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[doorNumber] + unicode(",", "utf-8") + tblAdr[city]
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
+                tblAdr[doorNumber] + "," + tblAdr[city]
     
         elif not doorNumber and zip4 and not zip3 and city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[city]
+            tblAdr["search"] = tblAdr[addrCol] + "," + tblAdr[city]
     
         elif not doorNumber and zip4 and zip3 and not city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[zip4] + unicode("-", "utf-8") + tblAdr[zip3]
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
+                tblAdr[zip4] + "-" + tblAdr[zip3]
     
         elif doorNumber and zip4 and not zip3 and not city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[doorNumber] + unicode(",", "utf-8") + tblAdr[zip4]
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
+                tblAdr[doorNumber] + "," + tblAdr[zip4]
     
         elif doorNumber and zip4 and zip3 and not city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[doorNumber] + unicode(",", "utf-8") + tblAdr[zip4] + \
-                unicode("-", "utf-8") + tblAdr[zip3]
+            tblAdr["search"] = tblAdr[addrCol] + "," + \
+                tblAdr[doorNumber] + "," + tblAdr[zip4] + \
+                "-" + tblAdr[zip3]
     
         elif not doorNumber and zip4 and not zip3 and not city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[zip4]
+            tblAdr["search"] = tblAdr[addrCol] + "," + tblAdr[zip4]
     
         elif not doorNumber and not zip4 and not zip3 and city:
-            tblAdr["search"] = tblAdr[addrCol] + unicode(",", "utf-8") + \
-                tblAdr[city]
+            tblAdr["search"] = tblAdr[addrCol] + "," + tblAdr[city]
     
         else:
             raise ValueError('Parameters are not valid')
@@ -161,8 +158,8 @@ def shp_from_address(inTbl, idAddr, addrCol, outShp,
     
     # Reproject if user wants it
     if epsg_out != 4326:
-        from gasp3.gt.mng.prj import project
-        geoAdr = project(geoAdr, None, epsg_out, gisApi='pandas')
+        from gasp3.gt.prj import proj
+        geoAdr = proj(geoAdr, None, epsg_out, gisApi='pandas')
     
     # To Shapefile
     df_to_shp(geoAdr, outShp)
@@ -174,13 +171,13 @@ def address_from_featcls(inShp, outShp, epsg_in):
     Read a point geometry and return a table with the addresses
     """
     
-    from gasp3.dt.glg.geocod import get_address
-    from gasp3.dt.fm         import tbl_to_obj
-    from gasp3.dt.to.geom    import df_to_geodf
-    from gasp3.dt.to.shp     import df_to_shp
-    from gasp3.dt.to.obj     import df_to_dict, dict_to_df
-    from gasp3.pyt.df.fld    import pointxy_to_cols
-    from gasp3.gt.prop.feat  import get_gtype
+    from gasp3.adv.glg.geocod import get_address
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.gt.to.geom     import df_to_geodf
+    from gasp3.gt.to.shp      import df_to_shp
+    from gasp3.pyt.df.to      import df_to_dict, dict_to_df
+    from gasp3.pyt.df.fld     import pointxy_to_cols
+    from gasp3.gt.prop.feat   import get_gtype
     
     # Convert ESRI Shapefile to GeoDataFrame
     geoDf = tbl_to_obj(inShp)
@@ -201,9 +198,9 @@ def address_from_featcls(inShp, outShp, epsg_in):
     
     # Reproject geodf if necessary
     if epsg_in != 4326:
-        from gasp3.gt.mng.prj import project
+        from gasp3.gt.prj import proj
         
-        geoDf = project(geoDf, None, 4326, gisApi='pandas')
+        geoDf = proj(geoDf, None, 4326, gisApi='pandas')
     
     # Get Coords of each point
     geoDf = pointxy_to_cols(geoDf, F_GEOM, colX="x", colY='y')

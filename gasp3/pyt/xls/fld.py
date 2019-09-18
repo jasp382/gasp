@@ -11,7 +11,7 @@ def get_columns_position(sheet_object, cols_name):
     }
     """
     
-    from gasp import goToList
+    from gasp3 import goToList
     
     cols_name = goToList(cols_name)
     
@@ -54,7 +54,7 @@ def get_columns_position_outside_options(sheet_obj, cols_name):
     return cols_position
 
 
-def columns_by_order(xls_file, sheet_name=None, sheet_index=None):
+def col_name(xls_file, sheet_name=None, sheet_index=None):
     
     import xlrd
     from gasp3.pyt.xls.sheet import get_sheet_obj
@@ -62,7 +62,7 @@ def columns_by_order(xls_file, sheet_name=None, sheet_index=None):
     try:
         xls = xlrd.open_workbook(xls_file)
     
-        sheet = get_sheet_obj(xls_file, name=sheet_name, index=sheet_index)
+        sheet = get_sheet_obj(xls, name=sheet_name, index=sheet_index)
     
     except:
         sheet = xls_file

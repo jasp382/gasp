@@ -30,7 +30,7 @@ def shp_to_djg_mdl(fileShape, djgModel, mapFields, djgProj=None, useLyrMap=True)
     else:
         from django.contrib.gis.geos import GEOSGeometry
         from django.contrib.gis.db   import models
-        from gasp3.dt.fm             import tbl_to_obj
+        from gasp3.fm                import tbl_to_obj
         
         inDf = tbl_to_obj(inShp)
         
@@ -188,7 +188,7 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
     
     import os, sys
     from gasp3                 import __import
-    from gasp3.pyt.oss         import list_files
+    from gasp3.pyt.oss         import lst_ff
     from gasp3.web.djg.mdl.rel import order_models_by_relation
     
     # Open Django Project
@@ -202,7 +202,7 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
     
     # Get importing order
     txt_tables = [
-        os.path.splitext(os.path.basename(x))[0] for x in list_files(
+        os.path.splitext(os.path.basename(x))[0] for x in lst_ff(
             folder, file_format='.txt'
         )
     ]
@@ -239,7 +239,7 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
     from gasp3.sql             import run_sql_script
     from gasp3.sql.mng.db      import create_db
     from gasp3.sql.i           import lst_tbl
-    from gasp3.dt.fm.sql       import tbl_to_dict
+    from gasp3.sql.fm          import tbl_to_dict
     from gasp3.web.djg.mdl.i   import get_special_tables
     from gasp3.web.djg.mdl.rel import order_models_by_relation
     

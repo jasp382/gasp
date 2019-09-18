@@ -51,8 +51,8 @@ def gdal_slope(dem, srs, slope, unit='DEGREES'):
     import math
     from osgeo             import gdal
     from scipy.ndimage     import convolve
-    from gasp3.dt.fm.rst   import rst_to_array
-    from gasp3.dt.to.rst   import array_to_raster
+    from gasp3.gt.fm.rst   import rst_to_array
+    from gasp3.gt.to.rst   import obj_to_rst
     from gasp3.gt.prop.rst import get_cellsize, get_nodata
     
     # ################ #
@@ -164,10 +164,7 @@ def gdal_slope(dem, srs, slope, unit='DEGREES'):
     # Del value originally nodata
     numpy.place(arr_slope, aux_dem==NoData, numpy.nan)
     #arr_slope[lnh][col] = slope_degres
-    array_to_raster(
-        arr_slope, slope, dem, srs, cellsize, gdal.GDT_Float64,
-        gisApi='gdal'
-    )
+    obj_to_rst(arr_slope, slope, dem)
 
 
 def viewshed(demrst, obsShp, output):
@@ -179,7 +176,7 @@ def viewshed(demrst, obsShp, output):
     import os
     from gasp3           import exec_cmd
     from gasp3.pyt.oss   import get_filename
-    from gasp3.dt.to.rst import saga_to_tif
+    from gasp3.gt.to.rst import saga_to_tif
     
     SAGA_RASTER = os.path.join(
         os.path.dirname(output),

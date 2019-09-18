@@ -10,15 +10,15 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
     
     import os; import math; import numpy
     from osgeo              import gdal
-    from gasp3.dt.fm.rst    import rst_to_array
-    from gasp3.dt.fm        import tbl_to_obj
+    from gasp3.gt.fm.rst    import rst_to_array
+    from gasp3.fm           import tbl_to_obj
     from gasp3.gt.prop.feat import get_gtype
     from gasp3.gt.prop.rst  import rst_shape
     from gasp3.gt.prop.rst  import count_cells
     from gasp3.gt.prop.rst  import get_cellsize
     from gasp3.gt.prop.rst  import frequencies
     from gasp3.pyt.oss      import create_folder
-    from gasp3.dt.to.rst    import array_to_raster
+    from gasp3.gt.to.rst    import obj_to_rst
     
     # Create Workspace for temporary files
     workspace = create_folder(os.path.join(
@@ -66,7 +66,7 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
             ))
         
         # Convert To Raster
-        from gasp3.dt.to.rst import shp_to_rst
+        from gasp3.gt.to.rst import shp_to_rst
         
         land_raster = shp_to_rst(
             land_poly, None, get_cellsize(variables[0], gisApi='gdal'), -9999,
@@ -146,10 +146,7 @@ def infovalue(landslides, variables, iv_rst, dataEpsg):
     
     numpy.place(vi_rst, vi_rst == len(variables) * -128, -128)
     
-    result = array_to_raster(
-        vi_rst, iv_rst, variables[i], dataEpsg,
-        gdal.GDT_Float32, noData=-128, gisApi='gdal'
-    )
+    result = obj_to_rst(vi_rst, iv_rst, variables[i], noData=-128)
     
     return iv_rst
 

@@ -27,9 +27,9 @@ def join_attr_by_distance(mainTable, joinTable, workGrass, epsg_code,
     
     import os
     from gasp3.gt.wenv.grs import run_grass
-    from gasp3.dt.fm       import tbl_to_obj
-    from gasp3.dt.to.geom  import df_to_geodf
-    from gasp3.dt.to.shp   import df_to_shp
+    from gasp3.fm          import tbl_to_obj
+    from gasp3.gt.to.geom  import df_to_geodf
+    from gasp3.gt.to.shp   import df_to_shp
     from gasp3.pyt.oss     import get_filename
     
     # Create GRASS GIS Location
@@ -42,7 +42,7 @@ def join_attr_by_distance(mainTable, joinTable, workGrass, epsg_code,
     # Import some GRASS GIS tools
     from gasp3.gt.anls.prox import grs_near as near
     from gasp3.gt.mng.tbl   import geomattr_to_db
-    from gasp3.dt.to.shp    import shp_to_grs, grs_to_shp
+    from gasp3.gt.to.shp    import shp_to_grs, grs_to_shp
     
     # Import data into GRASS GIS
     grsMain = shp_to_grs(mainTable, get_filename(
@@ -88,10 +88,10 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     """
     
     import os; import pandas; from geopandas import GeoDataFrame
-    from gasp3.dt.fm        import tbl_to_obj
-    from gasp3.dt.to.shp    import df_to_shp, shpext_to_boundary
-    from gasp3.dt.to.rst    import shp_to_rst
-    from gasp3.dt.to.geom   import df_to_geodf
+    from gasp3.fm           import tbl_to_obj
+    from gasp3.gt.to.shp    import df_to_shp, shpext_to_boundary
+    from gasp3.gt.to.rst    import shp_to_rst
+    from gasp3.gt.to.geom   import df_to_geodf
     from gasp3.gt.wenv.grs  import run_grass
     from gasp3.pyt.df.joins import join_dfs
     from gasp3.pyt.df.agg   import df_groupBy
@@ -120,8 +120,8 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     
     from gasp3.gt.spnlst.local import combine
     from gasp3.gt.prop.rst     import get_rst_report_data
-    from gasp3.dt.to.shp       import shp_to_grs, grs_to_shp
-    from gasp3.dt.to.rst       import shp_to_rst
+    from gasp3.gt.to.shp       import shp_to_grs, grs_to_shp
+    from gasp3.gt.to.rst       import shp_to_rst
     
     # Add data to GRASS GIS
     mainVector = shp_to_grs(
@@ -190,11 +190,11 @@ def join_xls_table(main_table, fid_main, join_table, fid_join, copy_fields, out_
     TODO: Use Pandas Instead
     """
     
-    import xlwt; from gasp3.dt.fm import tbl_to_obj
-    from gasp3.pyt.xls.fld        import columns_by_order
+    import xlwt; from gasp3.fm import tbl_to_obj
+    from gasp3.pyt.xls.fld     import col_name
     
-    copy_fields = [copy_fields] if type(copy_fields) == str or type(copy_fields) == unicode \
-        else copy_fields if type(copy_fields) == list else None
+    copy_fields = [copy_fields] if type(copy_fields) == str else \
+        copy_fields if type(copy_fields) == list else None
     
     if not copy_fields:
         raise ValueError(
@@ -219,7 +219,7 @@ def join_xls_table(main_table, fid_main, join_table, fid_join, copy_fields, out_
     new_sheet = out_xls.add_sheet(out_sheet_name)
     
     # Write tiles
-    COLUMNS_ORDER = columns_by_order(main_table, sheet_name=main_sheet)
+    COLUMNS_ORDER = col_name(main_table, sheet_name=main_sheet)
     
     TITLES = COLUMNS_ORDER + copy_fields
     for i in range(len(TITLES)):
@@ -272,9 +272,9 @@ def join_tables_in_table(mainTable, mainIdField, joinTables, outTable):
     """
     
     # Modules
-    import os;       import pandas
-    from gasp3.dt.fm import tbl_to_obj
-    from gasp3.dt.to import obj_to_tbl
+    import os;    import pandas
+    from gasp3.fm import tbl_to_obj
+    from gasp3.to import obj_to_tbl
     
     # Get table format
     tableType = os.path.splitext(mainTable)[1]
@@ -336,8 +336,8 @@ def field_sum_two_tables(tableOne, tableTwo,
     4 |  15
     """
     
-    from gasp3.dt.fm        import tbl_to_obj
-    from gasp3.dt.to        import obj_to_tbl
+    from gasp3.fm           import tbl_to_obj
+    from gasp3.to           import obj_to_tbl
     from gasp3.pyt.df.joins import sum_field_of_two_tables
     
     # Open two tables
@@ -360,10 +360,10 @@ def field_sum_by_table_folder(folderOne, joinFieldOne,
                               folderTwo, joinFieldTwo,
                               sum_field, outFolder):
     
-    import os; from gasp3.pyt.oss import list_files, get_filename
+    import os; from gasp3.pyt.oss import lst_ff, get_filename
     
-    tablesOne = list_files(folderOne, file_format=['.xls', '.xlsx'])
-    tablesTwo = list_files(folderTwo, file_format=['.xls', '.xlsx'])
+    tablesOne = lst_ff(folderOne, file_format=['.xls', '.xlsx'])
+    tablesTwo = lst_ff(folderTwo, file_format=['.xls', '.xlsx'])
     
     for table in tablesOne:
         table_name = get_filename(table)

@@ -37,18 +37,17 @@ def dist_matrix_by_shp(oShp, dShp, oEpsg, dEpsg, result, transMode=None):
     - Uses my first API_KEY
     """
     
-    import time
-    import pandas
-    from gasp.fm             import tbl_to_obj
-    from gasp.mng.split      import split_df
-    from gasp.mng.prj        import project
-    from gasp.mng.fld.df     import listval_to_newcols
-    from gasp.prop.feat      import get_gtype
-    from gasp.mng.gen        import merge_df
-    from gasp.web.glg.distmx import dist_matrix
-    from gasp.to             import obj_to_tbl
-    from gasp.to.obj         import df_to_list
-    from gasp.oss            import get_filename
+    import time;              import pandas
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.pyt.df.split   import split_df
+    from gasp3.gt.prj         import proj
+    from gasp3.pyt.df.fld     import listval_to_newcols
+    from gasp3.gt.prop.feat   import get_gtype
+    from gasp3.pyt.df.mng     import merge_df
+    from gasp3.adv.glg.distmx import dist_matrix
+    from gasp3.to             import obj_to_tbl
+    from gasp3.pyt.df.to      import df_to_list
+    from gasp3.pyt.oss        import get_filename
     
     # Origins and Destionations to GeoDataframe
     originsDf = tbl_to_obj(oShp); destnatDf = tbl_to_obj(dShp)
@@ -61,11 +60,11 @@ def dist_matrix_by_shp(oShp, dShp, oEpsg, dEpsg, result, transMode=None):
         raise ValueError('All input geometries must be of type point')
     
     # Re-project GeoDataframes if needed
-    originsDf = originsDf if oEpsg == 4326 else \
-        project(originsDf, None, 4326, gisApi='pandas')
+    originsDf = originsDf if oEpsg == 4326 else proj(
+        originsDf, None, 4326, gisApi='pandas')
     
-    destnatDf = destnatDf if dEpsg == 4326 else \
-        project(destnatDf, None, 4326, gisApi='pandas')
+    destnatDf = destnatDf if dEpsg == 4326 else proj(
+        destnatDf, None, 4326, gisApi='pandas')
     
     # Geom to Field as str
     originsDf["geom"] = originsDf["geometry"].y.astype(str) + "," + \
@@ -140,15 +139,15 @@ def dist_matrix_using_shp(originsShp, destinationsShp, originsEpsg,
     """
     
     import time
-    from threading           import Thread
-    from gasp.mng.split      import split_df, split_df_inN
-    from gasp.mng.prj        import project
-    from gasp.prop.feat      import get_gtype
-    from gasp.mng.gen        import merge_df
-    from gasp.fm             import tbl_to_obj
-    from gasp.to             import obj_to_tbl
-    from gasp.web.glg        import get_keys
-    from gasp.web.glg.distmx import dist_matrix
+    from threading            import Thread
+    from gasp3.gt.prj         import proj
+    from gasp3.gt.prop.feat   import get_gtype
+    from gasp3.pyt.df.split   import split_df, split_df_inN
+    from gasp3.pyt.df.mng     import merge_df
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.to             import obj_to_tbl
+    from gasp3.adv.glg        import get_keys
+    from gasp3.adv.glg.distmx import dist_matrix
     
     # Origins and Destionations to GeoDataframe
     originsDf = tbl_to_obj(     originsShp)
@@ -162,11 +161,11 @@ def dist_matrix_using_shp(originsShp, destinationsShp, originsEpsg,
         raise ValueError('All input geometries must be of type point')
     
     # Re-project GeoDataframes if needed
-    originsDf = originsDf if originsEpsg == 4326 else \
-        project(originsDf, None, 4326, gisApi='pandas')
+    originsDf = originsDf if originsEpsg == 4326 else proj(
+        originsDf, None, 4326, gisApi='pandas')
     
-    destnatDf = destnatDf if destinationsEpsg == 4326 else \
-        project(destnatDf, None, 4326, gisAPi='pandas')
+    destnatDf = destnatDf if destinationsEpsg == 4326 else proj(
+        destnatDf, None, 4326, gisAPi='pandas')
     
     # Geom to Field as str
     originsDf["geom"] = originsDf["geometry"].y.astype(str) + "," + \
@@ -281,16 +280,15 @@ def pnt_to_facility(pnt, pntSrs, facilities, facSrs,
     destinations
     """
     
-    import os
-    import time
-    from gasp.fm             import tbl_to_obj
-    from gasp.to.geom        import regulardf_to_geodf
-    from gasp.mng.prj        import project_df
-    from gasp.prop.feat      import get_gtype
-    from gasp.oss            import get_filename
-    from gasp.to.obj         import df_to_dict, dict_to_df
-    from gasp.to.shp         import df_to_shp
-    from gasp.web.glg.distmx import dist_matrix
+    import os;                import time
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.gt.to.geom     import df_to_geodf
+    from gasp3.gt.prj         import proj
+    from gasp3.gt.prop.feat   import get_gtype
+    from gasp3.pyt.oss        import get_filename
+    from gasp3.pyt.df.to      import df_to_dict, dict_to_df
+    from gasp3.gt.to.shp      import df_to_shp
+    from gasp3.adv.glg.distmx import dist_matrix
     
     # Convert SHPs to GeoDataFrame
     pntDf = tbl_to_obj(pnt); tbl_to_obj(facilities)
@@ -340,10 +338,10 @@ def pnt_to_facility(pnt, pntSrs, facilities, facSrs,
         pntDict[idx]["duration"] = matrix.duration.min() / 60.0
     
     pntDf = dict_to_df(pntDict)
-    pntDf = regulardf_to_geodf(pntDf, "geometry", 4326)
+    pntDf = df_to_geodf(pntDf, "geometry", 4326)
     
     if pntSrs != 4326:
-        pntDf = project(pntDf, None, pntSrs, gisApi='pandas')
+        pntDf = proj(pntDf, None, pntSrs, gisApi='pandas')
     
     df_to_shp(pntDf, os.path.join(
         os.path.dirname(pnt), "{}_{}.shp".format(

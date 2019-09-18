@@ -96,10 +96,9 @@ def rstcalc(expression, output, api='saga', grids=None):
     if api == 'saga':
         # Using SAGA GIS
         
-        import os
-        from gasp3           import exec_cmd
-        from gasp3.pyt.oss   import get_filename
-        from gasp3.dt.to.rst import saga_to_tif
+        import os; from gasp3 import exec_cmd
+        from gasp3.pyt.oss    import get_filename
+        from gasp3.gt.to.rst  import saga_to_tif
         
         SAGA_RASTER = os.path.join(
             os.path.dirname(output),

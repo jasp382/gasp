@@ -14,14 +14,11 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     
     import datetime
     from gasp3.sql.i          import row_num as cnt_row
-    from gasp3.dt.fm.sql      import query_to_df
-    if api_db == 'POSTGIS':
-        from gasp3.dt.to.shp  import psql_to_grs as db_to_shp
-    else:
-        from gasp3.dt.to.shp  import sqlite_to_grs as db_to_shp
+    from gasp3.sql.fm         import Q_to_df
+    from gasp3.gt.to.shp      import dbtbl_to_shp as db_to_shp
     from gasp3.sql.anls.ovlay import sgbd_get_feat_within
     from gasp3.sql.anls.ovlay import sgbd_get_feat_not_within
-    from gasp3.dt.to.rst      import shp_to_rst
+    from gasp3.gt.to.rst      import shp_to_rst
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     new_build = sgbd_get_feat_within(
@@ -60,7 +57,9 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     if N11:
         # Data to GRASS GIS
         grsBuild11 = db_to_shp(
-            osmLink, yes_build, "yes_builds", notTable=True, filterByReg=True
+            osmLink, yes_build, "yes_builds", notTable=True, filterByReg=True,
+            inDB='psql' if api_db == 'POSTGIS' else 'sqlite',
+            outShpIsGRASS=True
         )
         time_f = datetime.datetime.now().replace(microsecond=0)
         
@@ -75,7 +74,7 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
         time_f = None; time_g = None
     
     # Add data into GRASS GIS
-    lulcCls = query_to_df(
+    lulcCls = Q_to_df(
         osmLink, "SELECT cls FROM {} GROUP BY cls".format(new_build),
         db_api='psql' if api_db == 'POSTGIS' else 'sqlite'
     ).cls.tolist()
@@ -125,10 +124,7 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     
     import datetime
     from gasp3.sql.i          import row_num as cnt_row
-    if apidb != "POSTGIS":
-        from gasp3.dt.to.shp  import sqlite_to_grs as db_to_shp
-    else:
-        from gasp3.dt.to.shp  import psql_to_grs as db_to_shp
+    from gasp3.gt.to.shp      import dbtbl_to_shp as db_to_shp
     from gasp3.sql.anls.ovlay import sgbd_get_feat_within
     from gasp3.sql.anls.ovlay import sgbd_get_feat_not_within
     from gasp3.gt.mng.genze   import dissolve
@@ -169,7 +165,11 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     
     if N11:
         # Add data into grasss
-        grsBuild11 = db_to_shp(osmdb, yes_build, "yes_builds", filterByReg=True)
+        grsBuild11 = db_to_shp(
+            osmdb, yes_build, "yes_builds", filterByReg=True,
+            inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
+            outShpIsGRASS=True
+        )
         time_f = datetime.datetime.now().replace(microsecond=0)
         
         # Dissolve
@@ -186,7 +186,11 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     
     if N12:
         # Add data into GRASS GIS
-        grsBuild12 = db_to_shp(osmdb, new_build, "pnt_build", filterByReg=True)
+        grsBuild12 = db_to_shp(
+            osmdb, new_build, "pnt_build", filterByReg=True,
+            inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
+            outShpIsGRASS=True
+        )
         
         time_h = datetime.datetime.now().replace(microsecond=0)
         
@@ -228,11 +232,11 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
     if apidb == 'SQLITE':
         from gasp3.gt.anls.exct import sel_by_attr
     else:
-        from gasp3.dt.to.shp    import psql_to_shp as sel_by_attr
+        from gasp3.gt.to.shp    import dbtbl_to_shp as sel_by_attr
     from gasp3.sql.anls.ovlay   import sgbd_get_feat_within
     from gasp3.sql.anls.ovlay   import sgbd_get_feat_not_within
-    from gasp3.dt.fm.sql        import query_to_df
-    from gasp3.dt.to.rst        import shp_to_rst
+    from gasp3.sql.fm           import Q_to_df
+    from gasp3.gt.to.rst        import shp_to_rst
     
     time_a = datetime.datetime.now().replace(microsecond=0)
     build12 = sgbd_get_feat_within(
@@ -286,7 +290,7 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
         timeGasto[33] = ('to_rst_{}'.format(cls), time_y - time_x)
     
     def build12_torst(buildTbl):
-        LulcCls = query_to_df(
+        LulcCls = Q_to_df(
             osmLink, "SELECT cls FROM {} GROUP BY cls".format(buildTbl),
             db_api='psql' if apidb == 'POSTGIS' else 'sqlite'
         ).cls.tolist()

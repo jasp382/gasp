@@ -4,7 +4,7 @@ Working with sheets
 
 import xlrd
 
-def get_sheet_obj(xls_obj, name, index):
+def get_sheet_obj(xls_obj, name=None, index=None):
     if name and not index:
         return xls_obj.sheet_by_name(name)
     

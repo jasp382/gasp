@@ -39,12 +39,12 @@ def split_table_entity_number(conP, table, entity_field, entity_number):
     """
     
     import pandas
-    from gasp3.dt.fm.sql   import query_to_df
+    from gasp3.sql.fm      import Q_to_df
     from gasp3.sql.i       import cols_type
     from gasp3.sql.mng.tbl import q_to_ntbl
     
     # Select entities in table
-    entities = query_to_df(conP, "SELECT {c} FROM {t} GROUP BY {c}".format(
+    entities = Q_to_df(conP, "SELECT {c} FROM {t} GROUP BY {c}".format(
         c=entity_field, t=table
     ), db_api='psql')
     
@@ -86,14 +86,14 @@ def split_table_by_col_distinct(conParam, pgtable, column):
     Create a new table for each value in one column
     """
     
-    from gasp3.dt.fm.sql   import query_to_df
+    from gasp3.sql.fm      import Q_to_df
     from gasp3.sql.i       import cols_type
     from gasp3.sql.mng.tbl import q_to_ntbl
     
     fields_types = cols_type(conParam, pgtable)
     
     # Get unique values
-    VALUES = query_to_df(
+    VALUES = Q_to_df(
         conParam,
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=interest_column, t=pgtable

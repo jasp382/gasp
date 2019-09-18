@@ -15,13 +15,13 @@ def bar_chart_by_query(conParam, query, xaxis_col, chart_data_fld_name,
     "SELECT fld_name FROM t WHERE series_fld={}".format(serie in series)
     """
     
-    from gasp3.dt.fm.sql      import query_to_df
+    from gasp3.sql.fm         import Q_to_df
     from gasp3.pyt.df.joins   import combine_dfs
     from gasp3.pyt.xls.charts import barchart_in_xls_from_df
     
     dataDf = []
     for serie in series:
-        data = query_to_df(conParam, query.format(serie), db_api='psql')
+        data = Q_to_df(conParam, query.format(serie), db_api='psql')
         data.rename(columns={chart_data_fld_name : serie}, inplace=True)
         
         dataDf.append(data)

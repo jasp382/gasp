@@ -26,11 +26,11 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
     """
     
     if api == 'gdal':
-        import numpy as np
-        from osgeo import gdal
-        from gasp3.dt.fm.rst import rst_to_array
+        import numpy           as np
+        from osgeo             import gdal
+        from gasp3.gt.fm.rst   import rst_to_array
         from gasp3.gt.prop.rst import get_nodata
-        from gasp3.dt.to.rst import array_to_raster
+        from gasp3.gt.to.rst   import obj_to_rst
     
         # Raster to Array
         rst_array = rst_to_array(inrst)
@@ -64,7 +64,7 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
         else:
             np.place(rclRst, rst_array == nodataVal, nodataVal)
     
-        return array_to_raster(rclRst, outrst, inrst, noData=nodataVal)
+        return obj_to_rst(rclRst, outrst, inrst, noData=nodataVal)
     
     elif api == "pygrass":
         from grass.pygrass.modules import Module

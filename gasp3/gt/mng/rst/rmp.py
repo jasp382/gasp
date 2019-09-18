@@ -31,7 +31,7 @@ def match_cellsize_and_clip(rstBands, refRaster, outFolder,
     """
     GRS_WORKSPACE = create_folder(os.path.join(outFolder, 'grswork'))
     grsb = run_grass(
-        GRS_WORKSPACE, grassBIN='grass77', location='resample',
+        GRS_WORKSPACE, grassBIN='grass78', location='resample',
         srs=epsg
     )
     
@@ -43,10 +43,10 @@ def match_cellsize_and_clip(rstBands, refRaster, outFolder,
     """
     Import packages related with GRASS GIS
     """
-    from gasp3.dt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp3.gt.to.rst   import rst_to_grs, grs_to_rst
     from gasp3.gt.wenv.grs import rst_to_region
-    from gasp3.dt.to.shp   import shp_to_grs
-    from gasp3.dt.to.rst   import shp_to_rst, grs_to_mask
+    from gasp3.gt.to.shp   import shp_to_grs
+    from gasp3.gt.to.rst   import shp_to_rst, grs_to_mask
     
     # Send Ref Raster to GRASS GIS and set region
     extRst = rst_to_grs(refRaster, 'ext_rst')
@@ -79,7 +79,7 @@ def match_cellsize_and_clip(rstBands, refRaster, outFolder,
         """
         
         grsb = run_grass(
-            GRS_WORKSPACE, grassBIN='grass77',
+            GRS_WORKSPACE, grassBIN='grass78',
             location='clip_bnds', srs=epsg
         )
         

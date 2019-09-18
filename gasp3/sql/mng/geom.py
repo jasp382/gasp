@@ -211,9 +211,9 @@ def check_geomtype_in_table(conParam, table, geomCol='geom'):
     Return the number of geometry types in table
     """
     
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.fm import Q_to_df
     
-    return int(query_to_df(conParam, (
+    return int(Q_to_df(conParam, (
         "SELECT COUNT(*) AS row_count FROM ("
             "SELECT ST_GeometryType((ST_Dump({})).geom) AS cnt_geom "
             "FROM {} GROUP BY ST_GeometryType((ST_Dump({})).geom)"

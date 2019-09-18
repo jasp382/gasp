@@ -75,9 +75,11 @@ def new_view(sqliteDb, newView, q):
     return newView
 
 
-def rename_tbl(conParam, table, newName):
+def rename_tbl(conParam, tblNames):
     """
     Rename PGSQL Table
+    
+    tblNames = {old_name: new_name, ...}
     """
     
     from gasp3.sql.c import psqlcon
@@ -86,16 +88,19 @@ def rename_tbl(conParam, table, newName):
     
     cursor = con.cursor()
     
-    cursor.execute(
-        "ALTER TABLE {} RENAME TO {}".format(table, newName)
-    )
+    new_names =[]
+    for k in tblNames:
+        cursor.execute(
+            "ALTER TABLE {} RENAME TO {}".format(k, tblNames[k])
+        )
+        new_names.append(tblNames[k])
     
     con.commit()
     
     cursor.close()
     con.close()
     
-    return newName
+    return new_names[0] if len(new_names) == 1 else new_names
 
 
 """
@@ -179,41 +184,61 @@ def drop_where_cols_are_same(conParam, table, colA, colB):
 """
 Restore
 """
-def dump_table(conParam, table, outsql):
+def dump_tbls(conParam, tables, outsql, startWith=None):
     """
     Dump one table into a SQL File
     """
     
-    from gasp3 import exec_cmd
+    from gasp3 import exec_cmd, goToList
+    
+    tbls = goToList(tables)
+    
+    if startWith:
+        from gasp3.sql.i import lst_tbl
+        
+        db_tbls = lst_tbl(conParam, api='psql')
+        
+        dtbls = []
+        for t in db_tbls:
+            for b in tbls:
+                if t.startswith(b):
+                    dtbls.append(t)
+        
+        tbls = dtbls
+    
+    print(tbls)
     
     outcmd = exec_cmd((
         "pg_dump -Fc -U {user} -h {host} -p {port} "
-        "-w -t {tbl} {db} > {out}"
+        "-w {tbl} {db} > {out}"
     ).format(
         user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], tbl=table,
-        db=conParam["DATABASE"], out=outsql
+        port=conParam["PORT"], db=conParam["DATABASE"], out=outsql,
+        tbl=" ".join(["-t {}".format(t) for t in tbls])
     ))
     
     return outsql
 
-def restore_table(conParam, sql, tablename):
+
+def restore_tbls(conParam, sql, tablenames):
     """
     Restore one table from a sql Script
     """
     
-    from gasp3 import exec_cmd
+    from gasp3 import exec_cmd, goToList
+    
+    tbls = goToList(tablenames)
     
     outcmd = exec_cmd((
         "pg_restore -U {user} -h {host} -p {port} "
-        "-w -t {tbl} -d {db} {sqls}"
+        "-w {tbl} -d {db} {sqls}"
     ).format(
         user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], tbl=tablename,
-        db=conParam["DATABASE"], sqls=sql
+        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql,
+        tbl=" ".join(["-t {}".format(t) for t in tbls])
     ))
     
-    return tablename
+    return tablenames
 
 """
 Write new tables or edit tables in Database
@@ -310,6 +335,7 @@ def exec_write_q(conDB, queries, api='psql'):
     
     else:
         raise ValueError('API {} is not available'.format(api))
+
 
 def update_table(con_pgsql, pg_table, dic_new_values, dic_ref_values=None, 
                  logic_operator='OR'):
@@ -469,12 +495,21 @@ def replace_null_with_other_col_value(con_pgsql, pgtable, nullFld, replaceFld):
     cursor.close()
     con.close()
 
-def distinct_to_table(lnk, pgtable, columns, outable):
+
+def distinct_to_table(lnk, pgtable, outable, cols=None):
     """
     Distinct values of one column to a new table
     """
     
+    from gasp3       import goToList
     from gasp3.sql.c import psqlcon
+    
+    cols = goToList(cols)
+    
+    if not cols:
+        from gasp3.sql.i import cols_name
+        
+        cols = cols_name(lnk, pgtable, api='psql')
     
     con = psqlcon(lnk)
     
@@ -482,7 +517,7 @@ def distinct_to_table(lnk, pgtable, columns, outable):
     
     cs.execute(
         "CREATE TABLE {nt} AS SELECT {cls} FROM {t} GROUP BY {cls}".format(
-            nt=outable, cls=', '.join(goToList(columns)),
+            nt=outable, cls=', '.join(cols),
             t=pgtable
         )
     )

@@ -3,7 +3,8 @@ Data Extraction tools
 """
 
 
-def sel_by_attr(inShp, sql, outShp, geomType="area", lyrN=1, api_gis='ogr'):
+def sel_by_attr(inShp, sql, outShp, geomType="area", lyrN=1, api_gis='ogr',
+                oEPSG=None, iEPSG=None):
     """
     Select vectorial file and export to new file
     
@@ -21,8 +22,14 @@ def sel_by_attr(inShp, sql, outShp, geomType="area", lyrN=1, api_gis='ogr'):
     
         out_driver = drv_name(outShp)
     
-        cmd = 'ogr2ogr -f "{drv}" {o} {i} -dialect sqlite -sql "{s}"'.format(
-            o=outShp, i=inShp, s=sql, drv=out_driver
+        cmd = (
+            'ogr2ogr -f "{drv}" {o} {i} -dialect sqlite -sql "{s}"'
+            '{srs}'
+        ).format(
+            o=outShp, i=inShp, s=sql, drv=out_driver,
+            srs=" -s_srs EPSG:{} -t_srs EPSG:{}".format(
+                str(iEPSG), str(oEPSG)
+            ) if oEPSG and iEPSG else ""
         )
     
         # Execute command
@@ -66,11 +73,10 @@ def split_shp_by_attr(inShp, attr, outDir, _format='.shp'):
     Create a new shapefile for each value in a column
     """
     
-    import os
-    from gasp3.dt.fm      import tbl_to_obj
-    from gasp3.pyt.oss    import get_filename
-    from gasp3.pyt.df.fld import col_distinct
-    from gasp3.dt.to.shp  import df_to_shp
+    import os; from gasp3.fm import tbl_to_obj
+    from gasp3.pyt.oss       import get_filename
+    from gasp3.pyt.df.fld    import col_distinct
+    from gasp3.gt.to.shp     import df_to_shp
     
     # Sanitize format
     FFF = _format if _format[0] == '.' else '.' + _format
@@ -246,7 +252,7 @@ def split_whr_attrIsTrue(osm_fc, outputfolder, fields=None, sel_fields=None,
     # List table fields
     tbl_fields = fields if fields else lst_fld(osm_fc)
 
-    if type(tbl_fields) == str or type(tbl_fields) == unicode:
+    if type(tbl_fields) == str:
         tbl_fields = [tbl_fields]
 
     if sel_fields:

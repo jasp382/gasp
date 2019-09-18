@@ -12,7 +12,7 @@ def kernel_density(pnt_feat, popField, radius, template, outRst):
     """
     
     import os
-    from gasp3.dt.to.rst   import saga_to_tif
+    from gasp3.gt.to.rst   import saga_to_tif
     from gasp3.gt.prop.rst import rst_ext, get_cellsize
     from gasp3.pyt.oss     import get_filename
     

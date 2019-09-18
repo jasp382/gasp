@@ -128,7 +128,7 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
         gsetup.init(grsbase, workspace, "grs_loc", 'PERMANENT')
         
         # Add data to GRASS GIS
-        from gasp3.dt.to.shp import shp_to_grs
+        from gasp3.gt.to.shp import shp_to_grs
         
         cellsShp   = [shp_to_grs(
             shp, get_filename(shp), asCMD=True
@@ -150,7 +150,7 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
         ) for i in range(len(cellsShp))]
         
         # Export Data
-        from gasp3.dt.to.shp import grs_to_shp
+        from gasp3.gt.to.shp import grs_to_shp
         
         _UNION_SHP = [grs_to_shp(
             shp, os.path.join(workspace, shp + ".shp"), "area"
@@ -164,8 +164,8 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
             gsetup.init(grsbase, work, "proc_" + str(proc), 'PERMANENT')
             
             # Import GRASS GIS modules
-            from gasp3.dt.to.shp import shp_to_grs
-            from gasp3.dt.to.shp import grs_to_shp
+            from gasp3.gt.to.shp import shp_to_grs
+            from gasp3.gt.to.shp import grs_to_shp
             
             # Add data to GRASS
             a = shp_to_grs(la, get_filename(la), asCMD=True)
@@ -221,8 +221,8 @@ def intersection(inShp, intersectShp, outShp, api='geopandas'):
     if api == 'geopandas':
         import geopandas
     
-        from gasp3.dt.fm     import tbl_to_obj
-        from gasp3.dt.to.shp import df_to_shp
+        from gasp3.fm        import tbl_to_obj
+        from gasp3.gt.to.shp import df_to_shp
     
         dfShp       = tbl_to_obj(inShp)
         dfIntersect = tbl_to_obj(intersectShp)

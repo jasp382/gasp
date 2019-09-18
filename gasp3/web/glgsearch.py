@@ -12,7 +12,7 @@ def glg_search(keyword, __site=None, NPAGES=1):
     
     Q = keyword if not __site else "site:{} {}".format(__site, keyword)
     
-    results = google.search(unicode(Q, 'utf-8'), NPAGES)
+    results = google.search(Q, NPAGES)
     
     return pandas.DataFrame([[
         i.name, i.link, i.description

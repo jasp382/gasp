@@ -45,9 +45,9 @@ def add_fields_to_tables(inFolder, fields, tbl_format='.shp'):
     Add fields to several tables in a folder
     """
     
-    from gasp3.pyt.oss import list_files
+    from gasp3.pyt.oss import lst_ff
     
-    tables = list_files(inFolder, file_format=tbl_format)
+    tables = lst_ff(inFolder, file_format=tbl_format)
     
     for table in tables:
         add_fields(table, fields)

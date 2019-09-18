@@ -10,9 +10,9 @@ def path_from_coords_to_shp(latOrigin, lngOrigin, latDest, lngDest, outshp,
     """
     
     import pandas
-    from gasp.web.orouteserv import directions
-    from gasp.to.geom        import regulardf_to_geodf, json_obj_to_geodf
-    from gasp.to.shp         import df_to_shp
+    from gasp3.adv.mob.orouteserv import directions
+    from gasp3.gt.to.geom         import df_to_geodf, json_obj_to_geodf
+    from gasp3.gt.to.shp          import df_to_shp
     
     path = directions(
         latOrigin, lngOrigin, latDest, lngDest,
@@ -30,11 +30,11 @@ def path_from_coords_to_shp(latOrigin, lngOrigin, latDest, lngDest, outshp,
         geodf['summary'].apply(pandas.Series)
     ], axis=1)
     
-    geodf = regulardf_to_geodf(geodf, "geometry", 4326)
+    geodf = df_to_geodf(geodf, "geometry", 4326)
     
     if outepsg != 4326:
-        from gasp.mng.prj import project
-        geodf = project(geodf, None, outepsg, gisApi='pandas')
+        from gasp3.gt.prj import proj
+        geodf = proj(geodf, None, outepsg, gisApi='pandas')
     
     return df_to_shp(geodf, outshp)
 
@@ -45,19 +45,18 @@ def servarea_from_points(pntShp, inEPSG, range, outShp,
     Calculate isochrones for all points in a Point Feature Class
     """
     
-    import time
-    from shapely.geometry    import shape
-    from threading           import Thread
-    from gasp.web.orouteserv import get_keys, isochrones
-    from gasp.fm             import tbl_to_obj
-    from gasp.mng.split      import split_df_inN
-    from gasp.fm.geom        import pointxy_to_cols
-    from gasp.mng.gen        import merge_df
-    from gasp.prop.feat      import get_gtype
-    from gasp.mng.prj        import project
-    from gasp.to.geom        import dict_to_geodf
-    from gasp.to.obj         import df_to_dict
-    from gasp.to.shp         import df_to_shp
+    import time; from threading   import Thread
+    from shapely.geometry         import shape
+    from gasp3.adv.mob.orouteserv import get_keys, isochrones
+    from gasp3.fm                 import tbl_to_obj
+    from gasp3.pyt.df.split       import split_df_inN
+    from gasp3.pyt.df.mng         import merge_df
+    from gasp3.gt.prop.feat       import get_gtype
+    from gasp3.gt.prj             import proj
+    from gasp3.pyt.df.to          import df_to_dict
+    from gasp3.gt.to.shp          import df_to_shp
+    from gasp3.pyt.df.fld         import pointxy_to_cols
+    from gasp.to.geom             import dict_to_geodf
     
     # SHP TO GEODATAFRAME
     pntDf = tbl_to_obj(pntShp)
@@ -70,7 +69,7 @@ def servarea_from_points(pntShp, inEPSG, range, outShp,
     
     # Reproject geodf if necessary
     if inEPSG != 4326:
-        pntDf = project(pntDf, None, 4326, gisApi='pandas')
+        pntDf = proj(pntDf, None, 4326, gisApi='pandas')
     
     pntDf["old_fid"] = pntDf.index
     
@@ -128,7 +127,7 @@ def servarea_from_points(pntShp, inEPSG, range, outShp,
     pntDf = merge_df(results, ignIndex=False)
     
     if inEPSG != 4326:
-        pntDf = project(pntDf, None, inEPSG, gisApi='pandas')
+        pntDf = proj(pntDf, None, inEPSG, gisApi='pandas')
     
     return df_to_shp(pntDf, outShp)
 
@@ -139,17 +138,15 @@ def cost_od(shpOrigins, shpDestinations, epsgOrigins, epsgDestinations,
     Matrix od Service Implementation
     """
     
-    import pandas
-    from threading              import Thread
-    from gasp.fm.api.orouteserv import get_keys
-    from gasp.fm.api.orouteserv import matrix_od
-    from gasp.fm                import shp_to_df
-    from gasp.mng.split         import split_df_inN
-    from gasp.fm.geom           import pointxy_to_cols
-    from gasp.mng.prj           import project
-    from gasp.mng.gen           import merge_df
-    from gasp.prop.feat         import get_gtype
-    from gasp.to                import obj_to_tbl
+    import pandas;from threading  import Thread
+    from gasp3.adv.mob.orouteserv import get_keys, matrix_od
+    from gasp3.fm                 import tbl_to_obj
+    from gasp3.pyt.df.split       import split_df_inN
+    from gasp3.pyt.df.fld         import pointxy_to_cols
+    from gasp3.gt.prj             import proj
+    from gasp3.pyt.df.mng         import merge_df
+    from gasp3.gt.prop.feat       import get_gtype
+    from gasp3.to                 import obj_to_tbl
     
     origensDf = tbl_to_obj(     shpOrigins)
     destinoDf = tbl_to_obj(shpDestinations)
@@ -167,10 +164,10 @@ def cost_od(shpOrigins, shpDestinations, epsgOrigins, epsgDestinations,
     
     # Re-project if needed
     if epsgOrigins != 4326:
-        origensDf = project(origensDf, None, 4326, gisApi='pandas')
+        origensDf = proj(origensDf, None, 4326, gisApi='pandas')
     
     if epsgDestinations != 4326:
-        destinoDf = project(destinoDf, None, 4326, gisApi='pandas')
+        destinoDf = proj(destinoDf, None, 4326, gisApi='pandas')
     
     origensDf = pointxy_to_cols(
         origensDf, geomCol="geometry",

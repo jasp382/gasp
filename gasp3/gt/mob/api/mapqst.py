@@ -8,10 +8,10 @@ def rev_geocode_df(df, epsg, key=None, isOpen=None):
     Add Locations after Reverse Geocoding to Pandas Dataframe
     """
     
-    from gasp.web.mapqst import rev_geocode
-    from gasp.mng.prj    import project
+    from gasp3.adv.mob.mapqst import rev_geocode
+    from gasp3.gt.prj         import proj
     
-    __df = df.copy() if epsg == 4326 else project(df, None, 4326, gisApi='pandas')
+    __df = df.copy() if epsg == 4326 else proj(df, None, 4326, gisApi='pandas')
     
     __df["latitude"]  = __df.geometry.y.astype(float)
     __df["longitude"] = __df.geometry.x.astype(float) 

@@ -8,12 +8,14 @@ Dominating Geoserver with Python and requests
 def backup(backup_file, conf={
     'USER':'admin', 'PASSWORD': 'geoserver',
     'HOST':'localhost', 'PORT': '8080'
-    }, protocol='http'):
+    }):
     """
     """
     
     import requests
     import json
+    
+    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     url = '{pro}://{host}:{port}/geoserver/rest/br/backup/'.format(
         host=conf['HOST'], port=conf['PORT'], pro=protocol

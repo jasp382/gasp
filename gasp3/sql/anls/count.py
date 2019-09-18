@@ -2,9 +2,9 @@
 Execute queries to extract data from a PGSQL Database
 """
 
-import os;           import pandas
-from gasp3.dt.fm.sql import query_to_df
-from gasp3.dt.to     import obj_to_tbl
+import os;        import pandas
+from gasp3.sql.fm import Q_to_df
+from gasp3.to     import obj_to_tbl
 
 
 def count_by_periods_with_certain_duration(conParam, PERIOD_INTERVAL, pgtable,
@@ -39,7 +39,7 @@ def count_by_periods_with_certain_duration(conParam, PERIOD_INTERVAL, pgtable,
             )
         )
         
-        count = query_to_df(conParam, QUERY, db_api='psql')
+        count = Q_to_df(conParam, QUERY, db_api='psql')
         
         count.rename(index={0 : "{}-{}".format(
             _int_[0][:5], _int_[1][:5]
@@ -91,7 +91,7 @@ def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
             whr = "" if not filterWhere else " AND ({}) ".format(filterWhere)
         )
         
-        count = query_to_df(CON_PSQL, Q, db_api='psql')
+        count = Q_to_df(CON_PSQL, Q, db_api='psql')
         
         counting.append(count)
     
@@ -174,7 +174,7 @@ def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
                     ])
                 )
         
-        countTbl = query_to_df(conParam, QUERY, db_api='psql')
+        countTbl = Q_to_df(conParam, QUERY, db_api='psql')
         
         countTbl[HOUR_FIELD] = INTERVAL_STR
         
@@ -250,10 +250,10 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     TODO: See if PGSQL crosstab works to solve this problem
     """
     
-    from gasp3.dt.fm        import tbl_to_obj
-    from gasp3.dt.fm.sql    import query_to_df
-    from gasp3.dt.to.obj    import series_to_list
-    from gasp3.dt.to.shp    import df_to_shp
+    from gasp3.fm           import tbl_to_obj
+    from gasp3.sql.fm       import Q_to_df
+    from gasp3.pyt.df.to    import series_to_list
+    from gasp3.gt.to.shp    import df_to_shp
     from gasp3.pyt.df.joins import combine_dfs
     from gasp3.sql.mng.tbl  import q_to_ntbl, del_tables
     
@@ -269,7 +269,7 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     selData = q_to_ntbl(conPSQL, "seldata", q, api='psql')
     
     # Get columns of the output table
-    pivotCols = query_to_df(conPSQL,
+    pivotCols = Q_to_df(conPSQL,
         "SELECT {piv} FROM {tb} GROUP BY {piv}".format(
             tb=selData, piv=PG_PIVOT_COL
         ), db_api='psql'
@@ -277,7 +277,7 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     pivotCols = series_to_list(pivotCols[PG_PIVOT_COL])
     
     # Get data for each new column - new column data in one dataframe
-    pre_pivot = [query_to_df(conPSQL,
+    pre_pivot = [Q_to_df(conPSQL,
         "SELECT {entity}, n{entity} FROM {t} WHERE {c}='{pivcol}'".format(
             entity=PG_ENTITY, t=selData, c=PG_PIVOT_COL, pivcol=col
         ), db_api='psql'

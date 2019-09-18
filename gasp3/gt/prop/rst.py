@@ -45,7 +45,7 @@ def rst_shape(rst, gisApi='gdal'):
     shapes = {}
     
     if gisApi == 'gdal':
-        from gasp3.dt.fm.rst import rst_to_array
+        from gasp3.gt.fm.rst import rst_to_array
         
         for r in rst:
             array = rst_to_array(r)
@@ -106,9 +106,9 @@ def get_cellsize(rst, xy=False, bnd=None, gisApi='gdal'):
                     return [xs, xy]
             
             elif os.path.isdir(rst):
-                from gasp3.pyt.oss import list_files
+                from gasp3.pyt.oss import lst_ff
                 
-                rsts = list_files(rst, file_format=gdal_drivers().keys())
+                rsts = lst_ff(rst, file_format=gdal_drivers().keys())
                 
                 return __loop(rsts, xy)
             
@@ -170,7 +170,7 @@ def count_cells(raster, countNodata=None):
     Return number of cells in a Raster Dataset
     """
     
-    from gasp3.dt.fm.rst import rst_to_array
+    from gasp3.gt.fm.rst import rst_to_array
     from gasp3.pyt.num   import count_where
     
     a = rst_to_array(raster)
@@ -220,7 +220,7 @@ def rst_distinct(rst):
     """
     
     import numpy
-    from gasp3.dt.fm.rst import rst_to_array
+    from gasp3.gt.fm.rst import rst_to_array
     
     v = numpy.unique(rst_to_array(rst, flatten=True, with_nodata=False))
     
@@ -319,7 +319,7 @@ def frequencies(r):
     
     import numpy
     from osgeo             import gdal
-    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.fm.rst   import rst_to_array
     from gasp3.gt.prop.rst import get_nodata
     from gasp3.pyt.num     import count_where
     
@@ -345,7 +345,7 @@ def get_percentage_value(rst, value, includeNodata=None):
     import numpy
     from osgeo             import gdal
     from gasp3.pyt.num     import count_where
-    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.fm.rst   import rst_to_array
     from gasp3.gt.prop.rst import get_nodata
     
     array = rst_to_array(rst)
@@ -374,7 +374,7 @@ def percentage_nodata(rst):
     
     import numpy
     from gasp3.pyt.num     import count_where
-    from gasp3.dt.fm.rst   import rst_to_array
+    from gasp3.gt.fm.rst   import rst_to_array
     from gasp3.gt.prop.rst import get_nodata
     
     array = rst_to_array(rst)
@@ -401,7 +401,7 @@ def adjust_ext_to_snap(outExt, snapRst):
     
     from gasp3.gt.prop.ff  import check_isShp, check_isRaster
     from gasp3.gt.prop.rst import rst_ext, get_cellsize
-    from gasp3.dt.to.geom  import create_point, create_polygon
+    from gasp3.gt.to.geom  import new_pnt, create_polygon
     
     # Check if outExt is a raster or not
     isRst = check_isRaster(outExt)
@@ -440,20 +440,20 @@ def adjust_ext_to_snap(outExt, snapRst):
     # This will be used as pseudo origin
     
     snapRstPnt = [
-        create_point(snapRstExt[0], snapRstExt[3]),
-        create_point(snapRstExt[1], snapRstExt[3]),
-        create_point(snapRstExt[1], snapRstExt[2]),
-        create_point(snapRstExt[0], snapRstExt[2]),
-        create_point(snapRstExt[0], snapRstExt[3]),
+        new_pnt(snapRstExt[0], snapRstExt[3]),
+        new_pnt(snapRstExt[1], snapRstExt[3]),
+        new_pnt(snapRstExt[1], snapRstExt[2]),
+        new_pnt(snapRstExt[0], snapRstExt[2]),
+        new_pnt(snapRstExt[0], snapRstExt[3]),
     ]
     
     poly_snap_rst = create_polygon(snapRstPnt)
     
     outExtPnt = {
-        'top_left'     : create_point(shpAExt[0], shpAExt[3]),
-        'top_right'    : create_point(shpAExt[1], shpAExt[3]),
-        'bottom_right' : create_point(shpAExt[1], shpAExt[2]),
-        'bottom_left'  : create_point(shpAExt[0], shpAExt[2])
+        'top_left'     : new_pnt(shpAExt[0], shpAExt[3]),
+        'top_right'    : new_pnt(shpAExt[1], shpAExt[3]),
+        'bottom_right' : new_pnt(shpAExt[1], shpAExt[2]),
+        'bottom_left'  : new_pnt(shpAExt[0], shpAExt[2])
     }
     
     out_rst_pseudo = {}
@@ -583,7 +583,7 @@ def sanitize_report(report):
 
 
 def san_report_combine(report):
-    from gasp3.dt.fm      import tbl_to_obj
+    from gasp3.fm         import tbl_to_obj
     from gasp3.pyt.df.fld import splitcol_to_newcols
     
     repdata = tbl_to_obj(report, _delimiter="z")
@@ -615,8 +615,8 @@ def get_rst_report_data(rst, UNITS=None):
     """
     
     import os
-    from gasp3        import random_str
-    from gasp3.gt.oss import del_file
+    from gasp3.pyt.char import random_str
+    from gasp3.gt.oss   import del_file
     
     REPORT_PATH = raster_report(rst, os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

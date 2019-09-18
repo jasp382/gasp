@@ -11,9 +11,9 @@ def xy_to_buffer(x, y, radius):
     XY Coordinates to Buffer Geometry
     """
     
-    from gasp3.dt.to.geom import create_point
+    from gasp3.gt.to.geom import new_pnt
     
-    pnt = create_point(x, y, api='ogr')
+    pnt = new_pnt(x, y)
     
     return pnt.Buffer(int(round(float(radius), 0)))
 
@@ -36,7 +36,7 @@ def geodf_buffer_to_shp(geoDf, dist, outfile, colgeom='geometry'):
     the result to a new shp
     """
     
-    from gasp3.dt.to.shp import df_to_shp
+    from gasp3.gt.to.shp import df_to_shp
     
     __geoDf = geoDf.copy()
     __geoDf["buffer_geom"] = __geoDf[colgeom].buffer(dist, resolution=16)
@@ -58,7 +58,7 @@ def ogr_buffer(geom, radius, out_file, srs=None):
     """
     
     from osgeo             import ogr
-    from gasp3.gt.mng.prj  import ogr_def_proj
+    from gasp3.gt.prj      import ogr_def_proj
     from gasp3.gt.prop.ff  import drv_name
     from gasp3.gt.prop.prj import get_sref_from_epsg
     
@@ -98,9 +98,9 @@ def ogr_buffer(geom, radius, out_file, srs=None):
                 'X, Y'
             ))
         
-        from gasp3.dt.to.geom import create_point
+        from gasp3.gt.to.geom import new_pnt
         feat = ogr.Feature(featDefn)
-        g = create_point(geom[X], geom[Y], api='ogr')
+        g = new_pnt(geom[X], geom[Y])
         feat.SetGeometry(draw_buffer(g, radius))
         
         buffer_lyr.CreateFeature(feat)
@@ -112,7 +112,7 @@ def ogr_buffer(geom, radius, out_file, srs=None):
         if srs:
             ogr_def_proj(out_file, epsg=srs)
     
-    elif type(geom) == str or type(geom) == unicode:
+    elif type(geom) == str:
         # Check if the input is a file
         if os.path.exists(geom):
             inShp = ogr.GetDriverByName(drv_name(geom)).Open(geom, 0)
@@ -158,7 +158,7 @@ def _buffer(inShp, radius, outShp,
     """
     
     if api == 'geopandas':
-        from gasp3.dt.fm import tbl_to_obj
+        from gasp3.fm import tbl_to_obj
     
         geoDf_ = tbl_to_obj(inShp)
     
@@ -172,8 +172,7 @@ def _buffer(inShp, radius, outShp,
         
         from gasp3 import exec_cmd
         
-        distIsField = True if type(radius) == str or type(radius) == unicode \
-            else None
+        distIsField = True if type(radius) == str else None
         
         c = (
             "saga_cmd shapes_tools 18 -SHAPES {_in} "
@@ -232,9 +231,9 @@ def buffer_shpFolder(inFolder, outFolder, dist_or_field, fc_format='.shp',
     Create buffer polygons for all shp in one folder
     """
     
-    import os; from gasp3.pyt.oss import list_files
+    import os; from gasp3.pyt.oss import lst_ff
     
-    lst_fc = list_files(inFolder, file_format=fc_format)
+    lst_fc = lst_ff(inFolder, file_format=fc_format)
     
     for fc in lst_fc:
         _buffer(
@@ -355,8 +354,8 @@ def df_buffer_extent(inShp, inEpsg, meterTolerance, outShp):
     
     from shapely.geometry import Polygon
     from geopandas        import GeoDataFrame
-    from gasp3.dt.fm      import tbl_to_obj
-    from gasp3.dt.to.shp  import df_to_shp
+    from gasp3.fm         import tbl_to_obj
+    from gasp3.gt.to.shp  import df_to_shp
     
     inDf = tbl_to_obj(inShp)
     

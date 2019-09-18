@@ -4,6 +4,7 @@ Apply Indexes to highligh LULC types in Satellite Imagery
 Use GDAL to apply index
 """
 
+
 def ndwi2(green, nir, outRst, toReflectance=10000):
     """
     Apply Normalized Difference Water Index
@@ -28,9 +29,9 @@ def ndvi(nir, red, outRst):
     EXPRESSION: (nir - red) / (nir + red)
     """
     
-    import numpy as np
-    from osgeo import gdal, gdal_array
-    from gasp3.dt.to.rst import array_to_raster
+    import numpy         as np
+    from osgeo           import gdal, gdal_array
+    from gasp3.gt.to.rst import obj_to_rst
     
     # Open Images
     src_nir = gdal.Open(nir, gdal.GA_ReadOnly)
@@ -53,5 +54,39 @@ def ndvi(nir, red, outRst):
     np.place(ndvi, num_red==redNdVal, ndNdvi)
     
     # Export Result
-    return array_to_raster(ndvi, outRst, nir, noData=ndNdvi)
+    return obj_to_rst(ndvi, outRst, nir, noData=ndNdvi)
 
+
+def nbr(nir, swir, outrst):
+    """
+    Normalized Burn Ratio
+    
+    EXPRESSION Sentinel-2A: (9-12) / (9+12)
+    """
+    
+    import numpy         as np
+    from osgeo           import gdal, gdal_array
+    from gasp3.gt.to.rst import obj_to_rst
+    
+    # Open Images
+    srcNir  = gdal.Open(nir, gdal.GA_ReadOnly)
+    srcSwir = gdal.Open(swir, gdal.GA_ReadOnly)
+    
+    # To Array
+    numNir  = srcNir.GetRasterBand(1).ReadAsArray().astype(float)
+    numSwir = srcSwir.GetRasterBand(1).ReadAsArray().astype(float)
+    
+    # Do Calculation
+    nbr = (numNir - numSwir) / (numNir + numSwir)
+    
+    # Place NoData Value
+    nirNdVal  = srcNir.GetRasterBand(1).GetNoDataValue()
+    swirNdVal = srcSwir.GetRasterBand(1).GetNoDataValue()
+    
+    nd = np.amin(nbr) - 1
+    
+    np.place(nbr, numNir == nirNdVal, nd)
+    np.place(nbr, numSwir == swirNdVal, nd)
+    
+    # Export Result
+    return obj_to_rst(nbr, outrst, nir, noData=nd)

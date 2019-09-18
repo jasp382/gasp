@@ -96,14 +96,14 @@ def cost_surface(dem, lulc, cls_lulc, prod_lulc, roads, kph, barr,
     gsetup.init(grass_base, workspace, location, 'PERMANENT')
     
     # Import GRASS GIS Modules
-    from gasp3.dt.to.shp         import grs_to_shp, shp_to_grs
+    from gasp3.gt.to.shp         import grs_to_shp, shp_to_grs
     from gasp3.gt.spnlst.surf    import slope
     from gasp3.gt.mng.rst.rcls   import rcls_rst, interval_rules
     from gasp3.gt.mng.rst.rcls   import category_rules, set_null
     from gasp3.gt.mng.fld.grsfld import add_field
     from gasp3.gt.mng.grstbl     import update_table
     from gasp3.gt.anls.ovlay     import union
-    from gasp3.dt.to.rst         import rst_to_grs, grs_to_rst
+    from gasp3.gt.to.rst         import rst_to_grs, grs_to_rst
     from gasp3.gt.spnlst.local   import combine
     from gasp3.gt.spnlst.alg     import rstcalc
     from gasp3.gt.prop.rst       import raster_report
@@ -180,8 +180,8 @@ def acumulated_cost(cst_surface, dest_pnt, cst_dist):
     
     from gasp3.gt.spnlst.alg import rstcalc
     from gasp3.gt.spnlst.dst import rcost
-    from gasp3.dt.to.rst     import rst_to_grs, grs_to_rst
-    from gasp3.dt.to.shp     import shp_to_grs
+    from gasp3.gt.to.rst     import rst_to_grs, grs_to_rst
+    from gasp3.gt.to.shp     import shp_to_grs
     
     # Add Cost Surface to GRASS GIS
     rst_to_grs(cst_surface, 'cst_surf')
@@ -213,7 +213,7 @@ def cstDistance_with_motorway(
     from gasp3.gt.spnlst.local import rseries
     from gasp3.gt.spnlst.alg import rstcalc
     from gasp3.gt.spnlst.dst import rcost
-    from gasp3.dt.to.rst import shp_to_rst, rst_to_grs
+    from gasp3.gt.to.rst import shp_to_rst, rst_to_grs
     from gasp3.gt.mng.sample import rst_val_to_points
     from pysage.tools_thru_api.gdal.ogr import OGR_CreateNewShape
     

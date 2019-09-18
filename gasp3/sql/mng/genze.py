@@ -32,9 +32,9 @@ def st_dissolve(db, table, geomColumn, outTable, whrClause=None,
             sel_by_attr(db, sql, outTable, api_gis='ogr')
         
         elif api == 'psql':
-            from gasp3.dt.to.shp import psql_to_shp
+            from gasp3.gt.to.shp import dbtbl_to_shp
             
-            psql_to_shp(
+            dbtbl_to_shp(
                 db, table, outTable, api='pgsql2shp',
                 geom_col=geomColumn, tableIsQuery=True
             )

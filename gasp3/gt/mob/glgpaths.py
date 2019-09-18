@@ -7,19 +7,19 @@ def assign_cost_to_line(inLines, outLines, epsg):
     Assign Movement Cost to Line
     """
     
-    import time;             import pandas 
-    from geopandas           import GeoDataFrame
-    from gasp3.dt.fm         import tbl_to_obj
-    from gasp3.gt.mng.prj    import project
-    from gasp3.dt.glg.direct import pnt_to_pnt_duration
-    from gasp3.dt.to.shp     import df_to_shp
+    import time;              import pandas 
+    from geopandas            import GeoDataFrame
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.gt.prj         import proj
+    from gasp3.adv.glg.direct import pnt_to_pnt_duration
+    from gasp3.gt.to.shp      import df_to_shp
     
     # Data to GeoDataFrame
     linesDf = tbl_to_obj(inLines)
     
     # Re-Project input data
     if epsg != 4326:
-        linesDf = project(linesDf, None, 4326, gisApi='pandas')
+        linesDf = proj(linesDf, None, 4326, gisApi='pandas')
     
     def get_points(row):
         row["points"] = [pnt for pnt in row["geometry"].coords]
@@ -55,7 +55,7 @@ def assign_cost_to_line(inLines, outLines, epsg):
     )
     
     if epsg != 4326:
-        linesDff = project(linesDff, None, epsg, gisApi='pandas')
+        linesDff = proj(linesDff, None, epsg, gisApi='pandas')
     
     linesDff.drop("points", axis=1, inplace=True)
     
@@ -78,17 +78,17 @@ def dist_onedest_network(pntShp, pntRouteId, networkShp, netRouteId,
     associado a cada ponto deve constar na tabela dos pontos.
     """
     
-    import pandas;           import time
-    from geopandas           import GeoDataFrame
-    from gasp3.dt.fm         import tbl_to_obj
-    from gasp3.dt.glg.direct import pnt_to_pnt_duration
-    from gasp3.dt.to.geom    import df_to_geodf, pnt_dfwxy_to_geodf
-    from gasp3.pyt.df.agg    import df_groupBy
-    from gasp3.gt.mng.prj    import project
-    from gasp3.pyt.df.fld    import geom_endpoints_to_cols, pointxy_to_cols
-    from gasp3.pyt.df.fld    import distinct_of_distinct
-    from gasp3.dt.to.shp     import df_to_shp
-    from gasp3.dt.to.obj     import df_to_dict, dict_to_df
+    import pandas;            import time
+    from geopandas            import GeoDataFrame
+    from gasp3.fm             import tbl_to_obj
+    from gasp3.adv.glg.direct import pnt_to_pnt_duration
+    from gasp3.gt.to.geom     import df_to_geodf, pnt_dfwxy_to_geodf
+    from gasp3.pyt.df.agg     import df_groupBy
+    from gasp3.gt.prj         import proj
+    from gasp3.pyt.df.fld     import geom_endpoints_to_cols, pointxy_to_cols
+    from gasp3.pyt.df.fld     import distinct_of_distinct
+    from gasp3.gt.to.shp      import df_to_shp
+    from gasp3.pyt.df.to      import df_to_dict, dict_to_df
     
     netDataFrame = tbl_to_obj(networkShp)
     pntDataFrame = tbl_to_obj(pntShp)
@@ -99,8 +99,8 @@ def dist_onedest_network(pntShp, pntRouteId, networkShp, netRouteId,
     
     # To WGS
     if srs != 4326:
-        geoEntrances = project(geoEntrances, None, 4326, gisApi='pandas')
-        pntDataFrame = project(pntDataFrame, None, 4326, gisApi='pandas')
+        geoEntrances = proj(geoEntrances, None, 4326, gisApi='pandas')
+        pntDataFrame = proj(pntDataFrame, None, 4326, gisApi='pandas')
     
     # Get entrances by circuit
     routesEntrances = distinct_of_distinct(geoEntrances, netRouteId, netOrder)
@@ -178,7 +178,7 @@ def dist_onedest_network(pntShp, pntRouteId, networkShp, netRouteId,
     gd = df_to_geodf(pntRelStops_gp, "geometry_x", 4326)
     
     if srs != 4326:
-        gd = project(gd, None, srs, gisApi='pandas')
+        gd = proj(gd, None, srs, gisApi='pandas')
     
     df_to_shp(gd, output)
     

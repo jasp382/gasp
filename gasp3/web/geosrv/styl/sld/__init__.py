@@ -62,8 +62,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
     NOTE: This will work only for polygon/linear features
     """
 
-    import os
-    from gasp3.dt.to.Xml                 import write_xml_tree
+    import os; from gasp3.pyt.Xml        import write_xml_tree
     from gasp3.pyt.oss                   import get_fileformat
     from gasp3.web.geosrv.styl.sld.rules import get_categorical_rules
     from gasp3.web.geosrv.styl.sld.rules import get_quantitative_rules
@@ -83,7 +82,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
                 attr_colors = json.load(open(attr_colors, 'r'))
             
             elif ff == '.xlsx' or ff == '.xls':
-                from gasp3.dt.fm import tbl_to_obj
+                from gasp3.fm import tbl_to_obj
                 
                 attr_colors = tbl_to_obj(
                     attr_colors, sheet=0, useFirstColAsIndex=None, output='array'
@@ -197,8 +196,8 @@ def write_raster_sld(attrProp, outSld, dataType="CATEGORICAL"):
     * FLOATING;
     """
     
-    from gasp3.pyt.clr   import rgb_to_hex
-    from gasp3.dt.to.Xml import write_xml_tree
+    from gasp3.pyt.clr import rgb_to_hex
+    from gasp3.pyt.Xml import write_xml_tree
     
     # SLD Basic Structure
     sldRoot = (

@@ -51,7 +51,7 @@ def col_list_val_to_row(pndDf, colWithLists, geomCol=None, epsg=None):
     
     # Convert again to DataFrame
     if geomCol and epsg:
-        from gasp3.dt.to.geom import df_to_geodf
+        from gasp3.gt.to.geom import df_to_geodf
         
         return df_to_geodf(new_rows, geomCol, epsg)
     

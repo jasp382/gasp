@@ -8,11 +8,11 @@ def merge_xls_in_folder(tbl_folder, out_table):
     """
     
     import pandas
-    from gasp3.pyt.oss import list_files
-    from gasp3.dt.fm   import tbl_to_obj
-    from gasp3.dt.to   import obj_to_tbl
+    from gasp3.pyt.oss import lst_ff
+    from gasp3.fm      import tbl_to_obj
+    from gasp3.to      import obj_to_tbl
     
-    tables = list_files(tbl_folder, file_format=['.xls', '.xlsx'])
+    tables = lst_ff(tbl_folder, file_format=['.xls', '.xlsx'])
     
     dfs = [tbl_to_obj(table) for table in tables]
     
@@ -30,10 +30,10 @@ def sheets_into_file(xlsFolder, outXls, intSheets):
     """
     
     from gasp3               import goToList
-    from gasp3.pyt.oss       import list_files, get_filename
+    from gasp3.pyt.oss       import lst_ff, get_filename
     from gasp3.pyt.xls.sheet import copy_sheet_to_file
     
-    xls_s = list_files(xlsFolder, file_format=['.xls', '.xlsx'])
+    xls_s = lst_ff(xlsFolder, file_format=['.xls', '.xlsx'])
     
     for xlsPath in xls_s:
         copy_sheet_to_file(

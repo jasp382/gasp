@@ -26,15 +26,16 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     """
     
     import datetime
-    import os;             import pandas
-    from gasp3.dt.fm.sql import query_to_df
-    from gasp3.dt.to import db_to_tbl, df_to_db
-    from gasp3.dt.to.shp import shp_to_shp, psql_to_shp, rst_to_polyg
-    from gasp3.dt.to.sql import shp_to_psql
-    from gasp3.gt.prop.ff import check_isRaster
-    from gasp3.pyt.oss import get_filename
-    from gasp3.sql.mng.db import create_db
-    from gasp3.sql.mng.tbl import tbls_to_tbl, q_to_ntbl
+    import os;              import pandas
+    from gasp3.sql.fm       import Q_to_df
+    from gasp3.to           import db_to_tbl
+    from gasp3.sql.to       import df_to_db
+    from gasp3.gt.to.shp    import shp_to_shp, dbtbl_to_shp, rst_to_polyg
+    from gasp3.sql.to       import shp_to_psql
+    from gasp3.gt.prop.ff   import check_isRaster
+    from gasp3.pyt.oss      import get_filename
+    from gasp3.sql.mng.db   import create_db
+    from gasp3.sql.mng.tbl  import tbls_to_tbl, q_to_ntbl
     from gasp3.sql.mng.geom import fix_geom, check_geomtype_in_table
     from gasp3.sql.mng.geom import select_main_geom_type
     
@@ -64,8 +65,8 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
         
         gsetup.init(gbase, OUT_FOLDER, 'shpdif', 'PERMANENT')
         
-        from gasp3.dt.to.shp         import shp_to_grs, grs_to_shp
-        from gasp3.dt.to.rst         import rst_to_grs
+        from gasp3.gt.to.shp         import shp_to_grs, grs_to_shp
+        from gasp3.gt.to.rst         import rst_to_grs
         from gasp3.gt.mng.fld.grsfld import rename_col
         from gasp3.gt.mng.fld.ogrfld import rename_column
     
@@ -184,7 +185,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
                 conPARAM, corr_tbl, "corr2_{}".format(nt))
     
         # Export data again
-        newShp = psql_to_shp(
+        newShp = dbtbl_to_shp(
             conPARAM, corr_tbl,
             os.path.join(OUT_FOLDER, corr_tbl + '.shp'),
             api='pgsql2shp', geom_col='geom'
@@ -278,7 +279,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
         ), api='psql')
         
         # Produce confusion matrix for the pair in comparison
-        lulcCls = query_to_df(conPARAM, (
+        lulcCls = Q_to_df(conPARAM, (
             "SELECT fcol FROM ("
                 "SELECT CAST({map1_cls} AS text) AS fcol FROM {tbl} "
                 "GROUP BY {map1_cls} "
@@ -339,7 +340,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     )
     
     # Create table with % of agreement between each pair of maps
-    mapsNames = query_to_df(conPARAM, (
+    mapsNames = Q_to_df(conPARAM, (
         "SELECT lulc FROM ("
             "SELECT lulc_1 AS lulc FROM {tbl} GROUP BY lulc_1 "
             "UNION ALL "

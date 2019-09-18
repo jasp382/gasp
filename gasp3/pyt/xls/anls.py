@@ -182,8 +182,7 @@ def frequencies_by_place(xls, entities_sheet, entities_id, entities_place,
     data = {}
 
     cols_exclusion = cols_exclusion if type(cols_exclusion) == list else \
-        [cols_exclusion] if type(cols_exclusion) == str or  \
-        type(cols_exclusion) == unicode else 0
+        [cols_exclusion] if type(cols_exclusion) == str else 0
 
     for col in range(1, data_sheet.ncols):
         column_name = data_sheet.cell(0, col).value
@@ -197,9 +196,6 @@ def frequencies_by_place(xls, entities_sheet, entities_id, entities_place,
         if null or null == 0:
             if null in values:
                 values.remove(null)
-
-            if unicode(null) in values:
-                values.remove(unicode(null))
 
         # Count occourences of a value in that column
         val_count = count_values_column_if_entity_exists(
@@ -553,8 +549,7 @@ def frequencies_table(xls, data_sheet, output,
     data = {}
     registed_values = []
     values_filter = values_filter if type(values_filter) == list else \
-        [values_filter] if type(values_filter) == str or \
-        type(values_filter) == unicode else None
+        [values_filter] if type(values_filter) == str else None
 
     for col in range(1, attr_sheet.ncols):
         col_name = attr_sheet.cell(0, col).value

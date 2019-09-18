@@ -16,26 +16,26 @@ setup(
         # Main module
         'gasp3',
         # ******************************************************************** #
+        'gasp3.adv', 'gasp3.adv.dsn', 'gasp3.adv.dsn.fb', 'gasp3.adv.glg',
+        'gasp3.adv.meteo', 'gasp3.adv.mob',
+        'gasp3.adv.sat', 'gasp3.adv.txtcls',
+        # ******************************************************************** #
         'gasp3.alg',
         'gasp3.alg.hydro', 'gasp3.alg.lndsld', 
         'gasp3.alg.mob', 'gasp3.alg.osm2lulc', 'gasp3.alg.terrain',
         # ******************************************************************** #
         'gasp3.cons',
         # ******************************************************************** #
-        'gasp3.dt',
-        'gasp3.dt.dsn', 'gasp3.dt.dsn.fb',
-        'gasp3.dt.fm', 'gasp3.dt.glg', 'gasp3.dt.meteo',
-        'gasp3.dt.mob', 'gasp3.dt.sat', 'gasp3.dt.to', 'gasp3.dt.txtcls',
-        # ******************************************************************** #
         'gasp3.gt',
         'gasp3.gt.anls', 'gasp3.gt.anls.exct', 'gasp3.gt.anls.ovlay',
         'gasp3.gt.anls.prox',
+        'gasp3.gt.fm',
         'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
         'gasp3.gt.mob', 'gasp3.gt.mob.api', 'gasp3.gt.mob.api.glg',
         'gasp3.gt.mob.grstbx',
         'gasp3.gt.prop', 'gasp3.gt.prop.feat',
         'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
-        'gasp3.gt.stats', 'gasp3.gt.wenv',
+        'gasp3.gt.to', 'gasp3.gt.stats', 'gasp3.gt.wenv',
         # ******************************************************************** #
         'gasp3.pyt', 'gasp3.pyt.df', 'gasp3.pyt.xls',
         # ******************************************************************** #
@@ -69,7 +69,8 @@ setup(
         'seaborn==0.9.0',
         'sentinelsat==0.13',
         'django==2.2.4', 'django-widget-tweaks==1.4.5',
-        'django-cors-headers==3.1.0', 'djangorestframework==3.10.2'
+        'django-cors-headers==3.1.0', 'djangorestframework==3.10.2',
+        'sentinelsat==0.13'
     ],
     include_package_data=True
 )

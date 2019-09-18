@@ -12,8 +12,8 @@ def GDAL_Hidric_Balance(meta_file=os.path.join(
     """
     
     import os
-    from gasp3.dt.fm.rst   import rst_to_array
-    from gasp3.dt.to.rst   import array_to_raster
+    from gasp3.gt.fm.rst   import rst_to_array
+    from gasp3.gt.to.rst   import obj_to_rst
     from gasp3.gt.prop.rst import get_cellsize
     
     def DecodeJson(json_file):
@@ -135,9 +135,5 @@ def GDAL_Hidric_Balance(meta_file=os.path.join(
     def_hidrico = DeficeHidrico(EvapotranspiracaoP, etr)
     # Soma defice hidrico
     rst_hidrico = SomaRstOnLst(def_hidrico)
-    array_to_raster(
-        rst_hidrico, rst_saida, temperatura[0],
-        epsg, get_cellsize(temperatura[0], gisApi='gdal'), gdal.GDT_Float64,
-        gisApi='gdal'
-    )
+    obj_to_rst(rst_hidrico, rst_saida, temperatura[0])
 

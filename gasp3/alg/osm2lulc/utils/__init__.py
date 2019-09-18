@@ -10,7 +10,7 @@ def osm_to_sqdb(osmXml, osmSQLITE):
     Convert OSM file to SQLITE DB
     """
     
-    from gasp3.dt.to.shp import shp_to_shp
+    from gasp3.gt.to.shp import shp_to_shp
     
     return shp_to_shp(
         osmXml, osmSQLITE, gisApi='ogr', supportForSpatialLite=True)
@@ -43,7 +43,7 @@ def record_time_consumed(timeData, outXls):
     """
     
     import pandas
-    from gasp3.dt.to import obj_to_tbl
+    from gasp3.to import obj_to_tbl
     
     # Produce main table - Time consumed by rule
     main = [{
@@ -94,7 +94,7 @@ def osm_project(osmDb, srs_epsg, api='SQLITE', isGlobeLand=None):
     """
     
     if api != 'POSTGIS':
-        from gasp3.sql.mng.prj import ogr2ogr_transform_inside_sqlite as proj
+        from gasp3.gt.prj       import proj
     else:
         from gasp3.sql.mng.tbl  import q_to_ntbl as proj
         from gasp3.sql.mng.geom import add_idx_to_geom
@@ -150,10 +150,9 @@ def osm_project(osmDb, srs_epsg, api='SQLITE', isGlobeLand=None):
             )
         
         if api != 'POSTGIS':
-            proj(
-                osmDb, table, 4326, srs_epsg,
+            proj({'DB' : osmDb, 'TABLE' : table},
                 '{}_{}'.format(table, str(srs_epsg)),
-                sql=Q
+                srs_epsg, inEPSG=4326, gisApi='ogr2ogr_SQLITE', sql=Q
             )
         else:
             proj(osmDb, '{}_{}'.format(table, str(srs_epsg)), Q, api='psql')
@@ -170,7 +169,7 @@ def get_osm_feat_by_rule(nomenclature):
     Return OSM Features By rule
     """
     
-    from gasp3.dt.fm.sql import query_to_df
+    from gasp3.sql.fm import Q_to_df
     
     Q = (
         "SELECT jtbl.{rellulccls} AS {rellulccls}, "
@@ -200,7 +199,7 @@ def get_osm_feat_by_rule(nomenclature):
         areaCol    = DB_SCHEMA[nomenclature]["RULES_FIELDS"]["AREA"]
     )
     
-    return query_to_df(PROCEDURE_DB, Q, db_api='sqlite')
+    return Q_to_df(PROCEDURE_DB, Q, db_api='sqlite')
 
 
 def add_lulc_to_osmfeat(osmdb, osmTbl, nomenclature, api='SQLITE'):
@@ -368,9 +367,9 @@ def get_ref_raster(refBoundBox, folder, cellsize=None):
             
             if not isProj:
                 # A conversion between SRS is needed
-                from gasp3.gt.mng.prj import project
+                from gasp3.gt.prj import proj
                 
-                ref_shp = project(
+                ref_shp = proj(
                     refBoundBox, os.path.join(folder, 'tmp_ref_shp.shp'),
                     outEPSG=3857, inEPSG=epsg, gisApi='ogr2ogr'
                 )
@@ -379,7 +378,7 @@ def get_ref_raster(refBoundBox, folder, cellsize=None):
                 ref_shp = refBoundBox
             
             # Convert to Raster
-            from gasp3.dt.to.rst import shp_to_rst
+            from gasp3.gt.to.rst import shp_to_rst
             
             refRaster = shp_to_rst(
                 ref_shp, None, 2 if not cellsize else cellsize,
@@ -398,7 +397,7 @@ def get_ref_raster(refBoundBox, folder, cellsize=None):
         # Check if Raster has a SRS with projected coordinates
         if not isProj:
             # We need to reproject raster
-            from gasp3.gt.mng.prj import reprj_rst
+            from gasp3.gt.prj import reprj_rst
             
             refRaster = reprj_rst(
                 refBoundBox,

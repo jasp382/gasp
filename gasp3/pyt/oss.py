@@ -21,6 +21,7 @@ def get_filename(__file, forceLower=None):
     
     return filename
 
+
 def get_fileformat(__file):
     """
     Return file format
@@ -47,7 +48,8 @@ def get_filesize(path, unit='MB'):
     
     return memory
 
-def list_files(w, file_format=None, filename=None):
+
+def lst_ff(w, file_format=None, filename=None):
     """
     List the abs path of all files with a specific extension on a folder
     """
@@ -138,7 +140,7 @@ def list_folders_subfiles(path, files_format=None,
     
     out = {}
     for folder in folders_in_path:
-        out[folder] = list_files(
+        out[folder] = lst_ff(
             folder, file_format=files_format
         )
         
@@ -231,7 +233,7 @@ def del_files_by_name(folder, names):
     """
     
     
-    lst_files = list_files(folder, filename=basenames)
+    lst_files = lst_ff(folder, filename=basenames)
     
     for f in lst_files:
         del_file(f)
@@ -243,7 +245,7 @@ def del_files_by_partname(folder, partname):
     deleted
     """
     
-    files = list_files(folder)
+    files = lst_ff(folder)
     
     for _file in files:
         if partname in os.path.basename(_file):
@@ -259,7 +261,7 @@ def rename_files_with_same_name(folder, oldName, newName):
     Rename files in one folder with the same name
     """
     
-    _Files = list_files(folder, filename=oldName)
+    _Files = lst_ff(folder, filename=oldName)
     
     Renamed = []
     for f in _Files:
@@ -279,7 +281,7 @@ def onFolder_rename(fld, toBeReplaced, replacement, only_files=True,
     object 'replacement'
     """
     
-    from gasp3.pyt.oss import list_files
+    from gasp3.pyt.oss import lst_ff
 
     if not only_files and not only_folders:
         files = list_folders_files(fld)
@@ -288,7 +290,7 @@ def onFolder_rename(fld, toBeReplaced, replacement, only_files=True,
         files = list_folders(fld)
 
     elif only_files and not only_folders:
-        files = list_files(fld)
+        files = lst_ff(fld)
 
     for __file in files:
         if os.path.isfile(__file):
@@ -313,7 +315,7 @@ def onFolder_rename2(folder, newBegin, stripStr, fileFormats=None):
     begining of the file
     """
     
-    files = list_files(folder, file_format=fileFormats)
+    files = lst_ff(folder, file_format=fileFormats)
     
     for _file in files:
         name = get_filename(_file, forceLower=True)
@@ -355,7 +357,7 @@ def identify_groups(folder, splitStr, groupPos, outFolder):
     corresponde ao grupo.
     """
     
-    files = list_files(folder)
+    files = lst_ff(folder)
     
     # List groups and relate files with groups:
     groups = {}

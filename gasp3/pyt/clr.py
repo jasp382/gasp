@@ -44,7 +44,7 @@ def idcolor_to_hex(rgbObj):
         else:
             _hex = rgb_to_hex(rgbObj[R], rgbObj[G], rgbObj[B])
     
-    elif type(rgbObj) == str or type(rgbObj) == unicode:
+    elif type(rgbObj) == str:
         _hex = rgbObj
     
     else:

@@ -3,6 +3,29 @@ Django utils for Seralization
 """
 
 
+def tbl_serialize(model, dataType, filterQ=None):
+    """
+    Serialize Data in Database Table
+    """
+    
+    from django.core.serializers import serialize
+    from gasp3 import __import
+    
+    app_mdl = model.split('_')
+    app, mdl = app_mdl[0], '_'.join(app_mdl[1:])
+    djgMdl = __import('{}.models.{}'.format(app, mdl))
+    
+    dataType = 'geojson' if dataType == 'gjson' or dataType == 'geojson' \
+        else 'json'
+    
+    if filterQ:
+        data = serialize(dataType, djgMdl.objects.filter(**filterQ))
+    else:
+        data = serialize(dataType, djgMdl.objects.all())
+    
+    return data
+
+
 def serialize_by_getParam(request, dtype, table):
     """
     Parse any type of data from the Django Database to a Json Object
@@ -41,7 +64,7 @@ def serialize_by_getParam(request, dtype, table):
                 fldCount += 1
         
         if fldCount and fldCount == 1:
-            field = dicQuery.keys()[0]
+            field = list(dicQuery.keys())[0]
             fld_type = colsTypes[field]
             
             fld_value_template = __getWhrTemplate(fld_type)
@@ -86,8 +109,7 @@ def serialize_by_query(model, query, dataType):
     """
     
     from django.core.serializers import serialize
-    
-    from gasp3 import __import
+    from gasp3                   import __import
     
     appAndModel = model.split('_')
     djgModel = __import('{}.models.{}'.format(
@@ -97,20 +119,17 @@ def serialize_by_query(model, query, dataType):
     dataType = 'geojson' if dataType == 'gjson' or dataType=='geojson' \
          else 'json'
     
-    data = serialize(
-        dataType, djgModel.objects.raw(query)
-    )
+    data = serialize(dataType, djgModel.objects.raw(query))
     
     return data
 
 
-def serialize_by_query_to_jsonfile(model, query, dataType, filePath):
+def mdl_serialize_to_json(model, dataType, filePath, filterQ=None):
     """
     Serialize data from Django Database and store it in one file
     """
     
     from django.core.serializers import get_serializer
-    
     from gasp3 import __import
     
     # Get Model object
@@ -126,7 +145,9 @@ def serialize_by_query_to_jsonfile(model, query, dataType, filePath):
     # Write file with data
     with open(filePath, "w") as out:
         json_serializer.serialize(
-            modelObj.objects.raw(query),
+            modelObj.objects.all() if not filterQ else modelObj.objects.filter(
+                **filterQ
+            ),
             stream=out
         )
 
