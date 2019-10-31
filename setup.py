@@ -17,12 +17,13 @@ setup(
         'gasp3',
         # ******************************************************************** #
         'gasp3.adv', 'gasp3.adv.dsn', 'gasp3.adv.dsn.fb', 'gasp3.adv.glg',
-        'gasp3.adv.meteo', 'gasp3.adv.mob',
+        'gasp3.adv.meteo', 'gasp3.adv.mob', 'gasp3.adv.mob.grstbx',
         'gasp3.adv.sat', 'gasp3.adv.txtcls',
         # ******************************************************************** #
         'gasp3.alg',
         'gasp3.alg.hydro', 'gasp3.alg.lndsld', 
-        'gasp3.alg.mob', 'gasp3.alg.osm2lulc', 'gasp3.alg.terrain',
+        'gasp3.alg.mob', 'gasp3.alg.osm2lulc', 'gasp3.alg.osm2lulc.utils',
+        'gasp3.alg.terrain',
         # ******************************************************************** #
         'gasp3.cons',
         # ******************************************************************** #
@@ -32,7 +33,6 @@ setup(
         'gasp3.gt.fm',
         'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
         'gasp3.gt.mob', 'gasp3.gt.mob.api', 'gasp3.gt.mob.api.glg',
-        'gasp3.gt.mob.grstbx',
         'gasp3.gt.prop', 'gasp3.gt.prop.feat',
         'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
         'gasp3.gt.to', 'gasp3.gt.stats', 'gasp3.gt.wenv',

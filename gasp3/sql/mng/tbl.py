@@ -206,8 +206,6 @@ def dump_tbls(conParam, tables, outsql, startWith=None):
         
         tbls = dtbls
     
-    print(tbls)
-    
     outcmd = exec_cmd((
         "pg_dump -Fc -U {user} -h {host} -p {port} "
         "-w {tbl} {db} > {out}"
@@ -220,7 +218,7 @@ def dump_tbls(conParam, tables, outsql, startWith=None):
     return outsql
 
 
-def restore_tbls(conParam, sql, tablenames):
+def restore_tbls(conParam, sql, tablenames=None):
     """
     Restore one table from a sql Script
     """
@@ -229,13 +227,15 @@ def restore_tbls(conParam, sql, tablenames):
     
     tbls = goToList(tablenames)
     
+    tblStr = "" if not tablenames else " {}".format(" ".join([
+        "-t {}".format(t) for t in tbls]))
+    
     outcmd = exec_cmd((
         "pg_restore -U {user} -h {host} -p {port} "
-        "-w {tbl} -d {db} {sqls}"
+        "-w{tbl} -d {db} {sqls}"
     ).format(
         user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql,
-        tbl=" ".join(["-t {}".format(t) for t in tbls])
+        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql, tbl=tblStr
     ))
     
     return tablenames
