@@ -3,12 +3,15 @@ Text classification evaluation
 """
 
 def binary_eval(refTbl, refId, refCol, tstTbl, tstId,
-                outTbl, tstCol=None):
+                outTbl=None, tstCol=None):
     """
     Evaluation of a binary classification
     
     When tstCol is None, the script assumes that in tstTbl
     there are only positives
+    
+    A tabela de referencia deve ter positivos e negativos;
+    mas a tabela de teste pode ter so positivos.
     """
     
     import numpy   as np
@@ -16,15 +19,14 @@ def binary_eval(refTbl, refId, refCol, tstTbl, tstId,
     from gasp3.fm  import tbl_to_obj
     from gasp3.to  import obj_to_tbl
     
-    # TODO: this only works for xlsx.
-    
     # Data to Pandas Dataframe
     ref_df = tbl_to_obj(
         refTbl, fields=[refId, refCol]
-    ) if type(refTbl) != pandas.DataFrame else refTbl
+    ) if type(refTbl) != pandas.DataFrame else refTbl[[refId, refCol]]
     tst_df = tbl_to_obj(
         tstTbl, fields=[tstId] if not tstCol else [tstId, tstCol]
-    ) if type(refTbl) != pandas.DataFrame else tstTbl
+    ) if type(refTbl) != pandas.DataFrame else tstTbl[[tstId]] \
+        if not tstCol else tstTbl[[tstId, tstCol]]
     
     # Check if refId is equal to tstId; they must be different
     if refId == tstId:
@@ -191,10 +193,13 @@ def binary_eval(refTbl, refId, refCol, tstTbl, tstId,
         ['F-score 2', F_2]
     ], columns=['eval_mesure', 'value'])
     
-    return obj_to_tbl(
-        [conf_tbl, evalMeasures, df], outTbl,
-        sheetsName=['matrix', 'eval_mesures', 'tbl']
-    )
+    if outTbl:
+        return obj_to_tbl(
+            [conf_tbl, evalMeasures, df], outTbl,
+            sheetsName=['matrix', 'eval_mesures', 'tbl']
+        )
+    else:
+        return conf_tbl, evalMeasures, df
 
 
 def model_conf_matrix(tblFile, refCol, clsCol, outMxt):

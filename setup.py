@@ -70,7 +70,8 @@ setup(
         'sentinelsat==0.13',
         'django==2.2.4', 'django-widget-tweaks==1.4.5',
         'django-cors-headers==3.1.0', 'djangorestframework==3.10.2',
-        'sentinelsat==0.13'
+        'sentinelsat==0.13',
+        'nltk==3.4.5'
     ],
     include_package_data=True
 )
