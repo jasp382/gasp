@@ -265,10 +265,10 @@ def psql_insert_query(dic_pgsql, query, execute_many_data=None):
     Insert data into a PGSQL Table
     """
     
-    from gasp3.sql.c     import connection
+    from gasp3.sql.c     import sqlcon
     from psycopg2.extras import execute_values
     
-    con = psqlcon(dic_pgsql)
+    con = sqlcon(dic_pgsql)
     
     cursor = con.cursor()
     if execute_many_data:

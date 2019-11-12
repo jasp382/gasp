@@ -2,7 +2,7 @@
 Get Information about SQL database or database data
 """
 
-from gasp3.sql.c import psqlcon
+from gasp3.sql.c import sqlcon
 
 """
 Info about databases
@@ -13,7 +13,7 @@ def list_db(conParam):
     List all PostgreSQL databases
     """
     
-    con = psqlcon(conParam)
+    con = sqlcon(conParam)
     
     cursor = con.cursor()
     
@@ -26,7 +26,7 @@ def db_exists(lnk, db):
     """
     Database exists
     """
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
         
     cursor = con.cursor()
     
@@ -63,6 +63,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
     API's Available:
     * psql;
     * sqlite;
+    * mysql;
     """
     
     if api == 'psql':
@@ -97,7 +98,18 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
         
         __tbls = [n[0] for n in tables]
         cursor.close()
-        conn.close()    
+        conn.close()
+    
+    elif api == 'mysql':
+        """
+        List Tables in MySQL Database
+        """
+        
+        from gasp3.sql.c import alchemy_engine
+        
+        c = alchemy_engine(conObj, api='mysql')
+        
+        __tbls = c.table_names()
     
     else:
         raise ValueError('API {} is not available!'.format(api))
@@ -110,9 +122,9 @@ def lst_tbl_basename(basename, dic_con, schema='public'):
     List tables with name that includes basename
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
-    conn = psqlcon(dic_con)
+    conn = sqlcon(dic_con)
     
     cs = conn.cursor()
     cs.execute((
@@ -168,7 +180,7 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
     """
     
     if api == 'psql':
-        c = psqlcon(conparam)
+        c = sqlcon(conparam)
     
         cursor = c.cursor()
         cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
@@ -190,6 +202,14 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         
         colnames = list(map(lambda x: x[0], cursor.description))
     
+    elif api == 'mysql':
+        from gasp3.sql.fm import Q_to_df
+        
+        data = Q_to_df(
+            conparam, "SELECT * FROM {} LIMIT 1".format(table), db_api='mysql')
+        
+        colnames = data.columns.values
+    
     else:
         raise ValueError('API {} is not available'.format(api))
     
@@ -203,7 +223,7 @@ def cols_type(pgsqlDic, table, sanitizeColName=True, pyType=True):
     
     from gasp3.cons.psql import PG_SPECIAL_WORDS, map_psqltypes
     
-    c = psqlcon(pgsqlDic)
+    c = sqlcon(pgsqlDic)
     
     cursor = c.cursor()
     cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
@@ -235,7 +255,7 @@ def check_last_id(lnk, pk, table):
     TODO: Do this with Pandas
     """
     
-    from gasp3.sql.c  import psqlcon
+    from gasp3.sql.c  import sqlcon
     from gasp3.sql.fm import Q_to_df
     
     q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)
