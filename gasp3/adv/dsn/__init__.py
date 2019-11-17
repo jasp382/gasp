@@ -152,9 +152,8 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         
         # Send Buffers data to PostgreSQL
         inBuffers[city]["pg_buffer"] = shp_to_psql(
-            conParam, multiBuffer, inBuffers[city]["epsg"],
-            pgTable='buffers_{}'.format(city),
-            api="shp2pgsql"
+            conParam, multiBuffer, pgTable='buffers_{}'.format(city),
+            api="shp2pgsql", srsEpsgCode=inBuffers[city]["epsg"]
         )
         
         inBuffers[city]["filter_table"] = q_to_ntbl(

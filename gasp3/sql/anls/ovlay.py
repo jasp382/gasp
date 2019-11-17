@@ -48,7 +48,7 @@ def del_topoerror_shps(conParam, shps, epsg, outfolder):
     
     shps = goToList(shps)
     
-    TABLES = shp_to_psql(conParam, shps, epsg, api="shp2pgsql")
+    TABLES = shp_to_psql(conParam, shps, srsEpsgCode=epsg, api="shp2pgsql")
     
     NTABLE = [q_to_ntbl(
         conParam, "nt_{}".format(t),
@@ -183,7 +183,7 @@ def proj_clean_clip(con, dic_osm, boundary, srs, workspace):
         )
     
     from gasp3.sql.to import shp_to_psql
-    lmt_table = shp_to_psql(con, boundary, srs, api='shp2pgsql')
+    lmt_table = shp_to_psql(con, boundary, srsEpsgCode=srs, api='shp2pgsql')
     lmt_geom = "geom"
     
     from gasp3.sql.prj        import re_project
@@ -225,7 +225,7 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     conParam["DATABASE"] = conParam["DB"]
     
     # Send data to postgresql
-    table = shp_to_psql(conParam, checkShp, epsg, api="pandas")
+    table = shp_to_psql(conParam, checkShp, srsEpsgCode=epsg, api="pandas")
     
     # Produce result
     q = (
