@@ -323,7 +323,8 @@ def sqlite_insert_query(db, table, cols, new_values, execute_many=None):
 
 
 
-def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
+def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
+                mapCols=None, srsEpsgCode=None):
     """
     Send Shapefile to PostgreSQL
     
@@ -332,7 +333,8 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
     """
     
     import os
-    from gasp3.pyt.oss import get_filename
+    from gasp3.pyt.oss     import get_filename
+    from gasp3.gt.prop.prj import get_epsg_shp
     
     if api == "pandas":
         from gasp3.fm           import tbl_to_obj
@@ -359,20 +361,36 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
         
         shapes = goToList(shpData)
     
+    epsgs = [
+        get_epsg_shp(i) for i in shapes
+    ] if not srsEpsgCode else srsEpsgCode
+    if not srsEpsgCode:
+        raise ValueError((
+            "Cannot obtain EPSG code of {}. Use the srsEpsgCode parameter "
+            "to specify the EPSG code of your data."
+        ))
+    
     tables = []
     for _i in range(len(shapes)):
         # Get Table name
         tname = get_filename(shapes[_i], forceLower=True) if not pgTable else \
-            pgTable[_i] if type(pgTable) == list else pgTable
+            pgTable[_i] if type(pgTable) == list else pgTable if len(shapes) == 1 \
+            else pgTable + '_{}'.format(_i+1)
         
         # Import data
         if api == "pandas":
             # SHP to DataFrame
             df = tbl_to_obj(shapes[_i])
             
-            df.rename(columns={
-                x : x.lower() for x in df.columns.values
-            }, inplace=True)
+            if not mapCols:
+                df.rename(columns={
+                    x : x.lower() for x in df.columns.values
+                }, inplace=True)
+            else:
+                renameD = {
+                    x : mapCols[x].lower() if x in mapCols else x.lower() for x in df.columns.values
+                }
+                df.rename(columns=renameD, inplace=True)
             
             if "geometry" in df.columns.values:
                 geomCol = "geometry"
@@ -385,10 +403,11 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
                 raise ValuError("No Geometry found in shp")
             
             # GeoDataFrame to PSQL
-            geodf_to_pgsql(
-                con_param, df, tname, srsEpsgCode,
-                get_gtype(shapes[_i], name=True, py_cls=False, gisApi='ogr'),
-                colGeom=geomCol
+            df_to_db(
+                con_param, df, tname, append=True, api='psql',
+                epsg=epsgs[_i] if not srsEpsgCode else srsEpsgCode,
+                colGeom=geomCol,
+                geomType=get_gtype(shapes[_i], name=True, py_cls=False, gisApi='ogr')
             )
         
         else:
@@ -400,7 +419,8 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
                 'shp2pgsql -I -s {epsg} -W UTF-8 '
                 '{shp} public.{name} > {out}'
             ).format(
-                epsg=srsEpsgCode, shp=shapes[_i], name=tname, out=sql_script
+                epsg=epsgs[_i] if not srsEpsgCode else srsEpsgCode,
+                shp=shapes[_i], name=tname, out=sql_script
             )
             
             outcmd = exec_cmd(cmd)
@@ -422,7 +442,7 @@ def shps_to_onepsql(folder_shp, epsg, conParam, out_table):
     from gasp3.sql.mng.tbl import tbls_to_tbl, del_tables
     
     pgTables = shp_to_psql(
-        conParam, folder_shp, epsg, api="shp2pgsql"
+        conParam, folder_shp, srsEpsgCode=epsg, api="shp2pgsql"
     )
     
     tbls_to_tbl(conParam, pgTables, out_table)
