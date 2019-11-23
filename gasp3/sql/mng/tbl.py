@@ -107,7 +107,7 @@ def rename_tbl(conParam, tblNames):
 Delete Tables
 """
 
-def del_tables(lnk, pg_table_s, isViews=None):
+def del_tables(lnk, pg_table_s, isViews=None, isBasename=None):
     """
     Delete all tables in pg_table_s
     """
@@ -116,6 +116,16 @@ def del_tables(lnk, pg_table_s, isViews=None):
     from gasp3.sql.c import psqlcon
     
     pg_table_s = goToList(pg_table_s)
+    
+    if isBasename:
+        if not isViews:
+            from gasp3.sql.i import lst_tbl
+        
+            pg_table_s = lst_tbl(lnk, api='psql', basename=pg_table_s)
+        else:
+            from gasp3.sql.i import lst_views
+            
+            pg_table_s = lst_views(lnk, basename=pg_table_s)
         
     con = psqlcon(lnk)
     
@@ -131,16 +141,6 @@ def del_tables(lnk, pg_table_s, isViews=None):
         cursor.close()
     
     con.close()
-
-
-def del_tables_wbasename(conParam, table_basename):
-    """
-    Delete all tables with a certain general name
-    """
-    
-    pgTables = lst_tbl_basename(table_basename, conParam)
-    
-    del_tables(conParam, pgTables)
 
 
 def drop_table_data(dic_con, table, where=None):

@@ -69,10 +69,10 @@ def create_style(name, sld, conf={
     protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
     
     if overwrite:
-        GEO_STYLES = list_styles(conf=conf, protocol=protocol)
+        GEO_STYLES = lst_styles(conf=conf)
         
         if name in GEO_STYLES:
-            del_style(name, conf=conf, protocol=protocol)
+            del_style(name, conf=conf)
 
     url = '{pro}://{host}:{port}/geoserver/rest/styles'.format(
         host=conf['HOST'], port=conf['PORT'], pro=protocol

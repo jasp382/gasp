@@ -258,7 +258,7 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
     }
     """
     
-    import os; from gasp3.sql.i  import lst_tbl_basename
+    import os; from gasp3.sql.i  import lst_tbl
     from gasp3.web.geosrv.ws     import create_workspace
     from gasp3.web.geosrv.stores import create_pgstore
     from gasp3.web.geosrv.lyrs   import pub_pglyr
@@ -286,7 +286,7 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
         print("START PROCESSING {} GROUP".format(group))
         
         # - Identify tables
-        tables = lst_tbl_basename(group, pgsql_con)
+        tables = lst_tbl(pgsql_con, basename=group, excludeViews=True)
         
         # - Create Style
         STYLE_NAME = os.path.splitext(os.path.basename(groups_of_tables[group]))[0]

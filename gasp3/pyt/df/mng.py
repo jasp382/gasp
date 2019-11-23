@@ -61,6 +61,50 @@ def col_list_val_to_row(pndDf, colWithLists, geomCol=None, epsg=None):
         return pandas.DataFrame(new_rows)
 
 
+def dfcolstorows(inDf, colField, valField, colFid=None):
+    """
+    Dataframe Like:
+    
+      | pop_res |   ind2  | ind3 | id_unit
+    0 |   571   | 35.0975 | 123  |  3768 
+    1 |   938   | 18.2114 | 265  |  3618 
+    2 |   554   | 44.3149 |  76  |  3788 
+    3 |   711   | 37.8619 | 134  |  3766
+    4 |  1268   | 46.0733 | 203  |  3690
+    
+    To:
+    
+      | colField | valField
+    0 | pop_res |   571
+    1 |  ind2   | 35.0975
+    2 |  ind3   |   123
+    3 | id_unit |  3768 
+    4 | pop_res | 938
+    5 |  ind2   | 18.2114
+    6 |  ind3   | 265
+    7 | id_unit | 3618
+    """
+    
+    newDfs = []
+    cols = list(inDf.columns.values)
+    
+    if colFid and colFid in cols:
+        cols.remove(colFid)
+    
+    for col in cols:
+        ndf = inDf.copy()
+        
+        ndf.drop([c for c in cols if c != col], axis=1, inplace=True)
+        ndf[colField] = col
+        ndf.rename(columns={col : valField}, inplace=True)
+        
+        newDfs.append(ndf)
+    
+    res = merge_df(newDfs)
+    
+    return res
+
+
 def df_cols_to_rows(inDf, TO_COLS, col_old_col_name, key_old_col_name, col_mantain):
     """
     Dataframe like:
