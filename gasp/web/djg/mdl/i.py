@@ -57,8 +57,7 @@ def get_fieldsTypes(model_obj):
     return flds
 
 
-def isForeign_key_in_model(modelName=None, appName=None, exportAllFields=None,
-                           specialModel=None):
+def isForeign_key_in_model(mdl, exportAllFields=None, specialModel=None):
     """
     There is any foreign key in one model
     """
@@ -67,13 +66,13 @@ def isForeign_key_in_model(modelName=None, appName=None, exportAllFields=None,
     from gasp import __import
     
     # List fields in model
-    if modelName and appName and specialModel:
+    if mdl and specialModel:
         raise ValueError(
             'Please define modelName/AppName or only specialModel'
         )
     
-    if modelName and appName:
-        modelObj = __import('{}.models.{}'.format(appName, modelName))
+    if mdl:
+        modelObj = __import(mdl)
     
     elif specialModel:
         modelObj = __import(get_special_tables()[specialModel])
@@ -97,12 +96,10 @@ def isForeign_key_in_model(modelName=None, appName=None, exportAllFields=None,
            (fk_fields, fields)
 
 
-def list_tables_without_foreignk(tables, proj_path=None):
+def lst_mdl_no_fk(tables, proj_path=None):
     """
     List tables without foreign keys
     """
-    
-    import os
     
     if proj_path:
         from gasp.web.djg import open_Django_Proj
@@ -110,30 +107,18 @@ def list_tables_without_foreignk(tables, proj_path=None):
         application = open_Django_Proj(proj_path)
     
     result = []
-    for table in tables:
-        # Get model object
-        
-        if table in get_special_tables():
-            # Special table
-            fk_fields = isForeign_key_in_model(specialModel=table)
-        else:
-            tname = os.path.splitext(os.path.basename(table))[0] \
-                if os.path.isfile(table) else table
-            
-            appName = tname.split('_')[0]
-            modName = '_'.join(tname.split('_')[1:])
-            
-            fk_fields = isForeign_key_in_model(modName, appName)
+    for mdl in tables:
+        fk_fields = isForeign_key_in_model(mdl)
         
         if fk_fields:
             continue
         else:
-            result.append(table)
+            result.append(mdl)
     
     return result
 
 
-def lst_mdl_proj(path, thereIsApp=None):
+def lst_mdl_proj(path, thereIsApp=None, returnClassName=None):
     """
     List Django Models in Project
     """
@@ -149,11 +134,15 @@ def lst_mdl_proj(path, thereIsApp=None):
     
     from django.apps import apps
     
-    mlds = []
+    mdls = [] if not returnClassName else {}
     for __app in lst_apps:
         mdl = apps.get_app_config(__app).models
         
-        mlds += ["{}_{}".format(__app, k) for k in mdl]
+        if not returnClassName:
+            mdls += ["{}_{}".format(__app, k) for k in mdl]
+        else:
+            for k in mdl:
+                mdls["{}_{}".format(__app, k)] = mdl[k].__name__
     
-    return mlds
+    return mdls
 

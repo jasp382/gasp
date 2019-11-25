@@ -5,7 +5,7 @@ Get relations between django models
 from gasp import __import
 
 
-def order_models_by_relation(tables):
+def order_mdl_by_rel(mdl_cls):
     """
     Receive a group of tables and see which tables should be
     imported first in the database. Tables depending on others should be
@@ -13,28 +13,17 @@ def order_models_by_relation(tables):
     """
     
     import os
-    from gasp.web.djg.mdl.i   import list_tables_without_foreignk
-    from gasp.web.djg.mdl.i   import get_special_tables, get_ignore_tables
+    from gasp.web.djg.mdl.i    import lst_mdl_no_fk
     from django.contrib.gis.db import models
     
-    SPECIAL_MODELS = get_special_tables()
-    IGNORE_TABLES = get_ignore_tables()
-    
-    def get_childs(treeObj):
-        for table in treeObj:
-            # Get model object
-            if table not in SPECIAL_MODELS:
-                app = table.split('_')[0]
-                modObj = __import('{}.models.{}'.format(
-                    app, '_'.join(table.split('_')[1:])
-                ))
-            else:
-                modObj = __import(SPECIAL_MODELS[table])
+    def get_childs(tree_obj):
+        for mdl in tree_obj:
+            mdl_cls = __import(mdl)
             
             rel_model_name = None
-            rel_app_name = None
+            rel_app_name   = None
         
-            fields = modObj._meta.get_fields()
+            fields = mdl_cls._meta.get_fields()
         
             for field in fields:
                 if not isinstance(field, models.ForeignKey):
@@ -53,22 +42,20 @@ def order_models_by_relation(tables):
                     rel_app_name = None
         
                 if rel_model_name and rel_app_name:
-                    rmn = '{}_{}'.format(rel_app_name, rel_model_name)
+                    rmn = '{}.models.{}'.format(rel_app_name, rel_model_name)
                     
-                    if rmn in IGNORE_TABLES:
-                        continue
-                    
-                    treeObj[table].update({rmn: {}})
+                    tree_obj[mdl].update({rmn: {}})
         
                 else: 
                     continue
             
-            if treeObj[table]:
-                get_childs(treeObj[table])
+            if tree_obj[mdl]:
+                get_childs(tree_obj[mdl])
+            
             else: continue
     
     
-    def get_table_level(nodes, level, dic):
+    def get_mdl_level(nodes, level, dic):
         for node in nodes:
             if level not in dic:
                 dic[level] = [node]
@@ -78,25 +65,22 @@ def order_models_by_relation(tables):
             if not nodes[node]:
                 continue
             else:
-                get_table_level(nodes[node], level + 1, dic)
+                get_mdl_level(nodes[node], level + 1, dic)
     
     # Get root
-    root_tables = list_tables_without_foreignk(tables)
-    tree = {
-        os.path.splitext(os.path.basename(
-            root))[0] : {} for root in root_tables
-    }
+    root_tables = lst_mdl_no_fk(mdl_cls)
+    tree = {root : {} for root in root_tables}
     
     get_childs(tree)
     
-    tables_by_level = {}
-    get_table_level(tree, 0, tables_by_level)
+    mdl_by_level = {}
+    get_mdl_level(tree, 0, mdl_by_level)
     
     # Levels to a single list
     ordened = []
-    for i in range(len(tables_by_level.keys())):
-        for table in tables_by_level[i]:
-            ordened.append(table)
+    for i in range(len(mdl_by_level.keys())):
+        for mdl in mdl_by_level[i]:
+            ordened.append(mdl)
     
     clean = []
     for i in range(len(ordened)):
