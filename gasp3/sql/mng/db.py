@@ -12,12 +12,12 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
     """
     
     if api == 'psql':
-        from gasp3.sql.c import psqlcon
+        from gasp3.sql.c import sqlcon
         from gasp3.sql.i import list_db
     
         dbs = list_db(lnk)
     
-        con = psqlcon(lnk)
+        con = sqlcon(lnk)
         cs = con.cursor()
     
         if newdb in dbs and overwrite:
@@ -67,7 +67,7 @@ def drop_db(lnk, database):
     Return 0 if the database does not exist
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     from gasp3.sql.i import list_db
     
     if "DATABASE" in lnk:
@@ -80,7 +80,7 @@ def drop_db(lnk, database):
     
     if database not in databases: return 0
     
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     cursor = con.cursor()
     
     try:

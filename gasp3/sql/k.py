@@ -3,13 +3,13 @@ Tools to manage Table Keys
 """
 
 
-from gasp3.sql.c import psqlcon
+from gasp3.sql.c import sqlcon
 
 def create_pk(lnk, tbl, new_col):
     """
     Creates a new primary key field on a existent table
     """
-    conn = psqlcon(lnk)
+    conn = sqlcon(lnk)
     
     cs = conn.cursor()
     cs.execute(

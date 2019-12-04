@@ -2,7 +2,7 @@
 Manage fields
 """
 
-from gasp3.sql.c       import psqlcon
+from gasp3.sql.c       import sqlcon
 from gasp3.sql.mng.tbl import q_to_ntbl
 
 
@@ -20,7 +20,7 @@ def add_field(lnk, pgtable, columns):
             'columns should be a dict (name as keys; field type as values)'
         )
     
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     
     cursor = con.cursor()
     
@@ -43,7 +43,7 @@ def drop_column(lnk, pg_table, columns):
     
     from gasp3 import goToList
     
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     
     cursor = con.cursor()
     
@@ -77,7 +77,7 @@ def change_field_type(lnk, table, fields, outable,
     
     select_fields = [f for f in cols if f not in fields]
     
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     
     # Create new table with the new field with converted values
     cursor = con.cursor()

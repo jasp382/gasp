@@ -9,6 +9,7 @@ def Q_to_df(conParam, query, db_api='psql', geomCol=None, epsg=None):
     API's Available:
     * psql;
     * sqlite;
+    * mysql;
     """
     
     if not geomCol:
@@ -21,9 +22,9 @@ def Q_to_df(conParam, query, db_api='psql', geomCol=None, epsg=None):
     
     else:
         from geopandas   import GeoDataFrame
-        from gasp3.sql.c import psqlcon
+        from gasp3.sql.c import sqlcon
         
-        con = psqlcon(conParam)
+        con = sqlcon(conParam)
         
         df = GeoDataFrame.from_postgis(
             query, con, geom_col=geomCol,

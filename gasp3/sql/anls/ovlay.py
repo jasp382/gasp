@@ -11,7 +11,7 @@ def intersect_in_same_table(conParam, table, geomA, geomB, outtable,
     """
     
     from gasp3             import goToList
-    from gasp3.sql.c       import psqlcon
+    from gasp3.sql.c       import sqlcon
     from gasp3.sql.mng.tbl import q_to_ntbl
     
     COLS = goToList(colsSel)
@@ -92,7 +92,7 @@ def intersection(lnk, aShp, bShp, pk, aGeom, bGeom, output,
     elif type(priority) == type([0]):
         cols_tbl = priority
     cols_tbl.remove(pk)
-    conn = psqlcon(
+    conn = sqlcon(
         lnk['HOST'], lnk['USER'], lnk['PASSWORD'],
         lnk['PORT'], lnk['DATABASE']
     )

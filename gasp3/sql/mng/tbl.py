@@ -12,11 +12,11 @@ def create_tbl(conParam, table, fields, orderFields=None, api='psql'):
     """
     
     if api == 'psql':
-        from gasp3.sql.c import psqlcon
+        from gasp3.sql.c import sqlcon
     
         ordenedFields = orderFields if orderFields else fields.keys()
     
-        con = psqlcon(conParam)
+        con = sqlcon(conParam)
     
         cursor = con.cursor()
     
@@ -82,9 +82,9 @@ def rename_tbl(conParam, tblNames):
     tblNames = {old_name: new_name, ...}
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
-    con = psqlcon(conParam)
+    con = sqlcon(conParam)
     
     cursor = con.cursor()
     
@@ -113,7 +113,7 @@ def del_tables(lnk, pg_table_s, isViews=None, isBasename=None):
     """
     
     from gasp3       import goToList
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
     pg_table_s = goToList(pg_table_s)
     
@@ -127,7 +127,7 @@ def del_tables(lnk, pg_table_s, isViews=None, isBasename=None):
             
             pg_table_s = lst_views(lnk, basename=pg_table_s)
         
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     
     l = []
     for i in range(0, len(pg_table_s), 100):
@@ -148,9 +148,9 @@ def drop_table_data(dic_con, table, where=None):
     Delete all data on a PGSQL Table
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
-    con = psqlcon(dic_con)
+    con = sqlcon(dic_con)
     
     cursor = con.cursor()    
     
@@ -168,9 +168,9 @@ def drop_where_cols_are_same(conParam, table, colA, colB):
     Delete rows Where colA has the same value than colB
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
-    con = psqlcon(conParam)
+    con = sqlcon(conParam)
     
     cursor = con.cursor()
     
@@ -254,9 +254,9 @@ def q_to_ntbl(lnk, outbl, query, ntblIsView=None, api='psql'):
     """
     
     if api == 'psql':
-        from gasp3.sql.c import psqlcon
+        from gasp3.sql.c import sqlcon
     
-        con = psqlcon(lnk)
+        con = sqlcon(lnk)
     
         curs = con.cursor()
     
@@ -307,9 +307,9 @@ def exec_write_q(conDB, queries, api='psql'):
         raise ValueError("queries value is not valid")
     
     if api == 'psql':
-        from gasp3.sql.c import psqlcon
+        from gasp3.sql.c import sqlcon
         
-        con = psqlcon(conDB)
+        con = sqlcon(conDB)
     
         cs = con.cursor()
     
@@ -349,7 +349,7 @@ def update_table(con_pgsql, pg_table, dic_new_values, dic_ref_values=None,
     dic_new_values = {field: '\'value\''}
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
 
     __logic_operator = ' OR ' if logic_operator == 'OR' else ' AND ' \
         if logic_operator == 'AND' else None
@@ -360,7 +360,7 @@ def update_table(con_pgsql, pg_table, dic_new_values, dic_ref_values=None,
             'The valid options are \'OR\' and \'AND\'')
         )
 
-    con = psqlcon(con_pgsql)
+    con = sqlcon(con_pgsql)
 
     cursor = con.cursor()
     
@@ -479,9 +479,9 @@ def replace_null_with_other_col_value(con_pgsql, pgtable, nullFld, replaceFld):
      5  |  9   | -99
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
-    con = psqlcon(con_pgsql)
+    con = sqlcon(con_pgsql)
     
     cursor = con.cursor()
     
@@ -502,7 +502,7 @@ def distinct_to_table(lnk, pgtable, outable, cols=None):
     """
     
     from gasp3       import goToList
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
     cols = goToList(cols)
     
@@ -511,7 +511,7 @@ def distinct_to_table(lnk, pgtable, outable, cols=None):
         
         cols = cols_name(lnk, pgtable, api='psql')
     
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     
     cs = con.cursor()
     

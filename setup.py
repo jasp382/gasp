@@ -33,6 +33,7 @@ setup(
         'gasp3.gt.fm',
         'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
         'gasp3.gt.mob', 'gasp3.gt.mob.api', 'gasp3.gt.mob.api.glg',
+        'gasp3.gt.nc',
         'gasp3.gt.prop', 'gasp3.gt.prop.feat',
         'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
         'gasp3.gt.to', 'gasp3.gt.stats', 'gasp3.gt.wenv',
