@@ -365,8 +365,8 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     conParam["DATABASE"] = db_name
     
     TABLE = shp_to_psql(
-        conParam, MATRIX_OD, epsg, pgTable="tbl_{}".format(db_name),
-        api="pandas"
+        conParam, MATRIX_OD, pgTable="tbl_{}".format(db_name),
+        api="pandas", srsEpsgCode=epsg
     )
     
     OUT_TABLE = q_to_ntbl(conParam, get_filename(RESULT_MATRIX), (

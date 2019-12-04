@@ -45,7 +45,7 @@ setup(
         # ******************************************************************** #
         'gasp3.web',
         'gasp3.web.djg', 'gasp3.web.djg.ff', 'gasp3.web.djg.mdl',
-        'gasp3.web.geosrv', 'gasp3.web.geosrv.styl', 'gasp3.web.geosrv.styl.sld'
+        'gasp3.web.geosrv', 'gasp3.web.geosrv.sld'
         # ******************************************************************** #
     ],
     install_requires=[
@@ -71,7 +71,8 @@ setup(
         'sentinelsat==0.13',
         'django==2.2.4', 'django-widget-tweaks==1.4.5',
         'django-cors-headers==3.1.0', 'djangorestframework==3.10.2',
-        'sentinelsat==0.13'
+        'sentinelsat==0.13',
+        'simpledbf==0.2.6'
     ],
     include_package_data=True
 )

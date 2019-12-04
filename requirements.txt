@@ -31,3 +31,4 @@ django-widget-tweaks==1.4.1
 django-cors-headers==3.0.0
 djangorestframework==3.9.4
 sentinelsat==0.13
+simpledbf==0.2.6

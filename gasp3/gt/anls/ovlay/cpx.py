@@ -169,7 +169,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     
     def fix_geometry(shp):
         # Send data to PostgreSQL
-        nt = shp_to_psql(conPARAM, shp, SRS_CODE, api='shp2pgsql')
+        nt = shp_to_psql(conPARAM, shp, srsEpsgCode=SRS_CODE, api='shp2pgsql')
     
         # Fix data
         corr_tbl = fix_geom(
@@ -247,7 +247,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     for uShp in UNION_SHAPE:
         # Send data to PostgreSQL
         union_tbl = shp_to_psql(
-            conPARAM, UNION_SHAPE[uShp], SRS_CODE, api='shp2pgsql'
+            conPARAM, UNION_SHAPE[uShp], srsEpsgCode=SRS_CODE, api='shp2pgsql'
         )
         
         # Produce table with % of area equal in both maps

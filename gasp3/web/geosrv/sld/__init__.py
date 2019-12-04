@@ -14,7 +14,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
     
     * attr_colors -> list or table with styles for some category or interval
     
-    TABLE EXAMPLE (Sheet Index = 0):
+    QUANTITATIVE - TABLE EXAMPLE (Sheet Index = 0):
          | min | max | R | G | B
        1 |  0  |  5  | X | X | X
        2 |  5  |  10 | X | X | X
@@ -22,7 +22,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
        4 |  15 |  20 | X | X | X
        5 |  20 |  25 | X | X | X
        
-    LIST EXAMPLE:
+    QUANTITATIVE - LIST EXAMPLE:
     attr_colors = [
         {'min':  0, 'max':  5, 'R': X, 'G': X, 'B': X},
         {'min':  5, 'max': 10, 'R': X, 'G': X, 'B': X},
@@ -30,6 +30,10 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
         {'min': 15, 'max': 20, 'R': X, 'G': X, 'B': X},
         {'min': 20, 'max': 25, 'R': X, 'G': X, 'B': X}
     ]
+    
+    CATEGORICAL - TABLE EXAMPLE
+    
+    CATEGORICAL - LIST EXAMPLE
     
     * mapAttrKeys -> dict with the relation between the meaning of the 
     columns/keys in attr_colors
@@ -62,10 +66,10 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
     NOTE: This will work only for polygon/linear features
     """
 
-    import os; from gasp3.pyt.Xml        import write_xml_tree
-    from gasp3.pyt.oss                   import get_fileformat
-    from gasp3.web.geosrv.styl.sld.rules import get_categorical_rules
-    from gasp3.web.geosrv.styl.sld.rules import get_quantitative_rules
+    import os; from gasp3.pyt.Xml   import write_xml_tree
+    from gasp3.pyt.oss              import get_fileformat
+    from gasp3.web.geosrv.sld.rules import get_categorical_rules
+    from gasp3.web.geosrv.sld.rules import get_quantitative_rules
     
     if DATA != 'CATEGORICAL' and DATA != 'QUANTITATIVE':
         raise ValueError(
@@ -87,6 +91,11 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
                 attr_colors = tbl_to_obj(
                     attr_colors, sheet=0, useFirstColAsIndex=None, output='array'
                 )
+            
+            elif ff == '.dbf':
+                from gasp3.fm import tbl_to_obj
+                
+                attr_colors = tbl_to_obj(attr_colors, output='array')
             
             else:
                 raise ValueError('Your file is not a json or a xls')
