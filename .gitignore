@@ -10,3 +10,5 @@ gasp.egg-info
 .settings
 # Hide notebooks checkpoints
 .ipynb*
+# Scripts
+scripts/usee/obs_to_txt_nc.json
