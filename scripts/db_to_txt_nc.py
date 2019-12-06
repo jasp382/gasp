@@ -28,6 +28,92 @@ def args_parse():
 
 
 ###############################################################################
+############################# Auxilary methods ################################
+###############################################################################
+
+def quality_assessment(df, tempCol, timeCol):
+    """
+    Apply the following rules to get a quality flag:
+    
+    1 - The first 130 values of the day have poor quality;
+    2 - For two sequential measures, if delta time > 1h AND delta temperature
+        > 1C, the next 130 measures have poor quality;
+    3 - For two sequential measures, if delta time > 1min AND delta temperature
+        > 0.3C, the next 20 measures have poor quality.
+    """
+    
+    import numpy as np
+    
+    # Produce observations FID
+    df['myidx'] = df.index + 1
+    
+    # Comparing row values with previous row values
+    jdf = df.copy()
+    
+    jdf['myidx'] = jdf.myidx + 1
+    jdf.rename(columns={
+        tempCol : 'lagtemp', timeCol : 'lagtime', 'myidx' : 'jidx'
+    }, inplace=True)
+    jdf.drop([c for c in jdf.columns.values if c != 'lagtime' \
+              and c != 'lagtemp' and c != 'jidx'], axis=1, inplace=True)
+    
+    df = df.merge(jdf, how='left', left_on='myidx', right_on='jidx')
+    df['dtime'] = df[timeCol] - df.lagtime
+    df['dtime'] = df.dtime.dt.total_seconds()
+    df['dtemp'] = df.lagtemp - df[tempCol]
+    df['dtemp'] = df.dtemp.abs()
+    
+    # Apply rules
+    df['rule1'] = np.where(df.myidx <= 130, 1, 0)
+    
+    df['rule2'] = np.where(
+        (df.dtemp > 1) & (df.dtime > 3600) & (df.rule1 == 0),
+        1, 0
+    )
+    badQR = df[df.rule2 == 1].myidx.tolist()
+    badQR = [(i, i+130) for i in badQR]
+    for i in badQR:
+        df['rule2'] = np.where(
+            (df.myidx >= 1[0]) & (df.myidx < i[1]), 1, df.rule2
+        )
+    
+    df['rule3'] = np.where(
+        ((df.dtemp > 0.3) | (df.dtime > 60)) & (df.rule1 == 0), 1, 0
+    )
+    badQR = df[df.rule3 == 1].myidx.tolist()
+    badQR = [(i, i+20) for i in badQR]
+    for i in badQR:
+        df['rule3'] = np.where(
+            (df.myidx >= i[0]) & (df.myidx < i[1]), 1, df.rule3
+        )
+    
+    # Set Quality Flag
+    # 1 - Good Quality; 4 - Bad quality
+    df['quality'] = np.where(
+        (df.rule1 == 0) & (df.rule2 == 0) & (df.rule3 == 0), 1, 4
+    )
+    
+    # Delete uncessary columns
+    df.drop(['jidx', 'myidx', 'lagtemp', 'lagtime', 'dtime',
+             'dtemp', 'rule1', 'rule2', 'rule3'], axis=1, inplace=True)
+    
+    return df
+
+
+def txt_nodata(day, out):
+    """
+    There is no data for a specific day. Write txt file saying that. 
+    """
+    
+    import codecs
+    
+    outTxt = os.path.splitext(out)[0] + '.txt'
+    with codecs.open(outTxt, 'w', encoding='utf-8') as f:
+        f.write('No Data was collected in {}'.format(day))
+    
+    return out
+
+###############################################################################
 ###############################################################################
 """
 Conversion Methods
@@ -53,6 +139,9 @@ def db_to_srm(conDB, TABLE, TIME, DAY, COLS_ORDER, COL_MAP, OUT_SRM):
         t=TABLE, d=DAY, tmCol=TIME, cols=", ".join(COLS_ORDER),
         dep="" if 'depth' not in COL_MAP else ", 1 AS depth"
     ), db_api='mysql')
+    
+    if not df.shape[0]:
+        return txt_nodata(DAY, OUT_SRM)
     
     if 'depth' in COL_MAP:
         COLS_ORDER.insert(2, 'depth')
@@ -137,6 +226,9 @@ def db_to_nc(conDB, tbl, tm, daystr, varCols, latCol, lngCol, nc, cellsize=0.001
         var=", ".join(["{} AS {}".format(
             k, varCols[k]["STANDARD_NAME"]) for k in varCols])
     ), db_api='mysql')
+    
+    if not geoDf.shape[0]:
+        return txt_nodata(daystr, nc)
     
     # Rename axis columns
     geoDf.rename(columns={'latitude' : 'y', 'longitude' : 'x'}, inplace=True)
@@ -310,7 +402,7 @@ def db_to_nc(conDB, tbl, tm, daystr, varCols, latCol, lngCol, nc, cellsize=0.001
     return nc
 
 
-def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, timeCol, outNc):
+def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
     """
     DB to NC according Copernicus specifications for data collected IN SITU
     """
@@ -351,6 +443,23 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, timeCol, outNc):
         t=tbl, d=daystr, tmCol=timeCol
     ), db_api='mysql')
     
+    if not geoDf.shape[0]:
+        return txt_nodata(daystr, outNc)
+    
+    # Get Quality Flag for observations in File
+    temperatureCol = None
+    timeDim        = None
+    for i in dimCols:
+        if i['DB_COL'] == timeCol:
+            timeDim = i["SLUG"]
+        else:
+            continue
+    for i in varCols:
+        if i['DB_COL'] == tempCol:
+            temperatureCol = i["SLUG"]
+        else: continue
+    geoDf = quality_assessment(geoDf, temperatureCol, timeDim)
+    
     """ Create NC File """
     ncObj = netCDF4.Dataset(outNc, 'w', clobber=True)
     
@@ -364,7 +473,7 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, timeCol, outNc):
         if d["AXIS"] == 'X' or d["AXIS"] == 'Y':
             varValues = geoDf[d["SLUG"]]
         elif d["AXIS"] == 'T':
-            timeDim = d["SLUG"]
+            varValues = None
         else:
             varValues = geoDf[d["SLUG"]].unique()
         
@@ -405,8 +514,8 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, timeCol, outNc):
             d["QC"].flag_values  = QFlags
             d["QC"].flag_meanings = QC_STR
             
-            d["QC"][:] = np.zeros(geoDf.shape[0]) if 'IS_CHILD' not in d else \
-                np.zeros((geoDf.shape[0], 1))
+            d["QC"][:] = np.full(geoDf.shape[0], 1) if 'IS_CHILD' not in d else \
+                np.full((geoDf.shape[0], 1), 1)
         
         # Add variable for Data processing method
         if d["AXIS"] == 'Z':
@@ -460,7 +569,7 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, timeCol, outNc):
     pqc.valid_max = 9
     pqc.flag_values = QFlags
     pqc.flag_meanings = QC_STR
-    pqc[:] = np.zeros(geoDf.shape[0])
+    pqc[:] = np.full(geoDf.shape[0], 1)
     
     # Create DC Reference
     dcref = ncObj.createVariable('DC_REFERENCE', 'S1', (timeDim, "STRING32"))
@@ -503,7 +612,7 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, timeCol, outNc):
         
         for v in varCols:
             v["VAROBJ"][idx, :] = [row[v["SLUG"]]]
-            v["QC"][idx, :] = 1
+            v["QC"][idx, :] = row.quality
     
     """ Close File """
     ncObj.close()
@@ -535,7 +644,7 @@ if __name__ == '__main__':
     # Database Meta
     data_table = "buoys"
     time_col   = 'created_at'
-    day        = "2019-09-20"
+    day        = "2019-09-30"
     
     BASE_FOLDER = '/home/jasp/undersee'
     if ARGS.netcdf:
@@ -649,6 +758,8 @@ if __name__ == '__main__':
                 "TYPE" : 'f4', "DIM" : ("TIME", "DEPH")
             }
         ]
+        tempCol = 'value1'
         
         db_to_nc_v2(
-            con_db, data_table, day, dimensionCols, variableCols, time_col, out_file)
+            con_db, data_table, day, dimensionCols, variableCols, tempCol,
+            time_col, out_file)

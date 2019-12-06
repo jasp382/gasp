@@ -128,6 +128,7 @@ def db_to_tbl(conDB, tables, outTbl, txtDelimiter=None, dbAPI='psql',
     API's Avaialble:
     * psql;
     * sqlite;
+    * mysql;
     """
     
     import os; from gasp3 import goToList
