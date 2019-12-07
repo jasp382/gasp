@@ -99,26 +99,6 @@ def drop_db(lnk, database):
 
 
 """
-Dump Databases
-"""
-
-def dump_db(conPSQL, outSQL):
-    """
-    DB to SQL Script
-    """
-    
-    from gasp3 import exec_cmd
-    
-    outcmd = exec_cmd("pg_dump -U {} -h {} -p {} -w {} > {}".format(
-        conPSQL["USER"], conPSQL["HOST"], conPSQL["PORT"],
-        conPSQL["DATABASE"], outSQL      
-    ))
-    
-    return outSQL
-
-
-
-"""
 Merge Databases
 """
 
@@ -136,7 +116,8 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     from gasp3.sql.i       import db_exists, lst_tbl
     from gasp3.sql.mng.db  import create_db, drop_db
     from gasp3.sql.mng.tbl import rename_tbl, tbls_to_tbl
-    from gasp3.sql.mng.tbl import dump_tbls, restore_tbls
+    from gasp3.sql.fm      import dump_tbls
+    from gasp3.sql.to      import restore_tbls
     from gasp3.sql.mng.tbl import distinct_to_table, del_tables
     
     # Prepare database

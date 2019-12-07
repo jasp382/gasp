@@ -3,6 +3,62 @@ Data to a Relational Database
 """
 
 
+def restore_db(conDB, sqlScript, api='psql'):
+    """
+    Restore Database using SQL Script
+    
+    TODO: add mysql option
+    """
+    
+    from gasp3 import exec_cmd
+    
+    if api == 'psql':
+        cmd = 'psql -h {} -U {} -p {} -w {} < {}'.format(
+            conDB['HOST'], conDB['USER'], conDB['PORT'],
+            conDB["DATABASE"], sqlScript
+        )
+    
+    elif api == 'mysql':
+        cmd = 'mysql -u {} -p{} {} < {}'.format(
+            conDB['USER'], conDB['PASSWORD'], conDB["DATABASE"],
+            sqlScript
+        )
+    else:
+        raise ValueError('{} API is not available'.format(api))
+    
+    outcmd = exec_cmd(cmd)
+    
+    return conDB["DATABASE"]
+
+
+def restore_tbls(conParam, sql, tablenames=None):
+    """
+    Restore one table from a sql Script
+    
+    TODO: add mysql option
+    """
+    
+    from gasp3 import exec_cmd, goToList
+    
+    tbls = goToList(tablenames)
+    
+    tblStr = "" if not tablenames else " {}".format(" ".join([
+        "-t {}".format(t) for t in tbls]))
+    
+    outcmd = exec_cmd((
+        "pg_restore -U {user} -h {host} -p {port} "
+        "-w{tbl} -d {db} {sqls}"
+    ).format(
+        user=conParam["USER"], host=conParam["HOST"],
+        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql, tbl=tblStr
+    ))
+    
+    return tablenames
+
+###############################################################################
+###############################################################################
+
+
 def df_to_db(conParam, df, table, append=None, api='psql',
              epsg=None, geomType=None, colGeom='geometry'):
     """
@@ -197,8 +253,9 @@ def tbl_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
     
     else:
         import os
-        from gasp3.pyt.oss     import create_folder, del_folder
-        from gasp3.sql.mng.tbl import dump_tbls, restore_tbls
+        from gasp3.pyt.oss import create_folder, del_folder
+        from gasp3.sql.fm  import dump_tbls
+        from gasp3.sql.to  import restore_tbls
         
         tmpFolder = create_folder(
             os.path.dirname(os.path.abspath(__file__)), randName=True

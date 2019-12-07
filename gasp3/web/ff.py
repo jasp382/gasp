@@ -31,3 +31,15 @@ def get_file(url, output):
     
     return output
 
+
+def get_file_via_scp(host, username, hostpath, outpath, privateKey=None):
+    """
+    Get file from remote sensing via SCP
+    """
+    
+    from gasp3 import exec_cmd
+    
+    outcmd = exec_cmd("scp {}{}@{}:{} {}".format(
+        "-i {} ".format(privateKey) if privateKey else "",
+        username, host, hostpath, outpath
+    ))

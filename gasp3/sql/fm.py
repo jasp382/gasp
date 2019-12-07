@@ -57,3 +57,71 @@ def tbl_to_dict(tbl, con, cols=None, apidb='psql'):
     
     return data
 
+
+"""
+Dump Databases and their tables
+"""
+
+def dump_db(conDB, outSQL, api='psql'):
+    """
+    DB to SQL Script
+    """
+    
+    from gasp3 import exec_cmd
+    
+    if api == 'psql':
+        cmd = "pg_dump -U {} -h {} -p {} -w {} > {}".format(
+            conDB["USER"], conDB["HOST"], conDB["PORT"],
+            conDB["DATABASE"], outSQL
+        )
+    
+    elif api == 'mysql':
+        cmd = (
+            "mysqldump -u {} --port {} -p{} --host {} "
+            "{} > {}"
+        ).format(
+            conDB["USER"], conDB["PORT"], conDB["PASSWORD"],
+            conDB["HOST"], conDB["DATABASE"], outSQL
+        )
+    
+    else:
+        raise ValueError('{} API is not available'.format(api))
+    
+    outcmd = exec_cmd(cmd)
+    
+    return outSQL
+
+
+def dump_tbls(conParam, tables, outsql, startWith=None):
+    """
+    Dump one table into a SQL File
+    """
+    
+    from gasp3 import exec_cmd, goToList
+    
+    tbls = goToList(tables)
+    
+    if startWith:
+        from gasp3.sql.i import lst_tbl
+        
+        db_tbls = lst_tbl(conParam, api='psql')
+        
+        dtbls = []
+        for t in db_tbls:
+            for b in tbls:
+                if t.startswith(b):
+                    dtbls.append(t)
+        
+        tbls = dtbls
+    
+    outcmd = exec_cmd((
+        "pg_dump -Fc -U {user} -h {host} -p {port} "
+        "-w {tbl} {db} > {out}"
+    ).format(
+        user=conParam["USER"], host=conParam["HOST"],
+        port=conParam["PORT"], db=conParam["DATABASE"], out=outsql,
+        tbl=" ".join(["-t {}".format(t) for t in tbls])
+    ))
+    
+    return outsql
+

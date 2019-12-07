@@ -238,9 +238,9 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
     import os
     from gasp3                 import __import
     if not usePGRestore:
-        from gasp3.sql         import run_sql_script as restore_db
+        from gasp3.sql.to      import restore_db
     else:
-        from gasp3.sql.mng.tbl import restore_tbls as restore_db
+        from gasp3.sql.to      import restore_tbls as restore_db
     from gasp3.sql.mng.db      import create_db
     from gasp3.sql.i           import lst_tbl
     from gasp3.sql.fm          import tbl_to_dict

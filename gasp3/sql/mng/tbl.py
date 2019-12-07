@@ -180,66 +180,6 @@ def drop_where_cols_are_same(conParam, table, colA, colB):
     cursor.close()
     con.close()
 
-
-"""
-Restore
-"""
-def dump_tbls(conParam, tables, outsql, startWith=None):
-    """
-    Dump one table into a SQL File
-    """
-    
-    from gasp3 import exec_cmd, goToList
-    
-    tbls = goToList(tables)
-    
-    if startWith:
-        from gasp3.sql.i import lst_tbl
-        
-        db_tbls = lst_tbl(conParam, api='psql')
-        
-        dtbls = []
-        for t in db_tbls:
-            for b in tbls:
-                if t.startswith(b):
-                    dtbls.append(t)
-        
-        tbls = dtbls
-    
-    outcmd = exec_cmd((
-        "pg_dump -Fc -U {user} -h {host} -p {port} "
-        "-w {tbl} {db} > {out}"
-    ).format(
-        user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], db=conParam["DATABASE"], out=outsql,
-        tbl=" ".join(["-t {}".format(t) for t in tbls])
-    ))
-    
-    return outsql
-
-
-def restore_tbls(conParam, sql, tablenames=None):
-    """
-    Restore one table from a sql Script
-    """
-    
-    from gasp3 import exec_cmd, goToList
-    
-    tbls = goToList(tablenames)
-    
-    tblStr = "" if not tablenames else " {}".format(" ".join([
-        "-t {}".format(t) for t in tbls]))
-    
-    outcmd = exec_cmd((
-        "pg_restore -U {user} -h {host} -p {port} "
-        "-w{tbl} -d {db} {sqls}"
-    ).format(
-        user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql, tbl=tblStr
-    ))
-    
-    return tablenames
-
 """
 Write new tables or edit tables in Database
 """
