@@ -6,59 +6,65 @@ Data Management Tools > Manage Spatial Reference Systems
 
 from osgeo import osr
 
-def get_trans_param(in_epsg, out_epsg, export_all=None):
-    """
-    Return transformation parameters for two Spatial Reference Systems
-    """
-    
-    i = osr.SpatialReference()
-    i.ImportFromEPSG(in_epsg)
-    o = osr.SpatialReference()
-    o.ImportFromEPSG(out_epsg)
-    t = osr.CoordinateTransformation(i, o)
-    if not export_all:
-        return t
-    else:
-        return {'input': i, 'output': o, 'transform': t}
-
-
-def ogr_def_proj(shp, epsg=None, template=None):
+def def_prj(shp, epsg=None, template=None, api='ogr'):
     """
     Create/Replace the prj file of a ESRI Shapefile
+
+    API options:
+    * ogr;
+    * epsgio;
     """
     
     import os
+    import shutil
+
+    prj_file = os.path.join(os.path.dirname(shp), '{}.prj'.format(
+        os.path.splitext(os.path.basename(shp))[0]
+    ))
+
+    if api == 'ogr':
+        if epsg and not template:
+            s = osr.SpatialReference()
+            s.ImportFromEPSG(int(epsg))
+            s.MorphToESRI()
+            prj = open(prj_file, 'w')
+            prj.write(s.ExportToWkt())
+            prj.close()
+            return prj_file
     
-    prj_file = '{}.prj'.format(
-        os.path.join(
-            os.path.dirname(shp),
-            os.path.splitext(os.path.basename(shp))[0]
-        )
-    )
-    if epsg and not template:
-        s = osr.SpatialReference()
-        s.ImportFromEPSG(int(epsg))
-        s.MorphToESRI()
-        prj = open(prj_file, 'w')
-        prj.write(s.ExportToWkt())
-        prj.close()
-        return prj_file
+        elif not epsg and template:
+            prj_template = '{}.prj'.format(
+                os.path.splitext(os.path.basename(template))[0]
+            )
+        
+            if not os.path.exists(prj_template):
+                return 0
+        
+            try:
+                os.remove(prj_file)
+                shutil.copyfile(prj_template, prj_file)
+            except:
+                shutil.copyfile(prj_template, prj_file)
     
-    elif not epsg and template:
-        prj_template = '{}.prj'.format(
-            os.path.splitext(os.path.basename(template))[0]
-        )
+    elif api == 'epsgio':
+        if not epsg:
+            raise ValueError((
+                "TO use epsgio option, epsg parameter must be given"
+            ))
         
-        if not os.path.exists(prj_template):
-            return 0
+        from gasp.to.web  import get_file
+        from gasp.pyt.oss import del_file
+
+        url = 'https://epsg.io/{}.wkt?download'
+
+        if os.path.exists(prj_file):
+            # Delete file
+            del_file(prj_file)
         
-        try:
-            os.remove(prj_file)
-            shutil.copyfile(prj_template, prj_file)
-        except:
-            shutil.copyfile(prj_template, prj_file)
+        # Get new prj
+        get_file(url.format(str(epsg)), prj_file)
         
-        return prj_file
+    return prj_file
 
 
 def proj(inShp, outShp, outEPSG, inEPSG=None,
@@ -70,7 +76,6 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
     * ogr;
     * ogr2ogr;
     * pandas;
-    * OGRGeom;
     * ogr2ogr_SQLITE;
     * psql;
     """
@@ -91,8 +96,8 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
         from gasp.gt.lyr.fld   import copy_flds
         from gasp.gt.prop.feat import get_gtype
         from gasp.gt.prop.ff   import drv_name
-        from gasp.gt.prop.prj  import get_sref_from_epsg
-        from gasp.pyt.oss      import get_filename
+        from gasp.gt.prop.prj  import get_sref_from_epsg, get_trans_param
+        from gasp.pyt.oss      import fprop
         
         def copyShp(out, outDefn, lyr_in, trans):
             for f in lyr_in:
@@ -119,7 +124,7 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
             drv_name(outShp)).CreateDataSource(outShp)
         
         outlyr = out.CreateLayer(
-            get_filename(outShp), get_sref_from_epsg(outEPSG),
+            fprop(outShp, 'fn'), get_sref_from_epsg(outEPSG),
             geom_type=get_gtype(
                 inShp, name=None, py_cls=True, gisApi='ogr'
             )
@@ -190,57 +195,24 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
     
     elif gisApi == 'pandas':
         # Test if input Shp is GeoDataframe
-        from geopandas import GeoDataFrame as gdf
-        
-        if type(inShp) == gdf:
-            # Is DataFrame
-            df = inShp
-        
-        else:
-            # Assuming is file
-            if os.path.exists(inShp):
-                # Is File 
-                from gasp.fm import tbl_to_obj
-                
-                df = tbl_to_obj(inShp)
-            else:
-                raise ValueError((
-                    "For pandas API, inShp must be file or GeoDataFrame"
-                ))
+        from gasp.gt.fmshp import shp_to_obj
+        from gasp.gt.toshp import df_to_shp
+
+        df = shp_to_obj(inShp)
         
         # Project df
         newDf = df.to_crs({'init' : 'epsg:{}'.format(str(outEPSG))})
         
-        if outShp:
-            # Try to save as file
-            from gasp.gt.to.shp import df_to_shp
+        # Save as file 
             
-            return df_to_shp(df, outShp)
-        
-        else:
-            return newDf
-    
-    elif gisApi == 'OGRGeom':
-        if not inEPSG:
-            raise ValueError((
-                'With OGRGeom, the definition of inEPSG is '
-                'demandatory.'
-            ))
-        
-        from osgeo import ogr
-        
-        g = ogr.CreateGeometryFromWkt(inShp.ExportToWkt())
-        
-        g.Transform(get_trans_param(inEPSG, outEPSG))
-        
-        return g
+        return df_to_shp(df, outShp)
     
     elif gisApi == 'psql':
-        from gasp.sql.db    import create_db
-        from gasp.pyt.oss   import get_filename
-        from gasp.sql.to    import shp_to_psql
-        from gasp.gt.to.shp import dbtbl_to_shp
-        from gasp.gql.prj   import sql_proj
+        from gasp.sql.db      import create_db
+        from gasp.pyt.oss     import fprop
+        from gasp.sql.to      import shp_to_psql
+        from gasp.gt.toshp.db import dbtbl_to_shp
+        from gasp.gql.prj     import sql_proj
 
         con_db = {
             "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',
@@ -250,7 +222,7 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
         # Create Database
         if "DATABASE" not in con_db:
             con_db["DATABASE"] = create_db(
-                con_db, get_filename(outShp, forceLower=True),
+                con_db, fprop(outShp, 'fn', forceLower=True),
                 api='psql'
             )
         
@@ -270,7 +242,7 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
 
         # Transform
         oTbl = sql_proj(
-            con_db, inTbl, get_filename(outShp, forceLower=True),
+            con_db, inTbl, fprop(outShp, 'fn', forceLower=True),
             outEPSG, geomCol='geom', newGeom='geom'
         )
 

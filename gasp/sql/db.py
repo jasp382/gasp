@@ -113,26 +113,29 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     """
     
     import os
-    from gasp.pyt.oss     import get_filename, del_file, get_fileformat
-    from gasp.sql         import run_sql_script
-    from gasp.sql.i       import db_exists, lst_tbl
-    from gasp.sql.db      import create_db, drop_db
-    from gasp.sql.mng.tbl import rename_tbl, tbls_to_tbl
-    from gasp.sql.fm      import dump_tbls
-    from gasp.sql.to      import restore_tbls
-    from gasp.sql.mng.tbl import distinct_to_table, del_tables
+    from gasp.pyt.oss import fprop, del_file
+    from gasp.sql     import psql_cmd
+    from gasp.sql.i   import db_exists, lst_tbl
+    from gasp.sql.db  import create_db, drop_db
+    from gasp.sql.tbl import rename_tbl, tbls_to_tbl
+    from gasp.sql.fm  import dump_tbls
+    from gasp.sql.to  import restore_tbls
+    from gasp.sql.tbl import distinct_to_table, del_tables
     
     # Prepare database
+    fdb = fprop(destinationDb, ['fn', 'ff'])
     if os.path.isfile(destinationDb):
-        if get_fileformat(destinationDb) == '.sql':
-            newdb = create_db(
-                conPSQL, get_filename(destinationDb),
-                overwrite=True, api='psql'
-            )
+        if fdb['fileformat'] == '.sql':
+            newdb = create_db(conPSQL, fdb['filename'], 
+                overwrite=True, api='psql')
             
-            run_sql_script(conPSQL, newdb, destinationDb)
+            conPSQL["DATABASE"] = newdb
+            
+            psql_cmd(conPSQL, destinationDb)
             
             destinationDb = newdb
+
+            del conPSQL["DATABASE"]
         
         else:
             raise ValueError((
@@ -166,14 +169,14 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     
     for i in range(len(dbs)):
         # Create DB
-        DB_NAME = get_filename(dbs[i])
+        DB_NAME = fprop(dbs[i], 'fn')
         create_db(conPSQL, DB_NAME, overwrite=True, api='psql')
         
         # Restore DB
-        run_sql_script(conPSQL, DB_NAME, dbs[i])
+        conPSQL["DATABASE"] = DB_NAME
+        psql_cmd(conPSQL, dbs[i])
         
         # List Tables
-        conPSQL["DATABASE"] = DB_NAME
         if not tbls_to_merge:
             tbls__ = lst_tbl(conPSQL, excludeViews=True, api='psql')
             tbls   = [t for t in tbls__ if t not in ignoreCols]
@@ -186,7 +189,7 @@ def merge_dbs(conPSQL, destinationDb, dbs,
         
         for t in range(len(tbls)):
             if tbls[t] not in TABLES:
-                TABLES[tbls[t]] = ["{}_{}".format(tlbs[t], str(i))]
+                TABLES[tbls[t]] = ["{}_{}".format(tbls[t], str(i))]
             
             else:
                 TABLES[tbls[t]].append("{}_{}".format(tbls[t], str(i)))

@@ -15,11 +15,11 @@ def shply_break_lines_on_points(lineShp, pointShp, lineIdInPntShp, splitedShp):
     
     from shapely.ops      import split
     from shapely.geometry import Point, LineString
-    from gasp.fm          import tbl_to_obj
-    from gasp.df.mng      import col_list_val_to_row
+    from gasp.gt.fmshp    import shp_to_obj
+    from gasp.pyt.df.mng  import col_list_val_to_row
     from gasp.gt.prop.prj import get_epsg_shp
-    from gasp.gt.to.shp   import df_to_shp
-    from gasp.df.to       import dict_to_df
+    from gasp.gt.toshp    import df_to_shp
+    from gasp.pyt.df.to   import dict_to_df
     
     srs_code = get_epsg_shp(lineShp)
     
@@ -36,8 +36,8 @@ def shply_break_lines_on_points(lineShp, pointShp, lineIdInPntShp, splitedShp):
         
         return nline
     
-    pnts  = tbl_to_obj(pointShp)
-    lines = tbl_to_obj(lineShp, fields='ALL', output='dict')
+    pnts  = shp_to_obj(shp_to_obj)
+    lines = shp_to_obj(shp_to_obj, output='dict')
     
     # Split Rows
     def split_geom(row):
@@ -95,7 +95,8 @@ def vedit_break(inShp, pntBreakShp,
     
     # Iterate over pntBreakShp to get all coords
     if os.path.isfile(pntBreakShp):
-        from gasp.fm import points_to_list
+        from gasp.gt.fmshp import points_to_list
+        
         lstPnt = points_to_list(pntBreakShp)
     else:
         from grass.pygrass.vector import VectorTopo
@@ -127,11 +128,11 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     
     import os
     from gasp.sql.to      import shp_to_psql
-    from gasp.gt.to.shp   import dbtbl_to_shp
+    from gasp.gt.toshp.db import dbtbl_to_shp
     from gasp.gt.wenv.grs import run_grass
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     from gasp.sql.db      import create_db
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.to      import q_to_ntbl
     
     tmpFiles = os.path.join(workspace, loc)
     
@@ -142,10 +143,10 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     
     gsetup.init(gbase, workspace, loc, 'PERMANENT')
     
-    from gasp.gt.to.shp import shp_to_grs, grs_to_shp
+    from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
     
     grsLine = shp_to_grs(
-        lineShp, get_filename(lineShp, forceLower=True)
+        lineShp, fprop(lineShp, 'fn', forceLower=True)
     )
     
     vedit_break(grsLine, pntShp, geomType='line')
@@ -159,7 +160,7 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     
     LINES_TABLE = shp_to_psql(
         conParam, LINES, srsEpsgCode=srs,
-        pgTable=get_filename(LINES, forceLower=True), api="shp2pgsql"
+        pgTable=fprop(LINES, 'fn', forceLower=True), api="shp2pgsql"
     )
     
     # Delete old/original lines and stay only with the breaked one
@@ -217,11 +218,11 @@ def break_lines_on_points(lineShp, pntShp, outShp, lnhidonpnt,
             lineShp, pntShp, lnhidonpnt, outShp)
     
     elif api == 'psql':
-        from gasp.pyt.oss     import get_filename
+        from gasp.pyt.oss     import fprop
         from gasp.sql.db      import create_db
         from gasp.sql.to      import shp_to_psql
-        from gasp.gt.to.shp   import dbtbl_to_shp
-        from gasp.sql.gop.brk import split_lines_on_pnt
+        from gasp.gt.toshp.db import dbtbl_to_shp
+        from gasp.gql.brk     import split_lines_on_pnt
         
         conDB = {
             "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',
@@ -230,8 +231,8 @@ def break_lines_on_points(lineShp, pntShp, outShp, lnhidonpnt,
         
         # Create DB
         if "DATABASE" not in conDB:
-            conDB["DATABASE"] = create_db(conDB, get_filename(
-                lineShp, forceLower=True
+            conDB["DATABASE"] = create_db(conDB, fprop(
+                lineShp, 'fn', forceLower=True
             ))
         
         else:
@@ -250,7 +251,8 @@ def break_lines_on_points(lineShp, pntShp, outShp, lnhidonpnt,
         
         # Get result
         outTbl = split_lines_on_pnt(
-            conDB, lnhTbl, pntTbl, get_filename(outShp, forceLower=True),
+            conDB, lnhTbl, pntTbl,
+            fprop(outShp, 'fn', forceLower=True),
             lnhidonpnt, 'gid'
         )
         

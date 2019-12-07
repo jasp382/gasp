@@ -25,9 +25,9 @@ def cols_name(ff, sheetName=None, sheetIdx=None):
     Get Columns Name in File, regardeless the type of file
     """
     
-    from gasp.pyt.oss import get_fileformat
+    from gasp.pyt.oss import fprop
     
-    fFormat = get_fileformat(ff)
+    fFormat = fprop(ff, 'ff')
     
     if fFormat == '.xlsx' or fFormat == '.xls':
         from gasp.pyt.xls.fld import col_name

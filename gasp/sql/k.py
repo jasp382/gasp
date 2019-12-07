@@ -64,8 +64,8 @@ def multiCols_FK_to_singleCol(conParam, tbl_wPk, pkCol, tbl_multiFk,
             "fkCols parameter should be a dict"
         )
     
-    from gasp.pyt         import obj_to_lst
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.pyt    import obj_to_lst
+    from gasp.sql.to import q_to_ntbl
     
     colsSel = obj_to_lst(colsSel)
     

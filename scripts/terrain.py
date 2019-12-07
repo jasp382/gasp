@@ -25,7 +25,7 @@ if __name__ == '__main__':
     Run Script
     """
 
-    from gasp.gd.terrain.grs import thrd_dem
+    from gasp.sds.terrain.grs import thrd_dem
 
     thrd_dem(
         countours_fld, lmt_fld, dem_fld, elv_fld,

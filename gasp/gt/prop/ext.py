@@ -35,13 +35,13 @@ def get_ext(inFile, outEpsg=None):
             raise ValueError('cannot get EPSG of input file')
         
         if fileEpsg != outEpsg:
-            from gasp.gt.to.geom import new_pnt
-            from gasp.gt.prj     import proj
+            from gasp.g.to  import new_pnt
+            from gasp.g.prj import prj_ogrgeom
             
-            bt_left = proj(new_pnt(extent[0], extent[2]), None,
-                           outEpsg, inEPSG=fileEpsg, gisApi='OGRGeom')
-            top_right = proj(new_pnt(extent[1], extent[3]), None,
-                             outEpsg, inEPSG=fileEpsg, gisApi='OGRGeom')
+            bt_left = prj_ogrgeom(new_pnt(
+                extent[0], extent[2]), fileEpsg, outEpsg)
+            top_right = prj_ogrgeom(new_pnt(
+                extent[1], extent[3]), fileEpsg, outEpsg)
             
             left , bottom = bt_left.GetX(), bt_left.GetY()
             right, top    = top_right.GetX(), top_right.GetY()

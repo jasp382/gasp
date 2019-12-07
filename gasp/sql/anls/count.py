@@ -3,7 +3,7 @@ Execute queries to extract data from a PGSQL Database
 """
 
 import os;       import pandas
-from gasp.sql.fm import Q_to_df
+from gasp.sql.fm import q_to_obj
 from gasp.to     import obj_to_tbl
 
 
@@ -39,7 +39,7 @@ def count_by_periods_with_certain_duration(conParam, PERIOD_INTERVAL, pgtable,
             )
         )
         
-        count = Q_to_df(conParam, QUERY, db_api='psql')
+        count = q_to_obj(conParam, QUERY, db_api='psql')
         
         count.rename(index={0 : "{}-{}".format(
             _int_[0][:5], _int_[1][:5]
@@ -67,8 +67,8 @@ def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
     """
     
     import pandas
-    from gasp.pyt.tm   import day_to_intervals2
-    from gasp.df.joins import combine_dfs
+    from gasp.pyt.tm       import day_to_intervals2
+    from gasp.pyt.df.joins import combine_dfs
     
     # Get Intervals
     INTERVALS = day_to_intervals2(PERIOD_INTERVAL)
@@ -91,7 +91,7 @@ def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
             whr = "" if not filterWhere else " AND ({}) ".format(filterWhere)
         )
         
-        count = Q_to_df(CON_PSQL, Q, db_api='psql')
+        count = q_to_obj(CON_PSQL, Q, db_api='psql')
         
         counting.append(count)
     
@@ -174,7 +174,7 @@ def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
                     ])
                 )
         
-        countTbl = Q_to_df(conParam, QUERY, db_api='psql')
+        countTbl = q_to_obj(conParam, QUERY, db_api='psql')
         
         countTbl[HOUR_FIELD] = INTERVAL_STR
         
@@ -204,8 +204,8 @@ def sel_where_groupByIs(conParam, table, groupByCols, grpByOp, grpByVal, outTabl
     WHERE foo.cnt_day > 1
     """
     
-    from gasp.pyt         import obj_to_lst
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.pyt    import obj_to_lst
+    from gasp.sql.to import q_to_ntbl
     
     groupByCols = obj_to_lst(groupByCols)
     
@@ -250,12 +250,12 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     TODO: See if PGSQL crosstab works to solve this problem
     """
     
-    from gasp.fm          import tbl_to_obj
-    from gasp.sql.fm      import Q_to_df
-    from gasp.df.to       import series_to_list
-    from gasp.gt.to.shp   import df_to_shp
-    from gasp.df.joins    import combine_dfs
-    from gasp.sql.mng.tbl import q_to_ntbl, del_tables
+    from gasp.fm           import tbl_to_obj
+    from gasp.sql.fm       import q_to_obj
+    from gasp.pyt.df.to    import series_to_list
+    from gasp.gt.toshp     import df_to_shp
+    from gasp.pyt.df.joins import combine_dfs
+    from gasp.sql.to       import q_to_ntbl, del_tables
     
     
     # Get GROUP BYed data
@@ -269,7 +269,7 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     selData = q_to_ntbl(conPSQL, "seldata", q, api='psql')
     
     # Get columns of the output table
-    pivotCols = Q_to_df(conPSQL,
+    pivotCols = q_to_obj(conPSQL,
         "SELECT {piv} FROM {tb} GROUP BY {piv}".format(
             tb=selData, piv=PG_PIVOT_COL
         ), db_api='psql'
@@ -277,7 +277,7 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     pivotCols = series_to_list(pivotCols[PG_PIVOT_COL])
     
     # Get data for each new column - new column data in one dataframe
-    pre_pivot = [Q_to_df(conPSQL,
+    pre_pivot = [q_to_obj(conPSQL,
         "SELECT {entity}, n{entity} FROM {t} WHERE {c}='{pivcol}'".format(
             entity=PG_ENTITY, t=selData, c=PG_PIVOT_COL, pivcol=col
         ), db_api='psql'

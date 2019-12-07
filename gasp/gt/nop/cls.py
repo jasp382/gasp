@@ -11,7 +11,7 @@ def k_means(imgFiles, out, n_cls=8):
     from osgeo          import gdal, gdal_array
     import numpy        as np
     from sklearn        import cluster
-    from gasp.gt.to.rst import obj_to_rst
+    from gasp.gt.torst import obj_to_rst
     
     gdal.UseExceptions()
     gdal.AllRegister()

@@ -9,9 +9,9 @@ def get_distinct_values(lnk, pgtable, column):
     """
     
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
-    data = Q_to_df(lnk,
+    data = q_to_obj(lnk,
         "SELECT {col} FROM {t} GROUP BY {col};".format(
             col=", ".join(obj_to_lst(column)), t=pgtable
         ), db_api='psql'
@@ -59,14 +59,14 @@ def run_query_for_values_in_col(conParam, query,
     be iterated one by one
     """
     
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.sql.i  import cols_type
     from gasp.to     import obj_to_tbl
     
     fields_types = cols_type(conParam, table_interest_col)
     
     # Get  unique values
-    VALUES = Q_to_df(conParam,
+    VALUES = q_to_obj(conParam,
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=interest_col, t=table_interest_col
         ), db_api='psql'
@@ -75,7 +75,7 @@ def run_query_for_values_in_col(conParam, query,
     # Aplly query for every value in VALUES
     # Write data in excel
     for value in VALUES:
-        data = Q_to_df(conParam, query.format(
+        data = q_to_obj(conParam, query.format(
             str(value[0]) if fields_types[interest_col] != str else \
             "'{}'".format(str(value[0]))
         ), db_api='psql')
@@ -97,8 +97,8 @@ def get_rows_notin_query(conParam, tblA, tblB, joinCols, newTable,
     joinCols = {colTblA : colTblB}
     """
     
-    from gasp.pyt         import obj_to_lst
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.pyt    import obj_to_lst
+    from gasp.sql.to import q_to_ntbl
     
     cols_to_mantain = obj_to_lst(cols_to_mantain)
     

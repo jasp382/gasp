@@ -7,8 +7,8 @@ def split_table_by_range(conP, table, row_number):
     Split tables in several
     """
     
-    from gasp.sql.i       import cols_name, row_num
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.i  import cols_name, row_num
+    from gasp.sql.to import q_to_ntbl
     
     rowsN = row_num(conP, table, api='psql')
     
@@ -39,12 +39,12 @@ def split_table_entity_number(conP, table, entity_field, entity_number):
     """
     
     import pandas
-    from gasp.sql.fm      import Q_to_df
-    from gasp.sql.i       import cols_type
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.fm import q_to_obj
+    from gasp.sql.i  import cols_type
+    from gasp.sql.to import q_to_ntbl
     
     # Select entities in table
-    entities = Q_to_df(conP, "SELECT {c} FROM {t} GROUP BY {c}".format(
+    entities = q_to_obj(conP, "SELECT {c} FROM {t} GROUP BY {c}".format(
         c=entity_field, t=table
     ), db_api='psql')
     
@@ -86,15 +86,14 @@ def split_table_by_col_distinct(conParam, pgtable, column):
     Create a new table for each value in one column
     """
     
-    from gasp.sql.fm      import Q_to_df
-    from gasp.sql.i       import cols_type
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.fm import q_to_obj
+    from gasp.sql.i  import cols_type
+    from gasp.sql.to import q_to_ntbl
     
     fields_types = cols_type(conParam, pgtable)
     
     # Get unique values
-    VALUES = Q_to_df(
-        conParam,
+    VALUES = q_to_obj(conParam,
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=interest_column, t=pgtable
         ), db_api='psql'

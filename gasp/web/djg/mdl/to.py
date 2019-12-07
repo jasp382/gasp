@@ -2,76 +2,84 @@
 Data to Django Model
 """
 
-def shp_to_djg_mdl(fileShape, djgModel, mapFields, djgProj=None, useLyrMap=True):
+def shp_to_djg_mdl(in_shp, app, mdl, cols_map, djg_proj):
     """
     Add Geometries to Django Model
     """
     
-    from gasp import __import
+    from django.contrib.gis.geos import GEOSGeometry
+    from django.contrib.gis.db   import models
+    from gasp                    import __import
+    from gasp.web.djg            import open_Django_Proj
+    from gasp.gt.fmshp           import shp_to_obj
+    from gasp.gt.prop.prj        import get_epsg_shp
+    from shapely.geometry.multipolygon import MultiPolygon
+
+    def force_multi(geom):
+        if geom.geom_type == 'Polygon':
+            return MultiPolygon([geom])
+        else:
+            return geom
+
+    application = open_Django_Proj(djg_proj)
     
-    if djgProj:
-        from gasp.web.djg import open_Django_Proj
+    mdl_cls = __import('{}.models.{}'.format(app, mdl))
+    mdl_obj = mdl_cls()
         
-        application = open_Django_Proj(djgProj)
+    in_df = shp_to_obj(in_shp)
+    # Check if we need to import the SHP FID 
+    if 'FID' in cols_map.values():
+        in_df["FID"] = in_df.index.astype(int)
     
-    APP_MODEL = djgModel.split('_')[0]
-    djangoCls = __import('{}.models.{}'.format(
-        APP_MODEL,
-        '_'.join(djgModel.split('_')[1:])
-    ))
-    
-    if useLyrMap:
-        from django.contrib.gis.utils import LayerMapping
+    epsg = int(get_epsg_shp(in_shp))
+    if not epsg:
+        raise ValueError('Is not possible to recognize EPSG code of in_shp')
         
-        lm = LayerMapping(djangoCls, fileShape, mapFields)
+    OGR_GEOMS = [
+        'POLYGON', 'MULTIPOLYGON', 'MULTILINESTRING',
+        'LINESTRING', 'POINT', 'MULTIPOINT']
         
-        lm.save(strict=True, verbose=False)
-    
-    else:
-        from django.contrib.gis.geos import GEOSGeometry
-        from django.contrib.gis.db   import models
-        from gasp.fm                 import tbl_to_obj
-        
-        inDf = tbl_to_obj(inShp)
-        
-        modelObj = djangoCls()
-        
-        OGR_GEOMS = ['POLYGON', 'MULTIPOLYGON', 'MULTILINESTRING',
-                     'LINESTRING', 'POINT', 'MULTIPOINT']
-        
-        def updateModel(row):
-            for FLD in mapFields:
-                if mapFields[FLD] not in OGR_GEOMS:
-                    # Check if field is foreign key
-                    field_obj = djangoCls._meta.get_field(FLD)
+    def updateModel(row):
+        for FLD in cols_map:
+            if cols_map[FLD] not in OGR_GEOMS:
+                # Check if field is foreign key
+                field_obj = mdl_cls._meta.get_field(FLD)
                 
-                    if not isinstance(field_obj, models.ForeignKey):
-                        setattr(modelObj, FLD, row[mapFields[FLD]])
+                if not isinstance(field_obj, models.ForeignKey):
+                    setattr(mdl_obj, FLD, row[cols_map[FLD]])
                 
-                    else:
-                        # If yes, use the model instance of the related table
-                        # Get model of the table related com aquela cujos dados
-                        # estao a ser restaurados
-                        related_name = field_obj.related_model.__name__
-                    
-                        related_model = __import('{a}.models.{m}'.format(
-                            a=APP_MODEL[0], m=related_name
-                        ))
-                    
-                        related_obj = related_model.objects.get(
-                            pk=int(row[mapFields[FLD]])
-                        )
-                    
-                        setattr(modelObj, FLD, related_obj)
-            
                 else:
-                    setattr(modelObj, FLD, GEOSGeometry(
-                        row.geometry.wkt, srid=epsg
+                    # If yes, use the model instance of the related table
+                    # Get model of the table related com aquela cujos dados
+                    # estao a ser restaurados
+                    related_name = field_obj.related_model.__name__
+                    
+                    related_model = __import('{}.models.{}'.format(
+                        app, related_name
                     ))
+                    
+                    related_obj = related_model.objects.get(
+                        pk=int(row[cols_map[FLD]])
+                    )
+                    
+                    setattr(mdl_obj, FLD, related_obj)
+            
+            else:
+                if cols_map[FLD] == 'MULTIPOLYGON':
+                    geom = force_multi(row.geometry)
+                
+                else:
+                    geom = row.geometry
+                
+                setattr(mdl_obj, FLD, GEOSGeometry(
+                    geom.wkt, srid=epsg
+                ))
         
-            modelObj.save()
+        mdl_obj.save()
         
-        inDf.apply(lambda x: updateModel(x), axis=1)
+    in_df.apply(lambda x: updateModel(x), axis=1)
+
+    return 1
 
 
 def txt_to_db(txt, proj_path=None, delimiter='\t', encoding_='utf-8'):
@@ -222,7 +230,7 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
             print('Skipping {} - there is no file for this table'.format(table))
 
 
-def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
+def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, psql_con={
     'HOST': 'localhost', 'USER': 'postgres',
     'PORT' : '5432', 'PASSWORD': 'admin',
     'TEMPLATE': 'postgis_template'}, mapTbl=None, userDjgAPI=None):
@@ -240,7 +248,7 @@ def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
     from gasp.sql.to          import restore_tbls 
     from gasp.sql.db          import create_db
     from gasp.sql.i           import lst_tbl
-    from gasp.sql.fm          import tbl_to_dict
+    from gasp.sql.fm          import q_to_obj
     from gasp.web.djg.mdl.rel import order_mdl_by_rel
     from gasp.web.djg.mdl.i   import lst_mdl_proj
 
@@ -269,12 +277,12 @@ def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
     )] if not mapTbl else mapTbl
     
     # Open Django Project
-    if path_djgProj:
+    if djg_proj:
         from gasp.web.djg import open_Django_Proj
-        application = open_Django_Proj(path_djgProj)
+        application = open_Django_Proj(djg_proj)
     
     # List models in project
-    app_mdls = lst_mdl_proj(path_djgProj, thereIsApp=True, returnClassName=True)
+    app_mdls = lst_mdl_proj(djg_proj, thereIsApp=True, returnClassName=True)
     
     data_tbl = {}
     for t in tables:
@@ -288,7 +296,7 @@ def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
             continue
         
         else:
-            data_tbl[app_mdls[t]] = t
+            data_tbl["{}.models.{}".format(t.split('_')[0], app_mdls[t])] = t
     
     from django.contrib.gis.db import models
     mdl_cls = ["{}.models.{}".format(m.split('_')[0], app_mdls[m]) for m in app_mdls]
@@ -299,7 +307,7 @@ def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
     if userDjgAPI:
         for table in orderned_table:
             # Map pgsql table data
-            tableData = tbl_to_dict(data_tbl[table], psql_con)
+            tableData = q_to_obj(psql_con, data_tbl[table], of='dict')
         
             # Table data to Django Model
             if table == 'auth_user':
@@ -345,11 +353,14 @@ def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
                 __mdl.save()
     else:
         import json
-        from gasp.sql.fm import Q_to_df
+        from gasp.sql.fm import q_to_obj
         from gasp.sql.to import df_to_db
         
         for tbl in orderned_table:
-            data = Q_to_df(psql_con, "SELECT * FROM {}".format(data_tbl[tbl]))
+            if tbl not in data_tbl:
+                continue
+            
+            data = q_to_obj(psql_con, "SELECT * FROM {}".format(data_tbl[tbl]))
 
             psql_con['DATABASE'] = db_name
             df_to_db(psql_con, data, data_tbl[tbl], append=True)

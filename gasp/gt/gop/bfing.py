@@ -13,7 +13,7 @@ def buffer_ext(inShp, meterTolerance, outShp, inEpsg=None):
     """
     
     from gasp.fm          import tbl_to_obj
-    from gasp.gt.to.shp   import df_to_shp
+    from gasp.gt.toshp    import df_to_shp
     from gasp.g.gop.prox  import df_buffer_extent
     from gasp.gt.prop.prj import get_epsg_shp
     

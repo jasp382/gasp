@@ -1,3 +1,2 @@
-include gasp/alg/osm2lulc/osmtolulc.sqlite
-include gasp/alg/osm2lulc/con-postgresql.json
-include gasp/alg/fmapi/apis.db3
+include gasp/sds/osm2lulc/osmtolulc.sqlite
+include gasp/cons/con-postgresql.json

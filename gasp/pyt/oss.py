@@ -21,7 +21,7 @@ def cpu_cores(api='os'):
         return multiprocessing.cpu_count()
 
 
-def fprop(__file, prop, forceLower=None):
+def fprop(__file, prop, forceLower=None, fs_unit=None):
     """
     Return some property of file
 
@@ -33,50 +33,43 @@ def fprop(__file, prop, forceLower=None):
 
     prop = obj_to_lst(prop)
 
+    result = {}
+
     if 'filename' in prop or 'fn' in prop:
-        filename = os.path.splitext(os.path.basename(__file))
+        fn, ff = os.path.splitext(os.path.basename(__file))
 
-    return filename
+        result['filename'] = fn 
 
+        if 'fileformat' in prop or 'fn' in prop:
+            result['fileformat'] = ff
+    
+    elif 'fileformat' in prop or 'ff' in prop:
+        result['fileformat'] = os.path.splitext(__file)[1]
+    
+    if 'filesize' in prop or 'fs' in prop:
+        fs_unit = 'MB' if not fs_unit else fs_unit
 
-def get_filename(__file, forceLower=None):
-    """
-    Return filename without file format
-    """
-    
-    filename = os.path.splitext(os.path.basename(__file))[0]
-    
-    if forceLower:
-        filename = filename.lower()
-    
-    return filename
+        fs = os.path.getsize(__file)
 
-
-def get_fileformat(__file):
-    """
-    Return file format
-    """
+        if fs_unit == 'MB':
+            fs  = (fs / 1024.0) / 1024
+        
+        elif fs_unit == 'KB':
+            fs = fs / 1024.0
+        
+        result['filesize'] = fs
     
-    return os.path.splitext(__file)[1]
-
-
-def get_filesize(path, unit='MB'):
-    """
-    Return file size in some menory unit
-    """
-    
-    memory = os.path.getsize(path)
-    
-    if unit == 'MB':
-        memory = (memory / 1024.0) /1024
-    
-    elif unit == 'KB':
-        memory = memory / 1024.0
-    
+    if len(prop) == 1:
+        if prop[0] == 'fn':
+            return result['filename']
+        elif prop[0] == 'ff':
+            return result['fileformat']
+        elif prop[0] == 'fs':
+            return result['filesize']
+        else:
+            return result[prop[0]]
     else:
-        memory = memory
-    
-    return memory
+        return result
 
 
 def lst_ff(w, file_format=None, filename=None, rfilename=None):
@@ -125,7 +118,7 @@ def lst_ff(w, file_format=None, filename=None, rfilename=None):
         
         _t = []
         for i in t:
-            fn = get_filename(i) if not rfilename else i
+            fn = fprop(i, 'fn') if not rfilename else i
             if fn in filename:
                 _t.append(i)
         
@@ -191,7 +184,7 @@ def list_folders_subfiles(path, files_format=None,
 Manage folders
 """
 
-def create_folder(folder, randName=None, overwrite=True):
+def mkdir(folder, randName=None, overwrite=True):
     """
     Create a new folder
     Replace the given folder if that one exists
@@ -315,7 +308,7 @@ def rename_files_with_same_name(folder, oldName, newName):
     
     Renamed = []
     for f in _Files:
-        newFile = os.path.join(folder, newName + get_fileformat(f))
+        newFile = os.path.join(folder, newName + fprop(f, 'ff'))
         os.rename(f, newFile)
         
         Renamed.append(newFile)
@@ -368,10 +361,10 @@ def onFolder_rename2(folder, newBegin, stripStr, fileFormats=None):
     files = lst_ff(folder, file_format=fileFormats)
     
     for _file in files:
-        name = get_filename(_file, forceLower=True)
+        name = fprop(_file, 'fn', forceLower=True)
         
         new_name = name.replace(stripStr, '')
-        new_name = "{}{}{}".format(newBegin, new_name, get_fileformat(_file))
+        new_name = "{}{}{}".format(newBegin, new_name, fprop(_file, 'ff'))
         
         os.rename(_file, os.path.join(os.path.dirname(_file), new_name))
 
@@ -426,7 +419,7 @@ def identify_groups(folder, splitStr, groupPos, outFolder):
     # Create one folder for each group and put there the files related
     # with that group.
     for group in groups:
-        group_folder = create_folder(os.path.join(outFolder, group))
+        group_folder = mkdir(os.path.join(outFolder, group))
             
         for filename in groups[group]:
             copy_file(

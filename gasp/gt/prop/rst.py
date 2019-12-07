@@ -13,6 +13,22 @@ def compress_option(drv):
         return None
 
 
+def rst_dtype(rst):
+    """
+    Return Type of Raster Dataset
+
+    return numpy class
+    """
+
+    from osgeo import gdal, gdal_array
+
+    img = gdal.Open(rst, gdal.GA_ReadOnly)
+
+    bnd = img.GetRasterBand(1).DataType
+
+    return gdal_array.GDALTypeCodeToNumericTypeCode(bnd)
+
+
 def rst_ext(rst):
     """
     Return a array with the extent of one raster dataset
@@ -55,7 +71,7 @@ def rst_shape(rst, gisApi='gdal'):
     shapes = {}
     
     if gisApi == 'gdal':
-        from gasp.gt.fm.rst import rst_to_array
+        from gasp.gt.fmrst import rst_to_array
         
         for r in rst:
             array = rst_to_array(r)
@@ -178,8 +194,8 @@ def count_cells(raster, countNodata=None):
     Return number of cells in a Raster Dataset
     """
     
-    from gasp.gt.fm.rst import rst_to_array
-    from gasp.pyt.num   import count_where
+    from gasp.gt.fmrst import rst_to_array
+    from gasp.pyt.num  import count_where
     
     a = rst_to_array(raster)
     
@@ -228,7 +244,7 @@ def rst_distinct(rst):
     """
     
     import numpy
-    from gasp.gt.fm.rst import rst_to_array
+    from gasp.gt.fmrst import rst_to_array
     
     v = numpy.unique(rst_to_array(rst, flatten=True, with_nodata=False))
     
@@ -281,24 +297,34 @@ def frequencies(r, excludeNoData=True):
     Return frequencies table
     """
     
-    import numpy
-    from osgeo            import gdal
-    from gasp.gt.fm.rst   import rst_to_array
-    from gasp.gt.prop.rst import get_nodata
-    from gasp.pyt.num     import count_where
+    import numpy as np
+    from osgeo           import gdal
+    from gasp.g.prop.img import get_nd
     
     if type(r).__name__ == 'str':
-        img = rst_to_array(r)
-    else:
+        img = gdal.Open(r)
+        arr = img.ReadAsArray()
+    elif type(r).__name__ == 'Dataset':
         img = r
+        arr = img.ReadAsArray()
+    else:
+        img = None
+        arr = r
     
-    unique = list(numpy.unique(img))
+    unique = list(np.unique(arr))
     
-    nodataVal = get_nodata(r) if type(r) == str else None
-    if nodataVal in unique and excludeNoData:
-        unique.remove(nodataVal)
+    one_arr = arr.reshape(arr.shape[0] * arr.shape[1])
+    freq    = np.bincount(one_arr)
+    freq    = freq[freq != 0]
     
-    return { v : count_where(img, img==v) for v in unique }
+    if excludeNoData:
+        if type(r).__name__ == 'str' or type(r).__name__ == 'Dataset':
+            ndval = get_nd(img)
+            return {unique[i] : freq[i] for i in range(len(unique)) if unique[i] != ndval}
+        else:
+            return {unique[i] : freq[i] for i in range(len(unique))}
+    else:
+        return {unique[i] : freq[i] for i in range(len(unique))}
 
 
 def get_percentage_value(rst, value, includeNodata=None):
@@ -309,7 +335,7 @@ def get_percentage_value(rst, value, includeNodata=None):
     import numpy
     from osgeo            import gdal
     from gasp.pyt.num     import count_where
-    from gasp.gt.fm.rst   import rst_to_array
+    from gasp.gt.fmrst    import rst_to_array
     from gasp.gt.prop.rst import get_nodata
     
     array = rst_to_array(rst)
@@ -338,7 +364,7 @@ def percentage_nodata(rst):
     
     import numpy
     from gasp.pyt.num     import count_where
-    from gasp.gt.fm.rst   import rst_to_array
+    from gasp.gt.fmrst    import rst_to_array
     from gasp.gt.prop.rst import get_nodata
     
     array = rst_to_array(rst)
@@ -365,7 +391,7 @@ def adjust_ext_to_snap(outExt, snapRst):
     
     from gasp.gt.prop.ff  import check_isShp, check_isRaster
     from gasp.gt.prop.rst import rst_ext, get_cellsize
-    from gasp.gt.to.geom  import new_pnt, create_polygon
+    from gasp.g.to        import new_pnt, create_polygon
     
     # Check if outExt is a raster or not
     isRst = check_isRaster(outExt)
@@ -548,8 +574,8 @@ def sanitize_report(report):
 
 
 def san_report_combine(report):
-    from gasp.fm     import tbl_to_obj
-    from gasp.df.fld import splitcol_to_newcols
+    from gasp.fm         import tbl_to_obj
+    from gasp.pyt.df.fld import splitcol_to_newcols
     
     repdata = tbl_to_obj(report, _delimiter="z")
     

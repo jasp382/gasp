@@ -110,7 +110,7 @@ def polylines_from_points(points, polylines, POLYLINE_COLUMN,
     
     import os; from osgeo import ogr
     from gasp.gt.prop.ff  import drv_name
-    from gasp.gt.prj      import ogr_def_proj
+    from gasp.gt.prj      import def_prj
     from gasp.gt.prop.fld import ogr_list_fields_defn
     from gasp.gt.lyr.fld  import fields_to_lyr
     
@@ -285,11 +285,11 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
         
         import os
         from gasp.gt.wenv.grs import run_grass
-        from gasp.pyt.oss     import get_filename
+        from gasp.pyt.oss     import fprop
         
         # Create GRASS GIS Session
         wk = os.path.dirname(outShp)
-        lo = get_filename(outShp, forceLower=True)
+        lo = fprop(outShp, 'fn', forceLower=True)
         
         gs = run_grass(wk, lo, srs=inShp)
         
@@ -298,14 +298,15 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
         gsetup.init(gs, wk, lo, 'PERMANENT')
         
         # Import Packages
-        from gasp.gt.to.shp   import shp_to_grs, grs_to_shp
-        from gasp.gt.mng.feat import line_to_polyline
-        from gasp.gt.mng.feat import geomtype_to_geomtype
-        from gasp.gt.mng.feat import boundary_to_areas
+        from gasp.gt.toshp.cff  import shp_to_grs, grs_to_shp
+        from gasp.gt.toshp.cgeo import line_to_polyline
+        from gasp.gt.toshp.cgeo import geomtype_to_geomtype
+        from gasp.gt.toshp.cgeo import boundary_to_areas
         
         # Send data to GRASS GIS
-        lnh_shp = shp_to_grs(inShp, get_filename(
-            inShp, forceLower=True), asCMD=True if api == 'grass' else None)
+        lnh_shp = shp_to_grs(inShp, fprop(
+            inShp, 'fn', forceLower=True
+        ), asCMD=True if api == 'grass' else None)
         
         # Build Polylines
         pol_lnh = line_to_polyline(lnh_shp, "polylines",
@@ -326,11 +327,11 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
     elif api == 'psql':
         """ Do it using PostGIS """
         
-        from gasp.pyt.oss     import get_filename
+        from gasp.pyt.oss     import fprop
         from gasp.sql.db      import create_db
         from gasp.sql.to      import shp_to_psql
-        from gasp.gt.to.shp   import dbtbl_to_shp
-        from gasp.sql.gop.cnv import lnh_to_polg
+        from gasp.gt.toshp.db import dbtbl_to_shp
+        from gasp.gql.cnv     import lnh_to_polg
         from gasp.gt.prop.prj import get_epsg_shp
         
         conDB = {
@@ -340,8 +341,8 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
         
         # Create DB
         if "DATABASE" not in conDB:
-            conDB["DATABASE"] = create_db(conDB, get_filename(
-                inShp, forceLower=True))
+            conDB["DATABASE"] = create_db(conDB, fprop(
+                inShp, 'fn', forceLower=True))
         
         else:
             from gasp.sql.i import db_exists
@@ -357,8 +358,8 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
         in_tbl = shp_to_psql(conDB, inShp, api="shp2pgsql")
         
         # Get Result
-        result = lnh_to_polg(conDB, in_tbl, get_filename(
-            outShp, forceLower=True))
+        result = lnh_to_polg(conDB, in_tbl, fprop(
+            outShp, 'fn', forceLower=True))
         
         # Export Result
         outshp = dbtbl_to_shp(

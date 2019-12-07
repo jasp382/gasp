@@ -79,3 +79,16 @@ def pgtypes_from_pnddf(df):
     
     return {col : pnd_maps_pgtypes(
         str(dataTypes[col])) for col in dataTypes}
+
+
+def con_psql():
+    """
+    Return Dict to Connect to PostgreSQL
+    """
+
+    import json, os
+
+    return json.load(open(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'con-postgresql.json'
+    ), 'r'))

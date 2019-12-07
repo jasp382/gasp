@@ -8,7 +8,7 @@ def xy_to_buffer(x, y, radius):
     XY Coordinates to Buffer Geometry
     """
     
-    from gasp.gt.to.geom import new_pnt
+    from gasp.g.to import new_pnt
     
     pnt = new_pnt(x, y)
     

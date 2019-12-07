@@ -3,7 +3,7 @@ Pseudo Views for download
 """
 
 
-def down_zip(fileDir, fileName, fileFormat):
+def down_zip(zipf):
     """
     Prepare Download response for a zipped file
     """
@@ -11,16 +11,12 @@ def down_zip(fileDir, fileName, fileFormat):
     import os
     from django.http import HttpResponse
     
-    zipFile = os.path.join(
-        fileDir,
-        '{}.{}'.format(fileName, fileFormat)
-    )
-    with open(zipFile, 'rb') as f:
+    with open(zipf, 'rb') as f:
         r = HttpResponse(f.read())
         
         r['content_type'] = 'application/zip'
-        r['Content-Disposition'] = 'attachment;filename={}.{}'.format(
-            fileName, fileFormat
+        r['Content-Disposition'] = 'attachment;filename={}'.format(
+            os.path.basename(zipf)
         )
         
         return r
@@ -70,13 +66,13 @@ def mdl_to_kml(mdl, outKml, filter=None):
     
     import json;                 import os
     from django.http             import HttpResponse
-    from gasp.pyt.oss            import get_filename
+    from gasp.pyt.oss            import fprop
     from gasp.web.djg.mdl.serial import mdl_serialize_to_json
-    from gasp.gt.to.shp          import shp_to_shp
+    from gasp.gt.toshp.cff       import shp_to_shp
     
     # Write data in JSON
     JSON_FILE = os.path.join(
-        os.path.dirname(outKml), get_filename(outKml) + '.json'
+        os.path.dirname(outKml), fprop(outKml, 'fn') + '.json'
     )
     
     mdl_serialize_to_json(mdl, 'geojson', JSON_FILE, filterQ=filter)

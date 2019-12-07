@@ -92,7 +92,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     """
     
     import os
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     from gasp.gt.wenv.grs import run_grass
     
     grass_base = run_grass(
@@ -108,7 +108,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     # ************************************************************************ #
     # GRASS MODULES #
     # ************************************************************************ #
-    from gasp.gt.to.rst   import rst_to_grs, grs_to_rst
+    from gasp.gt.torst   import rst_to_grs, grs_to_rst
     from gasp.gt.wenv.grs import rst_to_region
     # ************************************************************************ #
     # SET GRASS GIS LOCATION EXTENT #
@@ -123,7 +123,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     for bnd in bands:
         l= []
         for b in bands[bnd]:
-            bb = rst_to_grs(b, get_filename(b))
+            bb = rst_to_grs(b, fprop(b, 'fn'))
             l.append(bb)
         
         grsBnds[bnd] = 1
@@ -131,7 +131,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     # PATCH bands and export #
     # ************************************************************************ #
     for bnd in grsBnds:
-        mosaic_band = mosaic_raster(grsBnds[bnd], bnd)
+        mosaic_band = rsts_to_mosaic(grsBnds[bnd], bnd)
         
         grsBnds[bnd] = grs_to_rst(mosaic_band, os.path.join(
             outdata, mosaic_band + '.tif'

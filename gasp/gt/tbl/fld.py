@@ -50,9 +50,9 @@ def add_fields(tbl, fields, lyrN=1, api='ogr'):
     
     elif api == 'ogrinfo':
         from gasp         import exec_cmd
-        from gasp.pyt.oss import get_filename
+        from gasp.pyt.oss import fprop
 
-        tname = get_filename(tbl)
+        tname = fprop(tbl, 'fn')
 
         ogrinfo = 'ogrinfo {i} -sql "{s}"'
 
@@ -114,10 +114,10 @@ def rn_cols(inShp, columns, api="ogr2ogr"):
     
     if api == "ogr2ogr":
         import os
-        from gasp.pyt          import obj_to_lst
-        from gasp.pyt.oss      import get_filename, get_fileformat
-        from gasp.pyt.oss      import del_file, lst_ff
-        from gasp.gt.anls.exct import sel_by_attr
+        from gasp.pyt     import obj_to_lst
+        from gasp.pyt.oss import fprop
+        from gasp.pyt.oss import del_file, lst_ff
+        from gasp.gt.attr import sel_by_attr
         
         # List Columns
         cols = lst_fld(inShp)
@@ -132,8 +132,8 @@ def rn_cols(inShp, columns, api="ogr2ogr"):
         # Get inShp Folder
         inshpfld = os.path.dirname(inShp)
 
-        # Get inShp Filename
-        inshpname = get_filename(inShp)
+        # Get inShp Filename and format
+        inshpname = fprop(inShp, 'fn')
 
         # Temporary output
         output = os.path.join(inshpfld, inshpname + '_xtmp.shp')
@@ -151,8 +151,7 @@ def rn_cols(inShp, columns, api="ogr2ogr"):
         # Rename Output file
         oufiles = lst_ff(inshpfld, filename=inshpname + '_xtmp')
         for f in oufiles:
-            os.rename(f, os.path.join(
-                inshpfld, inshpname + get_fileformat(f)))
+            os.rename(f, os.path.join(inshpfld, inshpname + fprop(inShp, 'ff')))
     
     elif api == 'grass':
         from gasp import exec_cmd

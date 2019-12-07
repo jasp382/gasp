@@ -67,7 +67,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
     """
 
     import os; from gasp.pyt.Xml   import write_xml_tree
-    from gasp.pyt.oss              import get_fileformat
+    from gasp.pyt.oss              import fprop
     from gasp.web.geosrv.sld.rules import get_categorical_rules
     from gasp.web.geosrv.sld.rules import get_quantitative_rules
     
@@ -78,7 +78,7 @@ def write_sld(attr_name, attr_colors, mapAttrKeys, sld_path,
     
     if type(attr_colors) != list:
         if os.path.exists(attr_colors):
-            ff = get_fileformat(attr_colors)
+            ff = fprop(attr_colors, 'ff')
             
             if ff == '.json':
                 import json

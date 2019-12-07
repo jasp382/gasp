@@ -16,9 +16,9 @@ def select_using_excel_refs(conParam, excel_file, sheet_name,
     TODO: Check if it's works. 
     """
     
-    from gasp.fm          import tbl_to_obj
-    from gasp.sql.i       import cols_type
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.fm     import tbl_to_obj
+    from gasp.sql.i  import cols_type
+    from gasp.sql.to import q_to_ntbl
     
     def to_and(row, cols, cols_type):
         def get_equal(_type):

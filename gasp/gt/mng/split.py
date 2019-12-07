@@ -9,9 +9,9 @@ def splitShp_by_range(shp, nrFeat, outFolder):
     """
     
     import os
-    from gasp.pyt.oss      import get_filename, get_fileformat
+    from gasp.pyt.oss      import fprop
     from gasp.gt.prop.feat import feat_count, lst_fld
-    from gasp.gt.anls.exct import sel_by_attr
+    from gasp.gt.attr      import sel_by_attr
     
     rowsN = feat_count(shp, gisApi='ogr')
     
@@ -22,6 +22,7 @@ def splitShp_by_range(shp, nrFeat, outFolder):
     offset = 0
     exportedShp = []
     for i in range(nrShp):
+        f = fprop(shp, ['fn', 'ff'], forceLower=True)
         outShp = sel_by_attr(
             shp,
             "SELECT {cols}, geometry FROM {t} ORDER BY {cols} LIMIT {l} OFFSET {o}".format(
@@ -30,8 +31,7 @@ def splitShp_by_range(shp, nrFeat, outFolder):
                 cols=", ".join(fields)
             ),
             os.path.join(outFolder, "{}_{}{}".format(
-                get_filename(shp, forceLower=True), str(i),
-                get_fileformat(shp)
+                f['filename'], str(i), f['fileformat']
             )), api_gis='ogr'
         )
         
@@ -40,46 +40,6 @@ def splitShp_by_range(shp, nrFeat, outFolder):
     
     return exportedShp
 
-
-"""
-Split Raster
-"""
-
-
-def gdal_split_bands(inRst, outFolder):
-    """
-    Export all bands of a raster to a new dataset
-    
-    TODO: this could be done using gdal_translate
-    """
-    
-    import numpy;         import os
-    from osgeo            import gdal
-    from gasp.gt.to.rst   import obj_to_rst
-    from gasp.gt.prop.rst import get_nodata
-    
-    
-    rst = gdal.Open(inRst)
-    
-    if rst.RasterCount == 1:
-        return
-    
-    nodata = get_nodata(inRst, gisApi='gdal')
-    
-    for band in range(rst.RasterCount):
-        band += 1
-        src_band = rst.GetRasterBand(band)
-        if src_band is None:
-            continue
-        else:
-            # Convert to array
-            array = numpy.array(src_band.ReadAsArray())
-            obj_to_rst(array, os.path.join(
-                outFolder, '{r}_{b}.tif'.format(
-                    r=os.path.basename(os.path.splitext(inRst)[0]),
-                    b=str(band)
-                )), inRst, noData=nodata
-            )
 
 """
 Split Excel tables

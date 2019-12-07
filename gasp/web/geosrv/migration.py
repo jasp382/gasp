@@ -90,7 +90,7 @@ def pgtables_to_layer_withStyle_by_col(
     
     import os; from gasp.pyt    import obj_to_lst
     from gasp.fm                import tbl_to_obj
-    from gasp.pyt.oss           import create_folder
+    from gasp.pyt.oss           import mkdir
     from gasp.sql.i             import cols_name
     from gasp.web.geosrv.ws     import create_ws
     from gasp.web.geosrv.stores import create_pgstore
@@ -173,7 +173,7 @@ def pgtables_to_layer_withStyle_by_col(
     create_pgstore(storeName, workName, pgsql_con, gs_con=geoserver_con)
     
     # Create folder for sld's
-    wTmp = create_folder(os.path.join(
+    wTmp = mkdir(os.path.join(
         os.path.dirname(sldData), 'sldFiles'
     )) if not pathToSLDfiles else pathToSLDfiles
     

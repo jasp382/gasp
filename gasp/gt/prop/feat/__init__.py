@@ -31,9 +31,9 @@ def feat_count(shp, gisApi='pandas'):
         fcnt = open_shp.num_primitive_of(geom)
     
     elif gisApi == 'pandas':
-        from gasp.fm import tbl_to_obj
+        from gasp.gt.fmshp import shp_to_obj
         
-        gdf = tbl_to_obj(shp)
+        gdf = shp_to_obj(shp)
         
         fcnt = int(gdf.shape[0])
         
@@ -59,9 +59,9 @@ def get_gtype(shp, name=True, py_cls=None, geomCol="geometry",
         from pandas import DataFrame
         
         if not isinstance(shp, DataFrame):
-            from gasp.fm import tbl_to_obj
+            from gasp.gt.fmshp import shp_to_obj
             
-            gdf     = tbl_to_obj(shp)
+            gdf     = shp_to_obj(shp)
             geomCol = "geometry"
         
         else:

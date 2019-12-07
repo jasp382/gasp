@@ -21,10 +21,10 @@ def snap_points_to_near_line(lineShp, pointShp, epsg, workGrass,
         
         import os;            import numpy
         from geopandas        import GeoDataFrame
-        from gasp.pyt.oss     import get_filename
+        from gasp.pyt.oss     import fprop
         from gasp.gt.wenv.grs import run_grass
-        from gasp.fm          import tbl_to_obj as shp_to_df
-        from gasp.gt.to.shp   import df_to_shp
+        from gasp.gt.fmshp    import shp_to_obj
+        from gasp.gt.toshp    import df_to_shp
     
         # Create GRASS GIS Location
         grassBase = run_grass(workGrass, location=location, srs=epsg)
@@ -34,17 +34,17 @@ def snap_points_to_near_line(lineShp, pointShp, epsg, workGrass,
         gsetup.init(grassBase, workGrass, location, 'PERMANENT')
     
         # Import some GRASS GIS tools
-        from gasp.gt.anls.prox import grs_near as near
-        from gasp.gt.mng.tbl   import geomattr_to_db
-        from gasp.gt.to.shp    import shp_to_grs, grs_to_shp
+        from gasp.gt.prox      import grs_near as near
+        from gasp.gt.tbl       import geomattr_to_db
+        from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
     
         # Import data into GRASS GIS
         grsLines = shp_to_grs(
-            lineShp, get_filename(lineShp, forceLower=True)
+            lineShp, fprop(lineShp, 'fn', forceLower=True)
         )
     
         grsPoint = shp_to_grs(
-            pointShp, get_filename(pointShp, forceLower=True)
+            pointShp, fprop(pointShp, 'fn', forceLower=True)
         )
     
         # Get distance from points to near line
@@ -64,9 +64,9 @@ def snap_points_to_near_line(lineShp, pointShp, epsg, workGrass,
         ))
     
         # Points to GeoDataFrame
-        pntDf = tbl_to_obj(ogrPoint)
+        pntDf = shp_to_obj(ogrPoint)
         # Lines to GeoDataFrame
-        lnhDf = tbl_to_obj(ogrLine)
+        lnhDf = shp_to_obj(ogrLine)
     
         # Erase unecessary fields
         pntDf.drop(["todistance"], axis=1, inplace=True)

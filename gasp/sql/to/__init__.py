@@ -59,6 +59,58 @@ def restore_tbls(conParam, sql, tablenames=None):
 ###############################################################################
 ###############################################################################
 
+def q_to_ntbl(lnk, outbl, query, ntblIsView=None, api='psql'):
+    """
+    Create table by query
+    
+    API's Available:
+    * psql;
+    * ogr2ogr
+    """
+    
+    if api == 'psql':
+        from gasp.sql.c import sqlcon
+    
+        con = sqlcon(lnk)
+    
+        curs = con.cursor()
+    
+        _q = "CREATE {} {} AS {}".format(
+            "TABLE" if not ntblIsView else "VIEW",
+            outbl, query
+        )
+    
+        curs.execute(_q)
+    
+        con.commit()
+        curs.close()
+        con.close()
+    
+    elif api == 'ogr2ogr':
+        """
+        Execute a SQL Query in a SQLITE Database and store the result in the
+        same database. Uses OGR2OGR instead of the regular SQLITE API
+        """
+        
+        from gasp import exec_cmd
+        
+        cmd = (
+            'ogr2ogr -update -append -f "SQLite" {db} -nln "{nt}" '
+            '-dialect sqlite -sql "{q}" {db}' 
+        ).format(
+             db=lnk, nt=outbl, q=query
+        )
+        
+        outcmd = exec_cmd(cmd)
+    
+    else:
+        raise ValueError('API {} is not available!'.format(api))
+    
+    return outbl
+
+###############################################################################
+###############################################################################
+
 
 def df_to_db(conParam, df, table, append=None, api='psql',
              epsg=None, geomType=None, colGeom='geometry'):
@@ -79,15 +131,17 @@ def df_to_db(conParam, df, table, append=None, api='psql',
     
     if epsg and geomType:
         from geoalchemy2 import Geometry, WKTElement
+
+        newdf = df.copy()
         
-        df["geom"] = df[colGeom].apply(
+        newdf["geom"] = newdf[colGeom].apply(
             lambda x : WKTElement(x.wkt, srid=epsg)
         )
         
         if colGeom != 'geom':
-            df.drop(colGeom, axis=1, inplace=True)
+            newdf.drop(colGeom, axis=1, inplace=True)
         
-        df.to_sql(
+        newdf.to_sql(
             table, pgengine,
             if_exists='replace' if not append else 'append',
             index=False, dtype={"geom" : Geometry(geomType, srid=epsg)}
@@ -115,7 +169,7 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
     
     import os
     from gasp.pyt     import obj_to_lst
-    from gasp.pyt.oss import get_fileformat, get_filename
+    from gasp.pyt.oss import fprop
     from gasp.fm      import tbl_to_obj
     
     if os.path.isdir(tblFile):
@@ -130,7 +184,9 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
     
     RTBL = []
     for i in range(len(tbls)):
-        ff = get_fileformat(tbls[i])
+        fp = fprop(tbls[i], ['fn', 'ff'])
+        ff = fp['fileformat']
+        fn = fp['filename']
     
         if ff == '.csv' or ff == '.txt' or ff == '.tsv':
             if not delimiter:
@@ -161,7 +217,7 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
             data = tbl_to_obj(tbls[i], sheet=sheet)
     
         else:
-            raise ValueError('{} is not a valid table format!'.format(fFormat))
+            raise ValueError('{} is not a valid table format!'.format(ff))
         
         if colsMap:
             data.rename(columns=colsMap, inplace=True)
@@ -169,7 +225,7 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
         # Send data to database
         _rtbl = df_to_db(
             dbCon, data,
-            outSQLTbl[i] if i+1 <= len(tbls) else get_filename(tlbs[i]),
+            outSQLTbl[i] if i+1 <= len(tbls) else fn,
             append=isAppend, api=api_db
         )
         
@@ -190,7 +246,7 @@ def db_to_db(conDBA, conDBB, typeDBA, typeDBB):
     """
     
     import os
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.sql.i  import lst_tbl
     from gasp.sql.db import create_db
     
@@ -217,7 +273,7 @@ def db_to_db(conDBA, conDBB, typeDBA, typeDBB):
     
     # Table to Database B
     for tbl in tbls:
-        df = Q_to_df(
+        df = q_to_obj(
             conDBA, "SELECT * FROM {}".format(tbl), db_api=typeDBA
         )
         
@@ -236,30 +292,30 @@ def tbl_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
     tables = obj_to_lst(tables)
     
     if api == 'pandas':
-        from gasp.sql.fm import Q_to_df
+        from gasp.sql.fm import q_to_obj
     
         for table in tables:
             if not qForTbl:
-                tblDf = Q_to_df(conFromDb, "SELECT * FROM {}".format(
+                tblDf = q_to_obj(conFromDb, "SELECT * FROM {}".format(
                     table), db_api='psql')
         
             else:
                 if table not in qForTbl:
-                    tblDf = Q_to_df(conFromDb, "SELECT * FROM {}".format(
+                    tblDf = q_to_obj(conFromDb, "SELECT * FROM {}".format(
                         table), db_api='psql')
             
                 else:
-                    tblDf = Q_to_df(conFromDb, qForTbl[table], db_api='psql')
+                    tblDf = q_to_obj(conFromDb, qForTbl[table], db_api='psql')
         
             df_to_db(conToDb, tblDf, table, api='psql')
     
     else:
         import os
-        from gasp.pyt.oss import create_folder, del_folder
+        from gasp.pyt.oss import mkdir, del_folder
         from gasp.sql.fm  import dump_tbls
         from gasp.sql.to  import restore_tbls
         
-        tmpFolder = create_folder(
+        tmpFolder = mkdir(
             os.path.dirname(os.path.abspath(__file__)), randName=True
         )
         
@@ -280,15 +336,15 @@ def apndtbl_in_otherdb(conA, conB, tblA, tblB, mapCols,
     Append data of one table to another table in other database.
     """
     
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
     if geomCol and srsEpsg:
-        df = Q_to_df(conA, "SELECT {} FROM {}".format(
+        df = q_to_obj(conA, "SELECT {} FROM {}".format(
             ", ".join(list(mapCols.keys())), tblA
         ), db_api='psql', geomCol=geomCol, epsg=srsEpsg)
     
     else:
-        df = Q_to_df(conA, "SELECT {} FROM {}".format(
+        df = q_to_obj(conA, "SELECT {} FROM {}".format(
             ", ".join(list(mapCols.keys())), tblA
         ), db_api='psql', geomCol=None, epsg=None)
     
@@ -392,7 +448,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     """
     
     import os
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     from gasp.gt.prop.prj import get_epsg_shp
     
     # If defined, srsEpsgCode must be a integer value
@@ -406,7 +462,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     
     elif api == "shp2pgsql":
         from gasp         import exec_cmd
-        from gasp.sql     import run_sql_script
+        from gasp.sql     import psql_cmd
         from gasp.pyt.oss import del_file
     
     else:
@@ -438,7 +494,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     tables = []
     for _i in range(len(shapes)):
         # Get Table name
-        tname = get_filename(shapes[_i], forceLower=True) if not pgTable else \
+        tname = fprop(shapes[_i], 'fn', forceLower=True) if not pgTable else \
             pgTable[_i] if type(pgTable) == list else pgTable if len(shapes) == 1 \
             else pgTable + '_{}'.format(_i+1)
         
@@ -492,7 +548,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
             
             outcmd = exec_cmd(cmd)
             
-            run_sql_script(con_param, con_param["DATABASE"], sql_script)
+            psql_cmd(con_param, sql_script)
             
             del_file(sql_script)
         
@@ -506,7 +562,7 @@ def shps_to_onepsql(folder_shp, epsg, conParam, out_table):
     Send all shps to PGSQL and merge the data into a single table
     """
     
-    from gasp.sql.mng.tbl import tbls_to_tbl, del_tables
+    from gasp.sql.tbl import tbls_to_tbl, del_tables
     
     pgTables = shp_to_psql(
         conParam, folder_shp, srsEpsgCode=epsg, api="shp2pgsql"
@@ -529,7 +585,7 @@ def rst_to_psql(rst, srs, lnk={
     
     import os
     from gasp     import exec_cmd
-    from gasp.sql import run_sql_script
+    from gasp.sql import psql_cmd
     
     rst_name = os.path.splitext(os.path.basename(rst))[0]
     
@@ -543,7 +599,7 @@ def rst_to_psql(rst, srs, lnk={
         epsg=str(srs), rfile=rst, name=rst_name, sqls=sql_script
     )
     
-    run_sql_script(lnk, lnk["DATABASE"], sql_script)
+    psql_cmd(lnk, sql_script)
     
     return rst_name
 
@@ -556,7 +612,7 @@ def txts_to_db(folder, conDB, delimiter, __encoding='utf-8', apidb='psql',
     The file name will be the table name
     """
     
-    from gasp.pyt.oss import lst_ff, get_filename
+    from gasp.pyt.oss import lst_ff, fprop
     
     if dbIsNew:
         # Create database
@@ -585,7 +641,7 @@ def txts_to_db(folder, conDB, delimiter, __encoding='utf-8', apidb='psql',
         """
         for __file in __files:
             tbl_to_db(
-                __file, conDB, get_filename(__file),
+                __file, conDB, fprop(__file, 'fn'),
                 delimiter=delimiter, encoding_=__encoding, api_db=apidb
             )
     
@@ -595,11 +651,11 @@ def txts_to_db(folder, conDB, delimiter, __encoding='utf-8', apidb='psql',
         """
         
         from gasp.sql.mng.fld import pgtypes_from_pnddf
-        from gasp.sql.mng.tbl import create_tbl
+        from gasp.sql.tbl     import create_tbl
         from gasp.fm          import tbl_to_obj
         
         # Get Table data
-        table_data = {get_filename(f) : tbl_to_obj(
+        table_data = {fprop(f, 'fn') : tbl_to_obj(
             f, _delimiter=delimiter, encoding_=__encoding
         ) for f in __files}
         

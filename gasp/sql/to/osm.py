@@ -47,11 +47,11 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTb
     }
     """
     
-    from gasp.sql.fm      import Q_to_df
-    from gasp.sql.i       import cols_name
-    from gasp.sql.mng.tbl import q_to_ntbl
-    from gasp.sql.to      import osm_to_pgsql
-    from gasp.sql.db      import create_db
+    from gasp.sql.fm import q_to_obj
+    from gasp.sql.i  import cols_name
+    from gasp.sql.to import q_to_ntbl
+    from gasp.sql.to import osm_to_pgsql
+    from gasp.sql.db import create_db
     
     # Create DB
     conDB["NEW_DB"] = conDB["DATABASE"]

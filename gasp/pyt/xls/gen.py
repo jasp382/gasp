@@ -30,7 +30,7 @@ def sheets_into_file(xlsFolder, outXls, intSheets):
     """
     
     from gasp.pyt           import obj_to_lst
-    from gasp.pyt.oss       import lst_ff, get_filename
+    from gasp.pyt.oss       import lst_ff, fprop
     from gasp.pyt.xls.sheet import copy_sheet_to_file
     
     xls_s = lst_ff(xlsFolder, file_format=['.xls', '.xlsx'])
@@ -38,7 +38,7 @@ def sheets_into_file(xlsFolder, outXls, intSheets):
     for xlsPath in xls_s:
         copy_sheet_to_file(
             xlsPath, outXls, intSheets,
-            {intSheets : get_filename(xlsPath, forceLower=True)}
+            {intSheets : fprop(xlsPath, 'fn', forceLower=True)}
         )
     
     return outXls

@@ -2,8 +2,8 @@
 Manage fields
 """
 
-from gasp.sql.c       import sqlcon
-from gasp.sql.mng.tbl import q_to_ntbl
+from gasp.sql.c  import sqlcon
+from gasp.sql.to import q_to_ntbl
 
 
 """
@@ -181,7 +181,7 @@ def text_columns_to_column(conParam, inTable, columns, strSep, newCol, outTable=
     
     else:
         # Add column to inTable
-        from gasp.sql.mng.tbl import update_table
+        from gasp.sql.tbl import update_table
         
         add_field(conParam, inTable, {newCol : 'text'})
         
@@ -314,7 +314,7 @@ def substring_to_newfield(conParam, table, field, newCol,
     Get substring of string by range
     """
     
-    from gasp.sql.mng.tbl import exec_write_q
+    from gasp.sql.q import exec_write_q
     
     # Add new field to table
     add_field(conParam, table, {newCol : "text"})
@@ -336,7 +336,7 @@ def add_geomtype_to_col(conParam, table, newCol, geomCol):
     Add Geom Type to Column
     """
     
-    from gasp.sql.mng.tbl import exec_write_q
+    from gasp.sql.q import exec_write_q
     
     # Add new field to table
     add_field(conParam, table, {newCol : "text"})

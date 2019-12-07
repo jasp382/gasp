@@ -67,11 +67,9 @@ def zonal_geometry(in_rst, out_rst, work):
                 c+=1
             else:
                 cols = line.split(',')
-                f.write(
-                    '{raster_value}  = {new_value} \n'.format(
-                        raster_value=cols[0], new_value=str(int(float(cols[1])))
-                    )
-                )
+                f.write('{}  = {} \n'.format(
+                    cols[0], str(int(float(cols[1])))
+                ))
         f.close()
         opened_rules.close()
     

@@ -27,10 +27,10 @@ def join_attr_by_distance(mainTable, joinTable, workGrass, epsg_code,
     
     import os
     from gasp.gt.wenv.grs import run_grass
-    from gasp.fm          import tbl_to_obj
-    from gasp.gt.to.geom  import df_to_geodf
-    from gasp.gt.to.shp   import df_to_shp
-    from gasp.pyt.oss     import get_filename
+    from gasp.gt.fmshp    import shp_to_obj
+    from gasp.g.to        import df_to_geodf
+    from gasp.gt.toshp    import df_to_shp
+    from gasp.pyt.oss     import fprop
     
     # Create GRASS GIS Location
     grassBase = run_grass(workGrass, location='join_loc', srs=epsg_code)
@@ -40,15 +40,15 @@ def join_attr_by_distance(mainTable, joinTable, workGrass, epsg_code,
     gsetup.init(grassBase, workGrass, 'join_loc', 'PERMANENT')
     
     # Import some GRASS GIS tools
-    from gasp.gt.anls.prox import grs_near as near
-    from gasp.gt.mng.tbl   import geomattr_to_db
-    from gasp.gt.to.shp    import shp_to_grs, grs_to_shp
+    from gasp.gt.prox      import grs_near as near
+    from gasp.gt.tbl       import geomattr_to_db
+    from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
     
     # Import data into GRASS GIS
-    grsMain = shp_to_grs(mainTable, get_filename(
-        mainTable, forceLower=True)
-    ); grsJoin = shp_to_grs(joinTable, get_filename(
-        joinTable, forceLower=True)
+    grsMain = shp_to_grs(mainTable, fprop(
+        mainTable, 'fn', forceLower=True)
+    ); grsJoin = shp_to_grs(joinTable, fprop(
+        joinTable, 'fn', forceLower=True)
     )
     
     # Get distance from each feature of mainTable to the nearest feature
@@ -61,8 +61,8 @@ def join_attr_by_distance(mainTable, joinTable, workGrass, epsg_code,
     ); ogrJoin = grs_to_shp(grsJoin, os.path.join(
         workGrass, 'join_loc', grsJoin + '_grs.shp'), None, asMultiPart=True)
     
-    dfMain = tbl_to_obj(ogrMain)
-    dfJoin = tbl_to_obj(ogrJoin)
+    dfMain = shp_to_obj(ogrMain)
+    dfJoin = shp_to_obj(ogrJoin)
     
     dfResult = dfMain.merge(dfJoin, how='inner',
                             left_on='tocat', right_on='cat')
@@ -87,18 +87,19 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     An raster based approach
     """
     
-    import os;            import pandas;
-    from geopandas        import GeoDataFrame
-    from gasp.fm          import tbl_to_obj
-    from gasp.gt.to.shp   import df_to_shp, shpext_to_boundshp
-    from gasp.gt.to.rst   import shp_to_rst
-    from gasp.gt.to.geom  import df_to_geodf
-    from gasp.gt.wenv.grs import run_grass
-    from gasp.df.joins    import join_dfs
-    from gasp.df.agg      import df_groupBy
-    from gasp.pyt.oss     import get_filename, create_folder 
+    import os;               import pandas;
+    from geopandas           import GeoDataFrame
+    from gasp.gt.fmshp       import shp_to_obj
+    from gasp.gt.toshp       import df_to_shp
+    from gasp.gt.toshp.coord import shpext_to_boundshp
+    from gasp.gt.torst       import shp_to_rst
+    from gasp.g.to           import df_to_geodf
+    from gasp.gt.wenv.grs    import run_grass
+    from gasp.pyt.df.joins   import join_dfs
+    from gasp.pyt.df.agg     import df_groupBy
+    from gasp.pyt.oss        import fprop, mkdir
     
-    workspace = create_folder(os.path.join(
+    workspace = mkdir(os.path.join(
         os.path.dirname(mainLines, 'tmp_dt')
     ))
     
@@ -121,14 +122,14 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     
     from gasp.gt.nop.local import combine
     from gasp.gt.prop.rst  import get_rst_report_data
-    from gasp.gt.to.shp    import shp_to_grs, grs_to_shp
-    from gasp.gt.to.rst    import shp_to_rst
+    from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
+    from gasp.gt.torst    import shp_to_rst
     
     # Add data to GRASS GIS
     mainVector = shp_to_grs(
-        mainLines, get_filename(mainLines, forceLower=True))
+        mainLines, fprop(mainLines, 'fn', forceLower=True))
     joinVector = shp_to_grs(
-        joinLines, get_filename(joinLines, forceLower=True))
+        joinLines, fprop(joinLines, 'fn', forceLower=True))
     
     mainRst = shp_to_rst(
         mainVector, mainId, None, None, "rst_" + mainVector, api='pygrass'
@@ -159,7 +160,7 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     mainLinesCat = grs_to_shp(
         mainVector, os.path.join(workspace, mainVector + '.shp'), 'line')
     
-    mainLinesDf = tbl_to_obj(mainLinesCat)
+    mainLinesDf = shp_to_obj(mainLinesCat)
     
     resultDf = join_dfs(
         mainLinesDf, fTable, "cat", "rst_1",
@@ -338,9 +339,9 @@ def field_sum_two_tables(tableOne, tableTwo,
     4 |  15
     """
     
-    from gasp.fm       import tbl_to_obj
-    from gasp.to       import obj_to_tbl
-    from gasp.df.joins import sum_field_of_two_tables
+    from gasp.fm           import tbl_to_obj
+    from gasp.to           import obj_to_tbl
+    from gasp.pyt.df.joins import sum_field_of_two_tables
     
     # Open two tables
     df_one = tbl_to_obj(tableOne)
@@ -362,16 +363,16 @@ def field_sum_by_table_folder(folderOne, joinFieldOne,
                               folderTwo, joinFieldTwo,
                               sum_field, outFolder):
     
-    import os; from gasp.pyt.oss import lst_ff, get_filename
+    import os; from gasp.pyt.oss import lst_ff, fprop
     
     tablesOne = lst_ff(folderOne, file_format=['.xls', '.xlsx'])
     tablesTwo = lst_ff(folderTwo, file_format=['.xls', '.xlsx'])
     
     for table in tablesOne:
-        table_name = get_filename(table)
+        table_name = fprop(table, 'fn')
         
         for __table in tablesTwo:
-            __table_name = get_filename(__table)
+            __table_name = fprop(__table, 'fn')
             
             if table_name == __table_name:
                 field_sum_two_tables(

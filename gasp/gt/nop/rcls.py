@@ -2,7 +2,7 @@
 Reclassify Raster files
 """
 
-def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
+def rcls_rst(inrst, rclsRules, outrst, api='gdal', maintain_ext=True):
     """
     Reclassify a raster (categorical and floating points)
     
@@ -18,7 +18,7 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
     rclsRules = {
         (0, 8) : 1
         (8, 16) : 2
-        '*'       : 'NoData'
+        '*'     : 'NoData'
     }
     
     elif api == grass:
@@ -27,10 +27,14 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
     
     if api == 'gdal':
         import numpy         as np
+        import os
         from osgeo           import gdal
-        from gasp.gt.to.rst  import obj_to_rst
+        from gasp.gt.torst   import obj_to_rst
         from gasp.g.fm       import imgsrc_to_num
         from gasp.g.prop.img import get_nd
+
+        if not os.path.exists(inrst):
+            raise ValueError('File {} does not exist!'.format(inrst))
 
         # Open Raster
         img = gdal.Open(inrst)
@@ -63,8 +67,19 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
     
         if 'NoData' in rclsRules and rclsRules['NoData'] != 'NoData':
             np.place(rcls_num, rst_num == nodataVal, rclsRules['NoData'])
-    
-        return obj_to_rst(rcls_num, outrst, img, noData=255)
+        
+        if not maintain_ext:
+            from gasp.g.nop.rshp import rshp_to_data
+
+            left, cellx, z, top, c, celly = img.GetGeoTransform()
+
+            clip_rcls, n_left, n_top = rshp_to_data(rcls_num, 255, left, cellx, top, celly)
+
+            return obj_to_rst(clip_rcls, outrst, img, noData=255, geotrans=(
+                n_left, cellx, z, n_top, c, celly
+            ))
+        else:
+            return obj_to_rst(rcls_num, outrst, img, noData=255)
     
     elif api == "pygrass":
         from grass.pygrass.modules import Module

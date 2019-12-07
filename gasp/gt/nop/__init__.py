@@ -11,9 +11,9 @@ def rst_rotation(inFolder, template, outFolder, img_format='.tif'):
     
     import os; from osgeo import gdal
     from gasp.pyt.oss     import lst_ff
-    from gasp.gt.fm.rst   import rst_to_array
+    from gasp.gt.fmrst    import rst_to_array
     from gasp.gt.prop.rst import get_nodata
-    from gasp.gt.to.rst   import obj_to_rst
+    from gasp.gt.torst    import obj_to_rst
     
     rasters = lst_ff(inFolder, file_format=img_format)
     

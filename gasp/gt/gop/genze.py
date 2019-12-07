@@ -57,14 +57,14 @@ def dissolve(inShp, outShp, fld,
         """
         
         import os; from gasp import exec_cmd
-        from gasp.pyt.oss    import get_filename
+        from gasp.pyt.oss    import fprop
         
         if not statistics:
             cmd = (
                 'ogr2ogr {o} {i} -dialect sqlite -sql '
                 '"SELECT ST_Union(geometry), {f} '
                 'FROM {t} GROUP BY {f};"'
-            ).format(o=outShp, i=inShp, f=fld, t=get_filename(shp))
+            ).format(o=outShp, i=inShp, f=fld, t=fprop(shp, 'fn'))
         
         else:
             cmd = (
@@ -73,7 +73,7 @@ def dissolve(inShp, outShp, fld,
                 'FROM {t} GROUP BY {f};"'
             ).format(
                 o=outShp, i=inShp, f=fld,
-                t=get_filename(shp),
+                t=fprop(shp, 'fn'),
                 stat=','.join([
                     '{s}({f}) AS {f}'.format(
                         f=str(fld),
@@ -104,11 +104,11 @@ def dissolve(inShp, outShp, fld,
         ).format(inShp, " column={}".format(fld) if fld else "", outShp))
     
     elif api == 'pandas':
-        from gasp.fm          import tbl_to_obj
-        from gasp.gt.to.shp   import df_to_shp
+        from gasp.gt.fmshp    import shp_to_obj
+        from gasp.gt.toshp    import df_to_shp
         from gasp.g.gop.genze import df_dissolve
 
-        gdf = tbl_to_obj(inShp)
+        gdf = shp_to_obj(inShp)
 
         ndf = df_dissolve(gdf, fld)
 

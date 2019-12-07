@@ -11,7 +11,7 @@ def show_duplicates_in_xls(conParam, table, pkCols, outFile,
     
     import pandas
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.to     import obj_to_tbl
     
     pkCols = obj_to_lst(pkCols)
@@ -47,7 +47,7 @@ def show_duplicates_in_xls(conParam, table, pkCols, outFile,
             ])
         )
     
-    data = Q_to_df(conParam, q, db_api='psql')
+    data = q_to_obj(conParam, q, db_api='psql')
     
     obj_to_tbl(data, outFile)
     

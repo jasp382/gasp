@@ -204,12 +204,12 @@ def create_pgstore(store, workspace, pg_con, gs_con={
     import os;         import requests
     from gasp.pyt.char import random_str
     from gasp.pyt.Xml  import write_xml_tree
-    from gasp.pyt.oss  import create_folder, del_folder
+    from gasp.pyt.oss  import mkdir, del_folder
     
     protocol = 'http' if 'PROTOCOL' not in gs_con else gs_con['PROTOCOL']
     
     # Create folder to write xml
-    wTmp = create_folder(
+    wTmp = mkdir(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             random_str(7)

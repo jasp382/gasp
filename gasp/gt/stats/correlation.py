@@ -13,7 +13,7 @@ def pearson_correlation(x, y):
     """
     
     import numpy
-    from gasp.gt.fm.rst import rst_to_array
+    from gasp.gt.fmrst import rst_to_array
     
     vx = rst_to_array(x, flatten=True, with_nodata=False)
     vy = rst_to_array(y, flatten=True, with_nodata=False)
@@ -32,8 +32,8 @@ def speraman_correlation(x, y):
     Is wise exclude the nodata values
     """
     
-    from scipy          import stats
-    from gasp.gt.fm.rst import rst_to_array
+    from scipy         import stats
+    from gasp.gt.fmrst import rst_to_array
     
     vx = rst_to_array(x, flatten=True, with_nodata=False)
     vy = rst_to_array(y, flatten=True, with_nodata=False)

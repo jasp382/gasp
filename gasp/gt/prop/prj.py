@@ -4,6 +4,22 @@ Spatial Reference Systems Properties
 
 from osgeo import osr
 
+def get_trans_param(in_epsg, out_epsg, export_all=None):
+    """
+    Return transformation parameters for two Spatial Reference Systems
+    """
+    
+    i = osr.SpatialReference()
+    i.ImportFromEPSG(in_epsg)
+    o = osr.SpatialReference()
+    o.ImportFromEPSG(out_epsg)
+    t = osr.CoordinateTransformation(i, o)
+    if not export_all:
+        return t
+    else:
+        return {'input': i, 'output': o, 'transform': t}
+
+
 def epsg_to_wkt(epsg):
     s = osr.SpatialReference()
     s.ImportFromEPSG(epsg)
@@ -16,39 +32,6 @@ def get_sref_from_epsg(epsg):
     s.ImportFromEPSG(epsg)
     
     return s
-
-
-def get_prj_web(epsg, output):
-    from gasp.web.ff import get_file
-    
-    if epsg != 3857:
-        sr_org = 'http://spatialreference.org/ref/epsg/{srs}/prj/'.format(
-            srs=str(epsg)
-        )
-    
-    else:
-        sr_org = 'http://spatialreference.org/ref/sr-org/7483/prj/'
-    
-    prj_file = get_file(sr_org, output)
-    
-    return prj_file
-
-
-def get_wkt_web(epsg):
-    import requests
-    
-    
-    if epsg != 3857:
-        URL = 'http://spatialreference.org/ref/epsg/{}/ogcwkt/'.format(
-            str(epsg)
-        )
-    
-    else:
-        URL = 'http://spatialreference.org/ref/sr-org/7483/ogcwkt/'
-    
-    r = requests.get(URL)
-    
-    return r.text
 
 
 def get_shp_sref(shp):
@@ -116,9 +99,9 @@ def get_epsg_shp(shp, returnIsProj=None):
     Return EPSG code of the Spatial Reference System of a Feature Class
     """
     
-    from gasp.pyt.oss import get_fileformat
+    from gasp.pyt.oss import fprop
     
-    if get_fileformat(shp) != '.gml':
+    if fprop(shp, 'ff') != '.gml':
         proj = get_shp_sref(shp)
     else:
         epsg = get_gml_epsg(shp)
@@ -135,7 +118,7 @@ def get_epsg_shp(shp, returnIsProj=None):
             '{} file has not Spatial Reference assigned!'.format(shp)
         )
     
-    epsg = int(str(proj.GetAttrValue(str('AUTHORITY'), 1)))
+    epsg = int(str(proj.GetAttrValue('AUTHORITY', 1)))
     
     if not returnIsProj:
         return epsg

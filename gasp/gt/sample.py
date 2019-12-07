@@ -14,7 +14,7 @@ def create_fishnet(boundary, fishnet, width=None, height=None, rowN=None, colN=N
     
     import os; from osgeo import ogr
     from math             import ceil
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     from gasp.gt.prop.ff  import drv_name
     from gasp.gt.prop.ext import get_ext
     from gasp.gt.prop.prj import get_srs
@@ -66,7 +66,7 @@ def create_fishnet(boundary, fishnet, width=None, height=None, rowN=None, colN=N
     out_fishnet = ogr.GetDriverByName(drv_name(
         fishnet)).CreateDataSource(fishnet)
     fishnet_lyr = out_fishnet.CreateLayer(
-        str(get_filename(fishnet)), srs=get_srs(boundary),
+        str(fprop(fishnet, 'fn')), srs=get_srs(boundary),
         geom_type=ogr.wkbPolygon
     )
     
@@ -127,7 +127,7 @@ def points_as_grid(boundary, fishnet_pnt, width=None, height=None,
     
     import os; from osgeo import ogr
     from math             import ceil
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     from gasp.gt.prop.ff  import drv_name
     from gasp.gt.prop.ext import get_ext
     from gasp.gt.prop.prj import get_shp_sref
@@ -192,7 +192,7 @@ def points_as_grid(boundary, fishnet_pnt, width=None, height=None,
     out_fishnet = ogr.GetDriverByName(drv_name(
         fishnet_pnt)).CreateDataSource(fishnet_pnt)
     fishnet_lyr = out_fishnet.CreateLayer(
-        get_filename(fishnet_pnt), get_shp_sref(boundary),
+        fprop(fishnet_pnt, 'fn'), get_shp_sref(boundary),
         geom_type=ogr.wkbPoint
     )
     
@@ -250,7 +250,7 @@ def get_random_point(minX, maxX, minY, maxY):
     """
     
     import random
-    from gasp.gt.to.geom import new_pnt
+    from gasp.g.to import new_pnt
     
     x = minX + (random.random() * (maxX - minX))
     y = minY + (random.random() * (maxY - minY))
@@ -324,20 +324,18 @@ def sample_to_points(points, col_name, rst):
     m()
 
 
-def create_random_points_on_raster(inputRaster, nr_points, outVect):
+def rst_random_pnt(rst, npnt, outvec):
     """
     Creates a raster map layer and vector point map containing
     randomly located points.
     """
     
     from grass.pygrass.modules import Module
-    
+
     m = Module(
-        "r.random", input=inputRaster, npoints=nr_points, vector=outVect,
+        "r.random", input=rst, npoints=npnt, vector=outvec,
         overwrite=True, run_=False, quiet=True
-    )
-    
-    m()
+    ); m()
     
     return outVect
 

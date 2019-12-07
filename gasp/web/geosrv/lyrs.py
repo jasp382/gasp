@@ -40,12 +40,12 @@ def pub_pglyr(workspace, store, pg_table, title=None, gs_con={
     import os;         import requests
     from gasp.pyt.char import random_str
     from gasp.pyt.Xml  import write_xml_tree
-    from gasp.pyt.oss  import create_folder, del_folder
+    from gasp.pyt.oss  import mkdir, del_folder
     
     protocol = 'http' if 'PROTOCOL' not in gs_con else gs_con['PROTOCOL']
     
     # Create folder to write xml
-    wTmp = create_folder(
+    wTmp = mkdir(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)), random_str(7)
         )
@@ -99,7 +99,7 @@ def pub_rst_lyr(layername, datastore, workspace, epsg_code, conf={
     import os;            import requests
     from gasp.pyt.char    import random_str
     from gasp.pyt.Xml     import write_xml_tree
-    from gasp.pyt.oss     import create_folder, del_folder
+    from gasp.pyt.oss     import mkdir, del_folder
     from gasp.gt.prop.prj import epsg_to_wkt
     
     protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
@@ -123,12 +123,10 @@ def pub_rst_lyr(layername, datastore, workspace, epsg_code, conf={
     }
     
     # Write XML
-    wTmp = create_folder(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            random_str(7)
-        )
-    ) 
+    wTmp = mkdir(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        random_str(7)
+    )) 
     
     xml_file = write_xml_tree(
         xmlTree, os.path.join(wTmp, 'rst_lyr.xml')

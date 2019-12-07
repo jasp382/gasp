@@ -12,16 +12,16 @@ def kernel_density(pnt_feat, popField, radius, template, outRst):
     """
     
     import os
-    from gasp.gt.to.rst   import saga_to_tif
+    from gasp.gt.torst    import saga_to_tif
     from gasp.gt.prop.rst import rst_ext, get_cellsize
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     
     left, right, bottom, top = rst_ext(template)
     cellsize = get_cellsize(template)
     
     SAGA_RASTER = os.path.join(
         os.path.dirname(outRst),
-        'saga_{}.sgrd'.format(get_filename(outRst))
+        'saga_{}.sgrd'.format(fprop(outRst, 'fn'))
     )
     
     cmd = (

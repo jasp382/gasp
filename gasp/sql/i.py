@@ -49,7 +49,7 @@ def lst_views(conParam, schema='public', basename=None):
     """
     
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
     basename = obj_to_lst(basename)
     
@@ -59,7 +59,7 @@ def lst_views(conParam, schema='public', basename=None):
         ) for b in basename])
     )
     
-    views = Q_to_df(conParam, (
+    views = q_to_obj(conParam, (
         "SELECT table_name FROM information_schema.views "
         "WHERE table_schema='{}'{}"
     ).format(schema, "" if not basename else " AND ({})".format(
@@ -91,7 +91,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
     )
     
     if api == 'psql':
-        from gasp.sql.fm import Q_to_df
+        from gasp.sql.fm import q_to_obj
         
         Q = (
             "SELECT table_name FROM information_schema.tables "
@@ -99,7 +99,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
         ).format(schema, "" if not basename else " AND ({})".format(
             basenameStr))
     
-        tbls = Q_to_df(conObj, Q, db_api='psql')
+        tbls = q_to_obj(conObj, Q, db_api='psql')
     
         if excludeViews:
             views = lst_views(conObj, schema=schema)
@@ -159,7 +159,7 @@ def row_num(conObj, table, where=None, api='psql'):
     * sqlite;
     """
     
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
     if not table.startswith('SELECT '):
         Q = "SELECT COUNT(*) AS nrows FROM {}{}".format(
@@ -169,7 +169,7 @@ def row_num(conObj, table, where=None, api='psql'):
     else:
         Q = "SELECT COUNT(*) AS nrows FROM ({}) AS foo".format(table)
     
-    d = Q_to_df(conObj, Q, db_api=api)
+    d = q_to_obj(conObj, Q, db_api=api)
     
     return int(d.iloc[0].nrows)
 
@@ -207,9 +207,9 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         colnames = list(map(lambda x: x[0], cursor.description))
     
     elif api == 'mysql':
-        from gasp.sql.fm import Q_to_df
+        from gasp.sql.fm import q_to_obj
         
-        data = Q_to_df(
+        data = q_to_obj(
             conparam, "SELECT * FROM {} LIMIT 1".format(table), db_api='mysql')
         
         colnames = data.columns.values
@@ -258,10 +258,10 @@ def check_last_id(lnk, pk, table):
     """
     
     from gasp.sql.c  import sqlcon
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
     q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)
-    d = Q_to_df(lnk, q, db_api='psql').fid.tolist()
+    d = q_to_obj(lnk, q, db_api='psql').fid.tolist()
     
     if not d[0]:
         return 0
@@ -278,7 +278,7 @@ def tbl_ext(conParam, table, geomCol):
     Return extent of the geometries in one pgtable
     """
     
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
     q = (
         "SELECT MIN(ST_X(pnt_geom)) AS eleft, MAX(ST_X(pnt_geom)) AS eright, "
@@ -289,7 +289,7 @@ def tbl_ext(conParam, table, geomCol):
         ") AS foo"
     ).format(tbl=table, geomcol=geomCol)
     
-    ext = Q_to_df(conParam, q, db_api='psql').to_dict(orient='index')[0]
+    ext = q_to_obj(conParam, q, db_api='psql').to_dict(orient='index')[0]
     
     return [
         ext['eleft'], ext['bottom'], ext['eright'], ext['top']

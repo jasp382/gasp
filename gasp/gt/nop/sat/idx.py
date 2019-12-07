@@ -31,7 +31,7 @@ def ndvi(nir, red, outRst):
     
     import numpy        as np
     from osgeo          import gdal, gdal_array
-    from gasp.gt.to.rst import obj_to_rst
+    from gasp.gt.torst import obj_to_rst
     
     # Open Images
     src_nir = gdal.Open(nir, gdal.GA_ReadOnly)
@@ -66,7 +66,7 @@ def nbr(nir, swir, outrst):
     
     import numpy        as np
     from osgeo          import gdal, gdal_array
-    from gasp.gt.to.rst import obj_to_rst
+    from gasp.gt.torst import obj_to_rst
     
     # Open Images
     srcNir  = gdal.Open(nir, gdal.GA_ReadOnly)

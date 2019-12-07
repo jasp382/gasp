@@ -1,3 +1,0 @@
-"""
-GeoData Analysis Procedures
-"""

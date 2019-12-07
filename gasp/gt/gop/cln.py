@@ -7,11 +7,11 @@ def remove_deadend(inShp, outShp, con_db=None):
     Remove deadend
     """
     
-    from gasp.pyt.oss     import get_filename
+    from gasp.pyt.oss     import fprop
     from gasp.sql.db      import create_db
     from gasp.sql.to      import shp_to_psql
-    from gasp.sql.gop.cln import rm_deadend
-    from gasp.gt.to.shp   import dbtbl_to_shp
+    from gasp.gql.cln     import rm_deadend
+    from gasp.gt.toshp.db import dbtbl_to_shp
     
     conDB = {
         "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',
@@ -20,8 +20,8 @@ def remove_deadend(inShp, outShp, con_db=None):
     
     # Create DB
     if "DATABASE" not in conDB:
-        conDB["DATABASE"] = create_db(conDB, get_filename(
-            inShp, forceLower=True
+        conDB["DATABASE"] = create_db(conDB, fprop(
+            inShp, 'fn', forceLower=True
         ), api='psql')
     
     else:
@@ -38,8 +38,8 @@ def remove_deadend(inShp, outShp, con_db=None):
     inTbl = shp_to_psql(conDB, inShp, api="shp2pgsql", encoding="LATIN1")
     
     # Produce result
-    out_tbl = rm_deadend(conDB, inTbl, get_filename(
-        outShp, forceLower=True))
+    out_tbl = rm_deadend(conDB, inTbl, fprop(
+        outShp, 'fn', forceLower=True))
     
     # Export result
     outshp = dbtbl_to_shp(

@@ -35,7 +35,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
     
     import pandas
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.sql.i  import cols_type
     from gasp.to     import obj_to_tbl
     
@@ -54,7 +54,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
             else:
                 whr.append("{}={}".format(c, row[c]))
         
-        hourRows = Q_to_df(conParam,
+        hourRows = q_to_obj(conParam,
             "SELECT {} FROM {} WHERE {}".format(
                 hour_decimal_field, table,
                 " AND ".join(whr)
@@ -79,7 +79,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
         return row
     
     # Count entity occourrences for one day and hour
-    countsByEntityTime = Q_to_df(conParam, (
+    countsByEntityTime = q_to_obj(conParam, (
         "SELECT {scols}, conta FROM "
         "(SELECT {scols}, COUNT({ent}) AS conta FROM {tbl} "
         "GROUP BY {scols}) AS foo WHERE conta > 1"
@@ -121,8 +121,8 @@ def del_rows_by_temporal_proximity(conpsql, table, entity_fields,
       1    | 2018-01-02 |  4   |   X    |    X    |     4,6
     """
     
-    from gasp.pyt         import obj_to_lst
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.pyt    import obj_to_lst
+    from gasp.sql.to import q_to_ntbl
     
     entity_fields = obj_to_lst(entity_fields)
     

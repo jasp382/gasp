@@ -16,7 +16,7 @@ def gdal_mapcalc(expression, exp_val_paths, outRaster, template_rst,
     from gasp.gt.prop.ff    import drv_name
     from py_expression_eval import Parser
     from gasp.g.prop.img    import get_nd
-    from gasp.gt.to.rst     import obj_to_rst
+    from gasp.gt.torst     import obj_to_rst
     
     parser = Parser()
     
@@ -50,12 +50,12 @@ def rstcalc(expression, output, api='saga', grids=None):
         # Using SAGA GIS
         
         import os; from gasp import exec_cmd
-        from gasp.pyt.oss    import get_filename
-        from gasp.gt.to.rst  import saga_to_tif
+        from gasp.pyt.oss    import fprop
+        from gasp.gt.torst  import saga_to_tif
         
         SAGA_RASTER = os.path.join(
             os.path.dirname(output),
-            "sag_{}.sgrd".format(get_filename(output))
+            "sag_{}.sgrd".format(fprop(output, 'fn'))
         )
         
         cmd = (
@@ -102,7 +102,7 @@ def floatrst_to_intrst(in_rst, out_rst):
     import numpy         as np
     from osgeo           import gdal
     from gasp.g.prop.img import get_nd
-    from gasp.gt.to.rst  import obj_to_rst
+    from gasp.gt.torst  import obj_to_rst
 
     nds = {
         'int8' : -128, 'int16' : -32768, 'int32' : -2147483648,

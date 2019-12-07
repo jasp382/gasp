@@ -7,7 +7,7 @@ def fix_geom(conParam, table, geom, out_tbl, colsSelect=None, whr=None):
     Remove some topological incorrections on the PostGIS data
     """
     
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.to import q_to_ntbl
     
     if not colsSelect:
         from gasp.sql.i import cols_name
@@ -40,7 +40,7 @@ def xycols_to_geom(conP, intable, x_col, y_col, outtable,
     X and Y Colums to PostGIS Geom Column
     """
     
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.to import q_to_ntbl
     
     return q_to_ntbl(conP, outtable, (
         "SELECT *, ST_SetSRID(ST_MakePoint({}, {}), {}) AS {} "
@@ -58,8 +58,8 @@ def geom_to_points(conParam, table, geomCol, outTable,
     Equivalent to feature to point tool
     """
     
-    from gasp.pyt         import obj_to_lst
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.pyt    import obj_to_lst
+    from gasp.sql.to import q_to_ntbl
     
     selCols = obj_to_lst(selCols)
     
@@ -83,8 +83,8 @@ def add_endpoints_to_table(conP, inTable, outTable,
     Add start/end points columns to table
     """
     
-    from gasp.sql.mng.tbl import q_to_ntbl
-    from gasp.sql.i       import cols_name
+    from gasp.sql.to import q_to_ntbl
+    from gasp.sql.i  import cols_name
     
     return q_to_ntbl(conP, outTable, (
         "SELECT {cols}, {stPnt}, {endPnt} FROM ("
@@ -121,8 +121,8 @@ def check_endpoint_ispoint(conParam, lnhTable, pntTable, outTable,
     in other table.
     """
     
-    from gasp.sql.mng.tbl import q_to_ntbl
-    from gasp.sql.i       import cols_name
+    from gasp.sql.to import q_to_ntbl
+    from gasp.sql.i  import cols_name
     
     tCols = [x for x in cols_name(
         conParam, lnhTable) if x != nodeStart and x != nodeEnd
@@ -190,7 +190,7 @@ def pnts_to_lines(conParam, inTable, outTable, entityCol, orderCol,
             raise ValueError(
                 'If geomCol is not specified, xCol and ycol must replace it!')
     
-    from gasp.sql.mng.tbl import q_to_ntbl
+    from gasp.sql.to import q_to_ntbl
     
     geomRef = geomCol if geomCol else "ST_MakePoint({}, {})".format(xCol, yXol)
     
@@ -211,9 +211,9 @@ def check_geomtype_in_table(conParam, table, geomCol='geom'):
     Return the number of geometry types in table
     """
     
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
-    return int(Q_to_df(conParam, (
+    return int(q_to_obj(conParam, (
         "SELECT COUNT(*) AS row_count FROM ("
             "SELECT ST_GeometryType((ST_Dump({})).geom) AS cnt_geom "
             "FROM {} GROUP BY ST_GeometryType((ST_Dump({})).geom)"
@@ -228,8 +228,8 @@ def select_main_geom_type(conparam, table, outbl, geomCol='geom'):
     type with more rows
     """
     
-    from gasp.sql.mng.tbl import q_to_ntbl
-    from gasp.sql.i       import cols_name
+    from gasp.sql.to import q_to_ntbl
+    from gasp.sql.i  import cols_name
     
     COLS = [x for x in cols_name(
         conparam, table, sanitizeSpecialWords=None

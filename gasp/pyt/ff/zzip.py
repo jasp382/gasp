@@ -32,9 +32,11 @@ def zip_files(lst_files, zip_file):
     
     for f in lst_files:
         __zip.write(f, os.path.relpath(f, os.path.dirname(zip_file)),
-                       compress_type=zipfile.ZIP_DEFLATED)
+                    compress_type=zipfile.ZIP_DEFLATED)
     
     __zip.close()
+
+    return zip_file
 
 
 def zip_folder(folder, zip_file):

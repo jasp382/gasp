@@ -16,11 +16,11 @@ def raster_formats():
 
 
 def check_isRaster(_file):
-    from gasp.pyt.oss import get_fileformat
+    from gasp.pyt.oss import fprop
 
     rst_lst = raster_formats()
     
-    file_ext = get_fileformat(_file)
+    file_ext = fprop(_file, 'ff')
     
     if file_ext not in rst_lst:
         return None
@@ -29,11 +29,11 @@ def check_isRaster(_file):
 
 
 def check_isShp(_file):
-    from gasp.pyt.oss import get_fileformat
+    from gasp.pyt.oss import fprop
     
     lst = vector_formats()
     
-    file_ext = get_fileformat(_file)
+    file_ext = fprop(_file, 'ff')
     
     if file_ext not in lst:
         return None

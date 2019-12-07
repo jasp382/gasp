@@ -145,7 +145,7 @@ def summarize_table_fields(table, outFld, fld_name_fld_name=None,
     
     import os
     from gasp         import exec_cmd
-    from gasp.pyt.oss import create_folder
+    from gasp.pyt.oss import mkdir
     
     # List table fields:
     fields = lst_fld(table)
@@ -154,7 +154,7 @@ def summarize_table_fields(table, outFld, fld_name_fld_name=None,
     cmd = 'ogr2ogr {o} {i} -dialect sqlite -sql "{s};"'
     
     if not os.path.exists(outFld):
-        tmp = create_folder(outFld)
+        tmp = mkdir(outFld)
     
     for field in fields:
         outTbl = os.path.join(outFld, '{}.dbf'.format(field))

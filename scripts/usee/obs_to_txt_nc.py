@@ -181,8 +181,8 @@ def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
     """
     
     import codecs
-    from gasp.sql.fm    import Q_to_df
-    from gasp.gt.to.shp import df_to_shp
+    from gasp.sql.fm   import q_to_obj
+    from gasp.gt.toshp import df_to_shp
     
     # Get Data from the Database
     q = (
@@ -203,7 +203,7 @@ def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
             " OR ".join(["jtbl.mac='{}'".format(m) for m in macs])
         )
     )
-    df = Q_to_df(conDB, q, db_api='mysql')
+    df = q_to_obj(conDB, q, db_api='mysql')
     
     if not df.shape[0]:
         return txt_nodata(DAY, OUT_SRM)
@@ -297,7 +297,7 @@ def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
     
     import netCDF4
     import numpy as np
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     
     dimCols = _dimCols.copy()
     varCols = _varCols.copy()
@@ -341,7 +341,7 @@ def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
             " OR ".join(["jtbl.mac='{}'".format(m) for m in macs])
         )
     )
-    geoDf = Q_to_df(conDB, Q, db_api='mysql')
+    geoDf = q_to_obj(conDB, Q, db_api='mysql')
     
     if not geoDf.shape[0]:
         return txt_nodata(daystr, outNc)

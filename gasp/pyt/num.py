@@ -28,11 +28,3 @@ def distance_line_point(lx1, ly1, lx2, ly2, px, py):
     
     return distance
 
-
-def get_distinct(vector):
-    array = numpy.array(vector)
-    
-    values = numpy.unique(array)
-    
-    return values
-

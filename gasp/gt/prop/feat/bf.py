@@ -61,7 +61,7 @@ def bf_prop(buffer_shp, epsg_in, isFile=None):
     from gasp.gt.prop.feat import get_cntr_bnd
     
     if isFile:
-        from gasp.gt.anls.exct import geom_by_idx
+        from gasp.gt.attr import geom_by_idx
         
         BUFFER_GEOM = ogr.CreateGeometryFromWkt(
             geom_by_idx(buffer_shp, 0)
@@ -73,10 +73,9 @@ def bf_prop(buffer_shp, epsg_in, isFile=None):
     # Get x_center, y_center and dist from polygon geometry
     # TODO: Besides 4326, we need to include also the others geographic systems
     if int(epsg_in) == 4326:
-        from gasp.gt.prj import proj
+        from gasp.g.prj import prj_ogrgeom
         
-        BUFFER_GEOM_R = proj(
-            BUFFER_GEOM, None, 3857, inEPSG=epsg_in, gisApi='OGRGeom')
+        BUFFER_GEOM_R = prj_ogrgeom(BUFFER_GEOM, epsg_in, 3857)
     
     else:
         BUFFER_GEOM_R = BUFFER_GEOM
@@ -98,9 +97,9 @@ def getBufferParam(inArea, inAreaSRS, outSRS=4326):
     inArea could be a file, dict, list or tuple
     """
     
-    import os
-    from gasp.gt.to.geom import new_pnt
-    from gasp.gt.prj     import proj
+    import os; from osgeo import ogr
+    from gasp.g.to  import new_pnt
+    from gasp.g.prj import prj_ogrgeom
     
     TYPE = type(inArea)
     
@@ -110,16 +109,16 @@ def getBufferParam(inArea, inAreaSRS, outSRS=4326):
         # Check if exists
         if os.path.exists(inArea):
             if os.path.isfile(inArea):
-                from gasp.gt.anls.exct import geom_by_idx
+                from gasp.gt.attr import geom_by_idx
                 
                 # Get Geometry object
                 BUFFER_GEOM = geom_by_idx(inArea, 0)
                 
                 # To outSRS
                 if int(inAreaSRS) != outSRS:
-                    BUFFER_GEOM = proj(
-                        ogr.CreateGeometryFromWkt(BUFFER_GEOM), None,
-                        outSRS, inEPSG=inAreaSRS, gisApi='ogr'
+                    BUFFER_GEOM = prj_ogrgeom(
+                        ogr.CreateGeometryFromWkt(BUFFER_GEOM),
+                        inAreaSRS, outSRS
                     ).ExportToWkt()
                 
                 # Get x_center, y_center and radius
@@ -162,10 +161,8 @@ def getBufferParam(inArea, inAreaSRS, outSRS=4326):
             )
             
             if inAreaSRS != outSRS:
-                pnt_wgs = proj(
-                    new_pnt(x_center, y_center), None,
-                    outSRS, inEPSG=inAreaSRS, gisApi='OGRGeom'
-                )
+                pnt_wgs = prj_ogrgeom(
+                    new_pnt(x_center, y_center), inAreaSRS, outSRS)
                 
                 x_center, y_center = (pnt_wgs.GetX(), pnt_wgs.GetY())
     
@@ -173,9 +170,8 @@ def getBufferParam(inArea, inAreaSRS, outSRS=4326):
         x_center, y_center, dist = inArea
         
         if inAreaSRS != outSRS:
-            pnt_wgs = proj(
-                new_pnt(x_center, y_center), None,
-                outSRS, inEPSG=inAreaSRS, gisApi='ogr'
+            pnt_wgs = prj_ogrgeom(
+                new_pnt(x_center, y_center), inAreaSRS, outSRS
             )
             
             x_center, y_center = (pnt_wgs.GetX(), pnt_wgs.GetY())

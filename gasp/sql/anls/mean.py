@@ -13,11 +13,11 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
     """
     
     import os;       import pandas
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.to     import obj_to_tbl
     
     # Get days
-    VALUES = Q_to_df(conParam, 
+    VALUES = q_to_obj(conParam, 
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=DAY_FIELD, t=pgtable
         ), db_api='psql'
@@ -38,7 +38,7 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
             table=pgtable, dayF=DAY_FIELD, d=day[0]
         )
         
-        countTbl = Q_to_df(conParam, QUERY, db_api='psql')
+        countTbl = q_to_obj(conParam, QUERY, db_api='psql')
         
         tableArray.append(countTbl)
     
@@ -90,7 +90,7 @@ def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
     
     import pandas
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.to     import obj_to_tbl
     
     entityField = obj_to_lst(entityField)
@@ -123,7 +123,7 @@ def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
         getD=ndaysQ
     )
     
-    data = Q_to_df(conParam, q, db_api='psql')
+    data = q_to_obj(conParam, q, db_api='psql')
     
     obj_to_tbl(data, out_file)
     
@@ -143,8 +143,8 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     
     import os;               import pandas
     from gasp.pyt.tm         import day_to_intervals
-    from gasp.df.joins       import combine_dfs
-    from gasp.sql.fm         import Q_to_df
+    from gasp.pyt.df.joins   import combine_dfs
+    from gasp.sql.fm         import q_to_obj
     from gasp.sql.i          import cols_type
     from gasp.to             import obj_to_tbl
     from gasp.sql.anls.count import count_by_period_entity
@@ -159,7 +159,7 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     INTERVALS = day_to_intervals(PERIODS_INTERVAL) if not PERIODS else PERIODS
     
     # Get unique values
-    VALUES = Q_to_df(conParam,
+    VALUES = q_to_obj(conParam,
         "SELECT {col} FROM {t} GROUP BY {col}".format(col=DAY_FIELD, t=pgtable)
     )[DAY_FIELD].tolist()
     
@@ -263,7 +263,7 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
     
     import pandas
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.fm import Q_to_df
+    from gasp.sql.fm import q_to_obj
     from gasp.to     import obj_to_tbl
     
     def get_case(PTUPLE, PFIELD):
@@ -331,7 +331,7 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
         getND=ndaysQ
     )
     
-    data = Q_to_df(conParam, q, db_api='psql')
+    data = q_to_obj(conParam, q, db_api='psql')
     
     obj_to_tbl(data, outFile)
     
@@ -355,13 +355,13 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     """
     
     import os
-    from gasp.pyt.oss     import get_filename
-    from gasp.sql.to      import shp_to_psql
-    from gasp.sql.db      import create_db
-    from gasp.sql.mng.tbl import q_to_ntbl
-    from gasp.to          import db_to_tbl
+    from gasp.pyt.oss import fprop
+    from gasp.sql.to  import shp_to_psql
+    from gasp.sql.db  import create_db
+    from gasp.sql.to  import q_to_ntbl
+    from gasp.to      import db_to_tbl
     
-    db_name = get_filename(MATRIX_OD)
+    db_name = fprop(MATRIX_OD, 'fn')
     create_db(conParam, db_name, overwrite=True)
     conParam["DATABASE"] = db_name
     
@@ -370,7 +370,7 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
         api="pandas", srsEpsgCode=epsg
     )
     
-    OUT_TABLE = q_to_ntbl(conParam, get_filename(RESULT_MATRIX), (
+    OUT_TABLE = q_to_ntbl(conParam, fprop(RESULT_MATRIX, 'fn'), (
         "SELECT {groupOriginCod}, {groupOriginName}, {groupDestCod}, "
         "{groupDestName}, AVG(mean_time) AS mean_time FROM ("
             "SELECT {origin}, {groupOriginCod}, {groupOriginName}, "
