@@ -41,7 +41,7 @@ setup(
         'gasp3.pyt', 'gasp3.pyt.df', 'gasp3.pyt.xls',
         # ******************************************************************** #
         'gasp3.sql',
-        'gasp3.sql.anls', 'gasp3.sql.charts', 'gasp3.sql.mng',
+        'gasp3.sql.anls', 'gasp3.sql.charts', 'gasp3.sql.mng', 'gasp3.sql.to',
         # ******************************************************************** #
         'gasp3.web',
         'gasp3.web.djg', 'gasp3.web.djg.ff', 'gasp3.web.djg.mdl',
@@ -72,8 +72,8 @@ setup(
         'django==2.2.4', 'django-widget-tweaks==1.4.5',
         'django-cors-headers==3.1.0', 'djangorestframework==3.10.2',
         'sentinelsat==0.13',
-        'simpledbf==0.2.6',
-        'mysqlclient==1.4.6'
+        'simpledbf==0.2.6'
+        #'mysqlclient==1.4.6'
     ],
     include_package_data=True
 )

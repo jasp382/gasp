@@ -32,7 +32,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     from gasp3.pyt.oss                import get_filename
     if roadsAPI == 'POSTGIS':
         from gasp3.sql.mng.db         import create_db
-        from gasp3.alg.osm2lulc.utils import osm_to_pgsql
+        from gasp3.sql.to             import osm_to_pgsql
         from gasp3.alg.osm2lulc.mod2  import pg_num_roads
     else:
         from gasp3.alg.osm2lulc.utils import osm_to_sqdb

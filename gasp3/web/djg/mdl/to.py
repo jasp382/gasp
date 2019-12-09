@@ -257,13 +257,8 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
     
     # Import SQL to a new database
     create_db(psql_con, tmp_db_name)
-    
-    if not usePGRestore:
-        restore_db(psql_con, tmp_db_name, sql_file)
-        psql_con["DATABASE"] = tmp_db_name
-    else:
-        psql_con["DATABASE"] = tmp_db_name
-        restore_db(psql_con, sql_file)
+    psql_con["DATABASE"] = tmp_db_name
+    restore_db(psql_con, sql_file)
     
     # List tables in the database
     tables = {x : x for x in lst_tbl(

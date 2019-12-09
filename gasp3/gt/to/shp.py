@@ -2,6 +2,7 @@
 Something to Feature Class
 """
 
+
 """
 Python data to SHP
 """
@@ -137,11 +138,12 @@ def getosm_to_featcls(inBoundary, outVector, boundaryEpsg=4326,
     """
 
     import os
-    from gasp3.adv.osm import download_by_boundary
+    from gasp3.gt.to.osm import download_by_boundary
 
     # Download data from the web
     osmData = download_by_boundary(
-        inBoundary, os.path.join(outVector, 'fresh_osm.xml'), boundaryEpsg
+        inBoundary, os.path.dirname(outVector), 'fresh_osm',
+        boundaryEpsg, GetUrl=None
     )
 
     # Convert data to regular vector file

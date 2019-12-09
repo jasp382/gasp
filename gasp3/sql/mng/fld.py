@@ -36,7 +36,7 @@ def add_field(lnk, pgtable, columns):
     con.close()
 
 
-def drop_column(lnk, pg_table, columns):
+def drop_col(lnk, pg_table, columns):
     """
     Delete column from pg_table
     """

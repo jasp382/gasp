@@ -185,7 +185,7 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         c = sqlcon(conparam)
     
         cursor = c.cursor()
-        cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
+        cursor.execute("SELECT * FROM {} LIMIT 1;".format(table))
         colnames = [desc[0] for desc in cursor.description]
     
         if sanitizeSpecialWords:
@@ -200,7 +200,7 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         
         con = sqlite3.connect(conparam)
         
-        cursor = con.execute("SELECT * FROM {}".format(table))
+        cursor = con.execute("SELECT * FROM {} LIMIT 1".format(table))
         
         colnames = list(map(lambda x: x[0], cursor.description))
     
