@@ -1,7 +1,8 @@
 """ OSM to DB """
 
 
-def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmRelTbl):
+def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
+                        outSQL=None):
     """
     PostgreSQL - OSM Data to Relational Model
     
@@ -61,7 +62,7 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmRelTbl):
     osm_to_pgsql(osmData, conDB)
     
     # Get KEYS COLUMNS
-    cols = cols_name(conDB, inSchema["TBL"])
+    cols = cols_name(conDB, inSchema["TBL"], sanitizeSpecialWords=None)
     transcols = [c for c in cols if c not in inSchema["NOT_KEYS"]]
     
     # Create osmGeoTbl 
@@ -74,9 +75,9 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmRelTbl):
     
     # Create OSM categories table
     qs = [(
-        "SELECT '{keyV}' AS {keyC}, CAST({keyV} AS text) AS {valC} "
-        "FROM {t} WHERE {keyV} IS NOT NULL "
-        "GROUP BY {keyV}"
+        "SELECT '{keyV}' AS {keyC}, CAST({t}.{keyV} AS text) AS {valC} "
+        "FROM {t} WHERE {t}.{keyV} IS NOT NULL "
+        "GROUP BY {t}.{keyV}"
     ).format(
         keyV=c, t=inSchema["TBL"], keyC=osmCatTbl["KEY_COL"],
         valC=osmCatTbl["VAL_COL"]
@@ -96,8 +97,8 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmRelTbl):
     
     # Create relation table
     qs = [(
-        "SELECT {fid}, '{keyV}' AS key, CAST({keyV} AS text) AS osmval "
-        "FROM {t} WHERE {keyV} IS NOT NULL"
+        "SELECT {fid}, '{keyV}' AS key, CAST({t}.{keyV} AS text) AS osmval "
+        "FROM {t} WHERE {t}.{keyV} IS NOT NULL"
     ).format(
         fid=inSchema["FID"], keyV=c, t=inSchema["TBL"]
     ) for c in transcols]
@@ -111,5 +112,10 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmRelTbl):
         catTbl=osmCatTbl["TBL"], osmcatfid=osmCatTbl["FID"]
     ), api='psql')
     
-    return osmgeotbl, osmcatbl, osmreltbl
+    if not outSQL:
+        return osmgeotbl, osmcatbl, osmreltbl
+    else:
+        from gasp3.sql.fm import dump_tbls
+        
+        return dump_tbls(conDB, [osmgeotbl, osmcatbl, osmreltbl], outSQL)
 
