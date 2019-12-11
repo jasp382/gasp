@@ -88,19 +88,18 @@ def pgtables_to_layer_withStyle_by_col(
     will be stored.
     """
     
-    import os
-    from gasp3                        import goToList
-    from gasp3.fm                     import tbl_to_obj
-    from gasp3.pyt.oss                import create_folder
-    from gasp3.sql.i                  import cols_name
-    from gasp3.web.geosrv.ws          import create_ws
-    from gasp3.web.geosrv.stores      import create_pgstore
-    from gasp3.web.geosrv.lyrs        import pub_pglyr
-    from gasp3.web.geosrv.styl        import create_style
-    from gasp3.web.geosrv.styl        import lst_styles
-    from gasp3.web.geosrv.styl        import del_style
-    from gasp3.web.geosrv.styl.assign import assign_style_to_layer
-    from gasp3.web.geosrv.styl.sld    import write_sld
+    import os; from gasp3        import goToList
+    from gasp3.fm                import tbl_to_obj
+    from gasp3.pyt.oss           import create_folder
+    from gasp3.sql.i             import cols_name
+    from gasp3.web.geosrv.ws     import create_ws
+    from gasp3.web.geosrv.stores import create_pgstore
+    from gasp3.web.geosrv.lyrs   import pub_pglyr
+    from gasp3.web.geosrv.sty    import create_style
+    from gasp3.web.geosrv.sty    import lst_styles
+    from gasp3.web.geosrv.sty    import del_style
+    from gasp3.web.geosrv.sty    import assign_style_to_layer
+    from gasp3.web.geosrv.sld    import write_sld
     
     # Sanitize PGtables
     pgtables = goToList(pgtables)
@@ -259,15 +258,14 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
     }
     """
     
-    import os
-    from gasp3.sql.i                  import lst_tbl_basename
-    from gasp3.web.geosrv.ws          import create_workspace
-    from gasp3.web.geosrv.stores      import create_pgstore
-    from gasp3.web.geosrv.lyrs        import pub_pglyr
-    from gasp3.web.geosrv.styl        import create_style
-    from gasp3.web.geosrv.styl        import lst_styles
-    from gasp3.web.geosrv.styl        import del_style
-    from gasp3.web.geosrv.styl.assign import assign_style_to_layer
+    import os; from gasp3.sql.i  import lst_tbl
+    from gasp3.web.geosrv.ws     import create_workspace
+    from gasp3.web.geosrv.stores import create_pgstore
+    from gasp3.web.geosrv.lyrs   import pub_pglyr
+    from gasp3.web.geosrv.sty    import create_style
+    from gasp3.web.geosrv.sty    import lst_styles
+    from gasp3.web.geosrv.sty    import del_style
+    from gasp3.web.geosrv.sty    import assign_style_to_layer
     
     # Create a new workspace
     workName = 'w_{}'.format(
@@ -288,7 +286,7 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
         print("START PROCESSING {} GROUP".format(group))
         
         # - Identify tables
-        tables = lst_tbl_basename(group, pgsql_con)
+        tables = lst_tbl(pgsql_con, basename=group, excludeViews=True)
         
         # - Create Style
         STYLE_NAME = os.path.splitext(os.path.basename(groups_of_tables[group]))[0]

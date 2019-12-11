@@ -261,9 +261,9 @@ def add_idx_to_geom(conParam, table, geomCol):
     Add index to Geometry
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     
-    con = psqlcon(conParam)
+    con = sqlcon(conParam)
     cursor = con.cursor()
     
     cursor.execute("CREATE INDEX {tbl}_{col}_idx ON {tbl} USING gist ({col})".format(

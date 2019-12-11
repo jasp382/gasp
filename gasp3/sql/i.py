@@ -2,7 +2,7 @@
 Get Information about SQL database or database data
 """
 
-from gasp3.sql.c import psqlcon
+from gasp3.sql.c import sqlcon
 
 """
 Info about databases
@@ -13,7 +13,7 @@ def list_db(conParam):
     List all PostgreSQL databases
     """
     
-    con = psqlcon(conParam)
+    con = sqlcon(conParam)
     
     cursor = con.cursor()
     
@@ -26,7 +26,7 @@ def db_exists(lnk, db):
     """
     Database exists
     """
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
         
     cursor = con.cursor()
     
@@ -41,37 +41,63 @@ def db_exists(lnk, db):
 Tables Info
 """
 
-def lst_views(conParam, schema='public'):
+def lst_views(conParam, schema='public', basename=None):
     """
     List Views in database
     """
     
+    from gasp3        import goToList
     from gasp3.sql.fm import Q_to_df
+    
+    basename = goToList(basename)
+    
+    basenameStr = "" if not basename else "{}".format(
+        " OR ".join(["{} LIKE '%%{}%%'".format(
+            "table_name", b
+        ) for b in basename])
+    )
     
     views = Q_to_df(conParam, (
         "SELECT table_name FROM information_schema.views "
-        "WHERE table_schema='{}'"
-    ).format(schema), db_api='psql')
+        "WHERE table_schema='{}'{}"
+    ).format(schema, "" if not basename else " AND ({})".format(
+        basenameStr
+    )), db_api='psql')
     
     return views.table_name.tolist()
 
 
-def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
+def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
+            basename=None):
     """
     list tables in a database
     
     API's Available:
     * psql;
     * sqlite;
+    * mysql;
     """
+    
+    from gasp3 import goToList
+    
+    basename = goToList(basename)
+    
+    basenameStr = "" if not basename else "{}".format(
+        " OR ".join(["{} LIKE '%%{}%%'".format(
+            "table_name" if api == 'psql' else "name", b
+        ) for b in basename])
+    )
     
     if api == 'psql':
         from gasp3.sql.fm import Q_to_df
-    
-        tbls = Q_to_df(conObj, (
+        
+        Q = (
             "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema='{}'"
-        ).format(schema), db_api='psql')
+            "WHERE table_schema='{}'{}"
+        ).format(schema, "" if not basename else " AND ({})".format(
+            basenameStr))
+    
+        tbls = Q_to_df(conObj, Q, db_api='psql')
     
         if excludeViews:
             views = lst_views(conObj, schema=schema)
@@ -92,42 +118,30 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql'):
         cursor = conn.cursor()
         
         tables = cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table';"
+            "SELECT name FROM sqlite_master WHERE type='table'{};".format(
+                "" if not basename else " AND ({})".format(basenameStr)
+            )
         )
         
         __tbls = [n[0] for n in tables]
         cursor.close()
-        conn.close()    
+        conn.close()
+    
+    elif api == 'mysql':
+        """
+        List Tables in MySQL Database
+        """
+        
+        from gasp3.sql.c import alchemy_engine
+        
+        c = alchemy_engine(conObj, api='mysql')
+        
+        __tbls = c.table_names()
     
     else:
         raise ValueError('API {} is not available!'.format(api))
     
     return __tbls
-
-
-def lst_tbl_basename(basename, dic_con, schema='public'):
-    """
-    List tables with name that includes basename
-    """
-    
-    from gasp3.sql.c import psqlcon
-    
-    conn = psqlcon(dic_con)
-    
-    cs = conn.cursor()
-    cs.execute((
-        "SELECT table_name FROM information_schema.tables "
-        "WHERE table_schema='{}' AND table_name LIKE '%{}%'".format(
-            schema, basename
-        )
-    ))
-    
-    f = [x[0] for x in cs.fetchall()]
-    
-    cs.close()
-    conn.close()
-    
-    return f
 
 
 """
@@ -168,10 +182,10 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
     """
     
     if api == 'psql':
-        c = psqlcon(conparam)
+        c = sqlcon(conparam)
     
         cursor = c.cursor()
-        cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
+        cursor.execute("SELECT * FROM {} LIMIT 1;".format(table))
         colnames = [desc[0] for desc in cursor.description]
     
         if sanitizeSpecialWords:
@@ -186,9 +200,17 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         
         con = sqlite3.connect(conparam)
         
-        cursor = con.execute("SELECT * FROM {}".format(table))
+        cursor = con.execute("SELECT * FROM {} LIMIT 1".format(table))
         
         colnames = list(map(lambda x: x[0], cursor.description))
+    
+    elif api == 'mysql':
+        from gasp3.sql.fm import Q_to_df
+        
+        data = Q_to_df(
+            conparam, "SELECT * FROM {} LIMIT 1".format(table), db_api='mysql')
+        
+        colnames = data.columns.values
     
     else:
         raise ValueError('API {} is not available'.format(api))
@@ -203,7 +225,7 @@ def cols_type(pgsqlDic, table, sanitizeColName=True, pyType=True):
     
     from gasp3.cons.psql import PG_SPECIAL_WORDS, map_psqltypes
     
-    c = psqlcon(pgsqlDic)
+    c = sqlcon(pgsqlDic)
     
     cursor = c.cursor()
     cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
@@ -231,11 +253,9 @@ def check_last_id(lnk, pk, table):
     Check last ID of a given table
     
     return 0 if there is no data
-    
-    TODO: Do this with Pandas
     """
     
-    from gasp3.sql.c  import psqlcon
+    from gasp3.sql.c  import sqlcon
     from gasp3.sql.fm import Q_to_df
     
     q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)

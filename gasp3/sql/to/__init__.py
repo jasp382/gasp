@@ -3,6 +3,62 @@ Data to a Relational Database
 """
 
 
+def restore_db(conDB, sqlScript, api='psql'):
+    """
+    Restore Database using SQL Script
+    
+    TODO: add mysql option
+    """
+    
+    from gasp3 import exec_cmd
+    
+    if api == 'psql':
+        cmd = 'psql -h {} -U {} -p {} -w {} < {}'.format(
+            conDB['HOST'], conDB['USER'], conDB['PORT'],
+            conDB["DATABASE"], sqlScript
+        )
+    
+    elif api == 'mysql':
+        cmd = 'mysql -u {} -p{} {} < {}'.format(
+            conDB['USER'], conDB['PASSWORD'], conDB["DATABASE"],
+            sqlScript
+        )
+    else:
+        raise ValueError('{} API is not available'.format(api))
+    
+    outcmd = exec_cmd(cmd)
+    
+    return conDB["DATABASE"]
+
+
+def restore_tbls(conParam, sql, tablenames=None):
+    """
+    Restore one table from a sql Script
+    
+    TODO: add mysql option
+    """
+    
+    from gasp3 import exec_cmd, goToList
+    
+    tbls = goToList(tablenames)
+    
+    tblStr = "" if not tablenames else " {}".format(" ".join([
+        "-t {}".format(t) for t in tbls]))
+    
+    outcmd = exec_cmd((
+        "pg_restore -U {user} -h {host} -p {port} "
+        "-w{tbl} -d {db} {sqls}"
+    ).format(
+        user=conParam["USER"], host=conParam["HOST"],
+        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql, tbl=tblStr
+    ))
+    
+    return tablenames
+
+###############################################################################
+###############################################################################
+
+
 def df_to_db(conParam, df, table, append=None, api='psql',
              epsg=None, geomType=None, colGeom='geometry'):
     """
@@ -197,8 +253,9 @@ def tbl_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
     
     else:
         import os
-        from gasp3.pyt.oss     import create_folder, del_folder
-        from gasp3.sql.mng.tbl import dump_tbls, restore_tbls
+        from gasp3.pyt.oss import create_folder, del_folder
+        from gasp3.sql.fm  import dump_tbls
+        from gasp3.sql.to  import restore_tbls
         
         tmpFolder = create_folder(
             os.path.dirname(os.path.abspath(__file__)), randName=True
@@ -265,10 +322,10 @@ def psql_insert_query(dic_pgsql, query, execute_many_data=None):
     Insert data into a PGSQL Table
     """
     
-    from gasp3.sql.c     import connection
+    from gasp3.sql.c     import sqlcon
     from psycopg2.extras import execute_values
     
-    con = psqlcon(dic_pgsql)
+    con = sqlcon(dic_pgsql)
     
     cursor = con.cursor()
     if execute_many_data:
@@ -323,7 +380,8 @@ def sqlite_insert_query(db, table, cols, new_values, execute_many=None):
 
 
 
-def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
+def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
+                mapCols=None, srsEpsgCode=None):
     """
     Send Shapefile to PostgreSQL
     
@@ -332,7 +390,8 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
     """
     
     import os
-    from gasp3.pyt.oss import get_filename
+    from gasp3.pyt.oss     import get_filename
+    from gasp3.gt.prop.prj import get_epsg_shp
     
     if api == "pandas":
         from gasp3.fm           import tbl_to_obj
@@ -359,20 +418,36 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
         
         shapes = goToList(shpData)
     
+    epsgs = [
+        get_epsg_shp(i) for i in shapes
+    ] if not srsEpsgCode else srsEpsgCode
+    if not srsEpsgCode:
+        raise ValueError((
+            "Cannot obtain EPSG code of {}. Use the srsEpsgCode parameter "
+            "to specify the EPSG code of your data."
+        ))
+    
     tables = []
     for _i in range(len(shapes)):
         # Get Table name
         tname = get_filename(shapes[_i], forceLower=True) if not pgTable else \
-            pgTable[_i] if type(pgTable) == list else pgTable
+            pgTable[_i] if type(pgTable) == list else pgTable if len(shapes) == 1 \
+            else pgTable + '_{}'.format(_i+1)
         
         # Import data
         if api == "pandas":
             # SHP to DataFrame
             df = tbl_to_obj(shapes[_i])
             
-            df.rename(columns={
-                x : x.lower() for x in df.columns.values
-            }, inplace=True)
+            if not mapCols:
+                df.rename(columns={
+                    x : x.lower() for x in df.columns.values
+                }, inplace=True)
+            else:
+                renameD = {
+                    x : mapCols[x].lower() if x in mapCols else x.lower() for x in df.columns.values
+                }
+                df.rename(columns=renameD, inplace=True)
             
             if "geometry" in df.columns.values:
                 geomCol = "geometry"
@@ -385,10 +460,11 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
                 raise ValuError("No Geometry found in shp")
             
             # GeoDataFrame to PSQL
-            geodf_to_pgsql(
-                con_param, df, tname, srsEpsgCode,
-                get_gtype(shapes[_i], name=True, py_cls=False, gisApi='ogr'),
-                colGeom=geomCol
+            df_to_db(
+                con_param, df, tname, append=True, api='psql',
+                epsg=epsgs[_i] if not srsEpsgCode else srsEpsgCode,
+                colGeom=geomCol,
+                geomType=get_gtype(shapes[_i], name=True, py_cls=False, gisApi='ogr')
             )
         
         else:
@@ -400,7 +476,8 @@ def shp_to_psql(con_param, shpData, srsEpsgCode, pgTable=None, api="pandas"):
                 'shp2pgsql -I -s {epsg} -W UTF-8 '
                 '{shp} public.{name} > {out}'
             ).format(
-                epsg=srsEpsgCode, shp=shapes[_i], name=tname, out=sql_script
+                epsg=epsgs[_i] if not srsEpsgCode else srsEpsgCode,
+                shp=shapes[_i], name=tname, out=sql_script
             )
             
             outcmd = exec_cmd(cmd)
@@ -422,7 +499,7 @@ def shps_to_onepsql(folder_shp, epsg, conParam, out_table):
     from gasp3.sql.mng.tbl import tbls_to_tbl, del_tables
     
     pgTables = shp_to_psql(
-        conParam, folder_shp, epsg, api="shp2pgsql"
+        conParam, folder_shp, srsEpsgCode=epsg, api="shp2pgsql"
     )
     
     tbls_to_tbl(conParam, pgTables, out_table)
@@ -561,4 +638,28 @@ def txts_to_db(folder, conDB, delimiter, __encoding='utf-8', apidb='psql',
                 psql_insert_query(conDB, sql)
         else:
             raise ValueError("API {} is not available".format(apidb))
+
+
+"""
+OSM Related
+"""
+
+def osm_to_pgsql(osmXml, conPGSQL):
+    """
+    Use GDAL to import osmfile into PostGIS database
+    """
+    
+    from gasp3 import exec_cmd
+    
+    cmd = (
+        "ogr2ogr -f PostgreSQL \"PG:dbname='{}' host='{}' port='{}' "
+        "user='{}' password='{}'\" {} -lco COLUM_TYPES=other_tags=hstore"
+    ).format(
+        conPGSQL["DATABASE"], conPGSQL["HOST"], conPGSQL["PORT"],
+        conPGSQL["USER"], conPGSQL["PASSWORD"], osmXml
+    )
+    
+    cmdout = exec_cmd(cmd)
+    
+    return conPGSQL["DATABASE"]
 

@@ -12,12 +12,12 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
     """
     
     if api == 'psql':
-        from gasp3.sql.c import psqlcon
+        from gasp3.sql.c import sqlcon
         from gasp3.sql.i import list_db
     
         dbs = list_db(lnk)
     
-        con = psqlcon(lnk)
+        con = sqlcon(lnk)
         cs = con.cursor()
     
         if newdb in dbs and overwrite:
@@ -67,7 +67,7 @@ def drop_db(lnk, database):
     Return 0 if the database does not exist
     """
     
-    from gasp3.sql.c import psqlcon
+    from gasp3.sql.c import sqlcon
     from gasp3.sql.i import list_db
     
     if "DATABASE" in lnk:
@@ -80,7 +80,7 @@ def drop_db(lnk, database):
     
     if database not in databases: return 0
     
-    con = psqlcon(lnk)
+    con = sqlcon(lnk)
     cursor = con.cursor()
     
     try:
@@ -96,26 +96,6 @@ def drop_db(lnk, database):
         
     cursor.close()
     con.close()
-
-
-"""
-Dump Databases
-"""
-
-def dump_db(conPSQL, outSQL):
-    """
-    DB to SQL Script
-    """
-    
-    from gasp3 import exec_cmd
-    
-    outcmd = exec_cmd("pg_dump -U {} -h {} -p {} -w {} > {}".format(
-        conPSQL["USER"], conPSQL["HOST"], conPSQL["PORT"],
-        conPSQL["DATABASE"], outSQL      
-    ))
-    
-    return outSQL
-
 
 
 """
@@ -136,7 +116,8 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     from gasp3.sql.i       import db_exists, lst_tbl
     from gasp3.sql.mng.db  import create_db, drop_db
     from gasp3.sql.mng.tbl import rename_tbl, tbls_to_tbl
-    from gasp3.sql.mng.tbl import dump_tbls, restore_tbls
+    from gasp3.sql.fm      import dump_tbls
+    from gasp3.sql.to      import restore_tbls
     from gasp3.sql.mng.tbl import distinct_to_table, del_tables
     
     # Prepare database

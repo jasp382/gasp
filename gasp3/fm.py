@@ -101,15 +101,15 @@ def tbl_to_obj(tblFile, sheet=None, useFirstColAsIndex=None,
                 
                 tableDf = del_fld_notin_geodf(tableDf, fields, geomCol=geomCol)
             
-            if srsTo:
-                from gasp3.gt.prj import proj
+        if srsTo:
+            from gasp3.gt.prj import proj
                 
-                tableDf = proj(tableDf, None, srsTo, gisApi='pandas')
+            tableDf = proj(tableDf, None, srsTo, gisApi='pandas')
             
-            tableDf.rename(columns={geomCol : "GEOM"}, inplace=True)
+        tableDf.rename(columns={geomCol : "GEOM"}, inplace=True)
             
-            if geomAsWkt:
-                tableDf["GEOM"] = tableDf.GEOM.astype(str)
+        if geomAsWkt:
+            tableDf["GEOM"] = tableDf.GEOM.astype(str)
     
     else:
         raise ValueError('{} is not a valid table format!'.format(fFormat))

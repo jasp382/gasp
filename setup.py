@@ -33,6 +33,7 @@ setup(
         'gasp3.gt.fm',
         'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
         'gasp3.gt.mob', 'gasp3.gt.mob.api', 'gasp3.gt.mob.api.glg',
+        'gasp3.gt.nc',
         'gasp3.gt.prop', 'gasp3.gt.prop.feat',
         'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
         'gasp3.gt.to', 'gasp3.gt.stats', 'gasp3.gt.wenv',
@@ -40,11 +41,11 @@ setup(
         'gasp3.pyt', 'gasp3.pyt.df', 'gasp3.pyt.xls',
         # ******************************************************************** #
         'gasp3.sql',
-        'gasp3.sql.anls', 'gasp3.sql.charts', 'gasp3.sql.mng',
+        'gasp3.sql.anls', 'gasp3.sql.charts', 'gasp3.sql.mng', 'gasp3.sql.to',
         # ******************************************************************** #
         'gasp3.web',
         'gasp3.web.djg', 'gasp3.web.djg.ff', 'gasp3.web.djg.mdl',
-        'gasp3.web.geosrv', 'gasp3.web.geosrv.styl', 'gasp3.web.geosrv.styl.sld'
+        'gasp3.web.geosrv', 'gasp3.web.geosrv.sld'
         # ******************************************************************** #
     ],
     install_requires=[
@@ -71,7 +72,9 @@ setup(
         'django==2.2.4', 'django-widget-tweaks==1.4.5',
         'django-cors-headers==3.1.0', 'djangorestframework==3.10.2',
         'sentinelsat==0.13',
-        'nltk==3.4.5'
+        'nltk==3.4.5',
+        'simpledbf==0.2.6'
+        #'mysqlclient==1.4.6'
     ],
     include_package_data=True
 )

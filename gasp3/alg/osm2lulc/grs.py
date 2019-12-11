@@ -26,7 +26,7 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     from gasp3.gt.wenv.grs            import run_grass
     if roadsAPI == 'POSTGIS':
         from gasp3.sql.mng.db         import create_db
-        from gasp3.alg.osm2lulc.utils import osm_to_pgsql
+        from gasp3.sql.to             import osm_to_pgsql
         from gasp3.alg.osm2lulc.mod2  import roads_sqdb
     else:
         from gasp3.alg.osm2lulc.utils import osm_to_sqdb
@@ -375,7 +375,7 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     from gasp3.gt.wenv.grs            import run_grass
     if RoadsAPI == 'POSTGIS':
         from gasp3.sql.mng.db         import create_db
-        from gasp3.alg.osm2lulc.utils import osm_to_pgsql
+        from gasp3.sql.to             import osm_to_pgsql
     else:
         from gasp3.alg.osm2lulc.utils import osm_to_sqdb
     from gasp3.alg.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat, get_ref_raster

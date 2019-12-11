@@ -59,11 +59,15 @@ Installation
 
 	# For Ubuntu and CentOS
 	sudo rm /usr/share/gdal/osmconf.ini
-	sudo cp /home/$user/xpto/gasp/gasp/osm2lulc/osmconf-gdal.ini /usr/share/gdal/osmconf.ini
+	sudo cp /home/$user/xpto/gasp3/conf/osmconf-gdal.ini /usr/share/gdal/osmconf.ini
+
+	# For CentOS
+	sudo rm /usr/local/share/gdal/osmconf.ini
+	sudo cp /home/$user/xpto/gasp3/conf/osmconf-gdal.ini /usr/local/share/gdal/osmconf.ini
 	
 	# For Lubuntu
 	sudo rm /usr/share/gdal/2.2/osmconf.ini
-	sudo cp /home/$user/xpto/gasp/gasp/osm2lulc/osmconf-gdal.ini /usr/share/gdal/2.2/osmconf.ini
+	sudo cp /home/$user/xpto/gasp3/conf/osmconf-gdal.ini /usr/share/gdal/2.2/osmconf.ini
 
 6 - Create Python Virtual Environment:
 

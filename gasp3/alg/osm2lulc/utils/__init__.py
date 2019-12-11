@@ -16,26 +16,6 @@ def osm_to_sqdb(osmXml, osmSQLITE):
         osmXml, osmSQLITE, gisApi='ogr', supportForSpatialLite=True)
 
 
-def osm_to_pgsql(osmXml, conPGSQL):
-    """
-    Use GDAL to import osmfile into PostGIS database
-    """
-    
-    from gasp3 import exec_cmd
-    
-    cmd = (
-        "ogr2ogr -f PostgreSQL \"PG:dbname='{}' host='{}' port='{}' "
-        "user='{}' password='{}'\" {} -lco COLUM_TYPES=other_tags=hstore"
-    ).format(
-        conPGSQL["DATABASE"], conPGSQL["HOST"], conPGSQL["PORT"],
-        conPGSQL["USER"], conPGSQL["PASSWORD"], osmXml
-    )
-    
-    cmdout = exec_cmd(cmd)
-    
-    return conPGSQL["DATABASE"]
-
-
 def record_time_consumed(timeData, outXls):
     """
     Record the time consumed by a OSM2LULC procedure version

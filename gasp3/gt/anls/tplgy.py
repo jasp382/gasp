@@ -291,7 +291,7 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     conParam["DATABASE"] = conParam["DB"]
     
     LINES_TABLE = shp_to_psql(
-        conParam, LINES, srs,
+        conParam, LINES, srsEpsgCode=srs,
         pgTable=get_filename(LINES, forceLower=True), api="shp2pgsql"
     )
     
