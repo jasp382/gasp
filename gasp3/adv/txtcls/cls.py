@@ -140,6 +140,7 @@ def text_prediction(trainData, classData, trainRefCol, trainClsCol, clsDataCol,
         classDf['classification'] = result
     
     elif method == 'LinearSupportVectorMachine':
+        import numpy
         from sklearn.svm import LinearSVC
         
         # Get features and Labels
@@ -171,7 +172,9 @@ def text_prediction(trainData, classData, trainRefCol, trainClsCol, clsDataCol,
             left_on='classification', right_on='ref_fid'
         )
         
-        classDf.drop(['ref_fid'], axis=1, inplace=True)
+        classDf.loc[:, 'classification'] = classDf.class_name
+        
+        classDf.drop(['ref_fid', 'class_name'], axis=1, inplace=True)
     
     elif method == 'RandomForest':
         from sklearn.ensemble import RandomForestClassifier
@@ -210,6 +213,134 @@ def text_prediction(trainData, classData, trainRefCol, trainClsCol, clsDataCol,
         classDf['classification'] = y_pred
     
     return obj_to_tbl(classDf, outfile)
+
+
+def txtclsmdl_to_file(train, tRef, tData, outMdl, outTf,
+                      method='NaiveBayes'):
+    """
+    Fit Text classification model and save model to file
+    
+    Classifier Options:
+    1) NaiveBayes;
+    2) LinearSupportVectorMachine;
+    3) RandomForest;
+    4) LogisticRegression.
+    """
+    
+    import pandas as pd
+    import joblib
+    from gasp3.fm import tbl_to_obj
+    
+    # Data to Dataframe
+    trainDf = tbl_to_obj(train) if type(train) != pd.DataFrame else  train
+    
+    # Just in case, delete rows with NULL refCol and NULL dataCol
+    trainDf = trainDf[pd.notnull(trainDf[tData])]
+    trainDf = trainDf[pd.notnull(trainDf[tRef])]
+    
+    if method == 'NaiveBayes':
+        from sklearn.naive_bayes             import MultinomialNB
+        from sklearn.feature_extraction.text import CountVectorizer
+        from sklearn.feature_extraction.text import TfidfTransformer
+        
+        """" Train Model """
+        # X train is trainClsCol
+        # Y train is trainRefCol
+        x_train, y_train = trainDf[tData], trainDf[tRef]
+    
+        tvect = CountVectorizer()
+    
+        X_train_counts = tvect.fit_transform(x_train)
+    
+        tfidf_transformer = TfidfTransformer()
+    
+        X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+    
+        clf = MultinomialNB().fit(X_train_tfidf, y_train)
+    
+    elif method == 'LinearSupportVectorMachine':
+        from sklearn.svm import LinearSVC
+        
+        feat, tvect = txt_to_num_representation(
+            trainDf, tData, __lang='english', returnTfiDf=True)
+        
+        # Train model
+        clf = LinearSVC().fit(feat, trainDf[tRef])
+    
+    elif method == 'RandomForest':
+        from sklearn.ensemble import RandomForestClassifier
+        
+        feat, tvect = txt_to_num_representation(
+            trainDf, tData, __lang='english', returnTfiDf=True)
+        
+        clf = RandomForestClassifier(n_estimators=1000, random_state=0)
+        clf.fit(feat, trainDf[tRef])
+    
+    elif method == 'LogisticRegression':
+        from sklearn.feature_extraction.text import CountVectorizer
+        from sklearn.feature_extraction.text import TfidfTransformer
+        from sklearn.pipeline                import Pipeline
+        from sklearn.linear_model            import LogisticRegression
+        
+        clf = Pipeline([
+            ('vect', CountVectorizer()), ('tfidf', TfidfTransformer()),
+            ('clf', LogisticRegression(
+                n_jobs=1, C=1e5, multi_class='auto', solver='lbfgs'))
+        ])
+        
+        clf.fit(trainDf[tData], trainDf[tRef])
+    
+    if method != 'LogisticRegression':
+        joblib.dump(tvect, outTf)
+        joblib.dump(clf, outMdl)
+    
+    else:
+        joblib.dump(clf, outMdl)
+        outTf=None
+    
+    return outMdl, outTf
+
+
+def predict_fm_mdl(mdlFile, vFile, data, txtCol, method='NaiveBayes'):
+    """
+    Text classification using file with fit data
+    """
+    
+    from joblib import load
+    import pandas as pd
+    from gasp3.fm import tbl_to_obj
+    
+    classDf = tbl_to_obj(data) if type(data) != pd.DataFrame else data
+    classDf = classDf[pd.notnull(classDf[txtCol])]
+    
+    clf   = load(mdlFile)
+    tvect = None if not vFile else load(vFile)
+    
+    if method == 'NaiveBayes':
+        result = clf.predict(tvect.transform(data[txtCol]))
+        
+        data.loc[:, 'classification'] = result
+    
+    elif method == 'LinearSupportVectorMachine':
+        feaTst = tvect.transform(classDf[txtCol])
+        
+        y_pred = clf.predict(feaTst)
+        
+        data.loc[:, 'classification'] = y_pred
+    
+    elif method == 'RandomForest':
+        feaTst = tvect.transform(classDf[txtCol])
+        
+        y_pred=clf.predict(feaTst)
+        
+        data.loc[:, 'classification'] = y_pred
+    
+    elif method == 'LogisticRegression':
+        y_pred = clf.predict(classDf[txtCol])
+        
+        data.loc[:, 'classification'] = y_pred
+    
+    return data
 
 
 """
