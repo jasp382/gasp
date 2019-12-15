@@ -94,7 +94,7 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
     from gasp3.pyt.oss       import get_filename
     from gasp3.gt.mng.sample import create_fishnet
     from gasp3.gt.wenv.grs   import run_grass
-    from gasp3.gt.mng.feat   import eachfeat_to_newshp
+    from gasp3.gt.to.shp     import eachfeat_to_newshp
     from gasp3.gt.mng.gen    import merge_feat
     from gasp3.gt.anls.exct  import split_shp_by_attr
     

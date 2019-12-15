@@ -16,8 +16,8 @@ def search_photos(lat=None, lng=None, radius=None, keyword=None,
     """
     
     import pandas
-    from flickrapi        import FlickrAPI
-    from gasp3.pyt.df.fld import listval_to_newcols
+    from flickrapi    import FlickrAPI
+    from gasp3.df.fld import listval_to_newcols
     
     if apiKey:
         FLIC_PUB, FLIC_SEC = apiKey

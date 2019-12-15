@@ -24,7 +24,7 @@ def shape_to_store(shape, store_name, workspace, conf={
         )
 
     if os.path.splitext(shape)[1] != '.zip':
-        from gasp3.zzip import zip_files
+        from gasp3.pyt.ff.zzip import zip_files
 
         shapefiles = lst_ff(
             os.path.dirname(shape),

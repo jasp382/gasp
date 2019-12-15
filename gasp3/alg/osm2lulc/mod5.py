@@ -92,7 +92,7 @@ def grs_vect_bbuffer(osmdata, lineTbl, api_db='SQLITE'):
     if not N: return None, {0 : ('count_rows_roads', time_b - time_a)}
     
     grsVect = db_to_shp(
-        osmdata, lineTbl, "bb_lnh", where=WHR, filterByReg=True,
+        osmdata, lineTbl, "geom", "bb_lnh", where=WHR, filterByReg=True,
         inDB='psql' if api_db == 'POSTGIS' else 'sqlite',
         outShpIsGRASS=True
     )

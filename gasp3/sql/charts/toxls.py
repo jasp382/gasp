@@ -16,7 +16,7 @@ def bar_chart_by_query(conParam, query, xaxis_col, chart_data_fld_name,
     """
     
     from gasp3.sql.fm         import Q_to_df
-    from gasp3.pyt.df.joins   import combine_dfs
+    from gasp3.df.joins       import combine_dfs
     from gasp3.pyt.xls.charts import barchart_in_xls_from_df
     
     dataDf = []

@@ -39,7 +39,8 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
     for cls in lulcCls:
         time_x = datetime.datetime.now().replace(microsecond=0)
         grsVect = db_to_grs(
-            osmLink, polygonTable, "{}_{}".format(RULE_COL, cls),
+            osmLink, polygonTable, "geom",
+            "{}_{}".format(RULE_COL, cls),
             inDB="psql" if api == 'POSTGIS' else 'sqlite',
             where=WHR.format(
                 op=OPERATOR, r=RULE_COL, ga=GEOM_AREA, cls_=cls
@@ -92,8 +93,8 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     if not N: return None, {0 : ('count_rows', time_b - time_a)}
     
     # Data to GRASS GIS
-    grsVect = db_to_shp(
-        osmcon, polyTbl, "area_{}".format(DIRECTION), where=WHR,
+    grsVect = db_to_shp(osmcon, polyTbl, "geom",
+        "area_{}".format(DIRECTION), where=WHR,
         inDB='psql' if apidb == 'POSTGIS' else 'sqlite', filterByReg=True,
         outShpIsGRASS=True
     )
@@ -166,8 +167,9 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
             shpCls = sel_by_attr(
                 osmLink, SQL_Q.format(c=str(CLS), tbl=polyTbl, w=WHR.format(
                     op=OPERATOR, r=RULE_COL, ga=GEOM_AREA, cls_=CLS
-                )), os.path.join(folder, "{}_{}.shp".format(RULE_COL, str(CLS))),
-                api='pgsql2shp', geom_col="geometry", tableIsQuery=True
+                )), "geom", os.path.join(
+                    folder, "{}_{}.shp".format(RULE_COL, str(CLS))
+                ), api='pgsql2shp', geom_col="geometry", tableIsQuery=True
             )
         time_y = datetime.datetime.now().replace(microsecond=0)
         

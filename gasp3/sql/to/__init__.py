@@ -381,7 +381,7 @@ def sqlite_insert_query(db, table, cols, new_values, execute_many=None):
 
 
 def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
-                mapCols=None, srsEpsgCode=None):
+                mapCols=None, srsEpsgCode=None, encoding="UTF-8"):
     """
     Send Shapefile to PostgreSQL
     
@@ -392,6 +392,11 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     import os
     from gasp3.pyt.oss     import get_filename
     from gasp3.gt.prop.prj import get_epsg_shp
+    
+    # If defined, srsEpsgCode must be a integer value
+    if srsEpsgCode:
+        if type(srsEpsgCode) != int:
+            raise ValueError('srsEpsgCode should be a integer value')
     
     if api == "pandas":
         from gasp3.fm           import tbl_to_obj
@@ -421,9 +426,10 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     epsgs = [
         get_epsg_shp(i) for i in shapes
     ] if not srsEpsgCode else srsEpsgCode
-    if not srsEpsgCode:
+    
+    if None in epsgs:
         raise ValueError((
-            "Cannot obtain EPSG code of {}. Use the srsEpsgCode parameter "
+            "Cannot obtain EPSG code. Use the srsEpsgCode parameter "
             "to specify the EPSG code of your data."
         ))
     
@@ -445,7 +451,8 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
                 }, inplace=True)
             else:
                 renameD = {
-                    x : mapCols[x].lower() if x in mapCols else x.lower() for x in df.columns.values
+                    x : mapCols[x].lower() if x in mapCols else \
+                    x.lower() for x in df.columns.values
                 }
                 df.rename(columns=renameD, inplace=True)
             
@@ -473,16 +480,17 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
             )
             
             cmd = (
-                'shp2pgsql -I -s {epsg} -W UTF-8 '
+                'shp2pgsql -I -s {epsg} -W {enc} '
                 '{shp} public.{name} > {out}'
             ).format(
                 epsg=epsgs[_i] if not srsEpsgCode else srsEpsgCode,
-                shp=shapes[_i], name=tname, out=sql_script
+                shp=shapes[_i], name=tname, out=sql_script,
+                enc=encoding
             )
             
             outcmd = exec_cmd(cmd)
             
-            run_sql_file(con_param, con_param["DATABASE"], sql_script)
+            run_sql_script(con_param, con_param["DATABASE"], sql_script)
             
             del_file(sql_script)
         

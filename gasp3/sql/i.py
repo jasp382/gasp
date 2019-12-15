@@ -34,6 +34,8 @@ def db_exists(lnk, db):
     
     dbs = [d[0] for d in cursor.fetchall()]
     
+    con.close()
+    
     return 1 if db in dbs else 0
 
 

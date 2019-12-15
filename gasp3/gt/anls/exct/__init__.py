@@ -75,7 +75,7 @@ def split_shp_by_attr(inShp, attr, outDir, _format='.shp'):
     
     import os; from gasp3.fm import tbl_to_obj
     from gasp3.pyt.oss       import get_filename
-    from gasp3.pyt.df.fld    import col_distinct
+    from gasp3.df.fld        import col_distinct
     from gasp3.gt.to.shp     import df_to_shp
     
     # Sanitize format

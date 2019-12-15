@@ -22,8 +22,8 @@ def search_tweets(lat=None, lng=None, radius=None, keyword=None,
     Returns an array with the encountered data
     """
     
-    import tweepy;        import pandas
-    from gasp3.pyt.df.fld import listval_to_newcols
+    import tweepy;    import pandas
+    from gasp3.df.fld import listval_to_newcols
     
     if not key:
         TOKEN, SECRET, CONSUMER_KEY, CONSUMER_SECRET = TWITTER_TOKEN['TOKEN'],\
