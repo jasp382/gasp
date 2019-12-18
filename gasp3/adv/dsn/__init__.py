@@ -309,17 +309,15 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         
         # Export Results
         dbtbl_to_shp(
-            conParam,  inBuffers[city]["table"],
+            conParam, inBuffers[city]["table"], 'geom',
             os.path.join(workspace, "{}.shp".format(inBuffers[city]["table"])),
-            api='psql', epsg=inBuffers[city]["epsg"],
-            geom_col='geom'
+            api='psql', epsg=inBuffers[city]["epsg"]
         )
         
         dbtbl_to_shp(
-            conParam, inBuffers[city]["pg_buffer"],
+            conParam, inBuffers[city]["pg_buffer"], 'geom',
             os.path.join(workspace, "{}.shp".format(inBuffers[city]["pg_buffer"])),
-            api='psql', epsg=inBuffers[city]["epsg"],
-            geom_col="geom"
+            api='psql', epsg=inBuffers[city]["epsg"]
         )
     
     return inBuffers
@@ -334,7 +332,7 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     from gasp3.sql.mng.db        import create_db
     from gasp3.adv.dsn.fb.places import places_by_query
     from gasp3.gt.prj            import proj
-    from gasp3.pyt.df.mng        import merge_df
+    from gasp3.df.mng            import merge_df
     from gasp3.gt.to.shp         import dbtbl_to_shp
     from gasp3.sql.mng.tbl       import q_to_ntbl
     from gasp3.sql.to            import df_to_db
@@ -396,8 +394,8 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     ).format(cols=", ".join(COLS), dtsrc=DATA_SOURCE), api='psql')
     
     dbtbl_to_shp(
-        conpgsql, GRP_BY_TBL, OUTPUT_TABLE,
-        api="psql", epsg=EPSG, geom_col="geom"
+        conpgsql, GRP_BY_TBL, "geom", OUTPUT_TABLE,
+        api="psql", epsg=EPSG
     )
     
     return OUTPUT_TABLE

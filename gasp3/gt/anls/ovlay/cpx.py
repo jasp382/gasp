@@ -186,9 +186,8 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     
         # Export data again
         newShp = dbtbl_to_shp(
-            conPARAM, corr_tbl,
-            os.path.join(OUT_FOLDER, corr_tbl + '.shp'),
-            api='pgsql2shp', geom_col='geom'
+            conPARAM, corr_tbl, "geom",
+            os.path.join(OUT_FOLDER, corr_tbl + '.shp'), api='pgsql2shp'
         )
         
         return newShp

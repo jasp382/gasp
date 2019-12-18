@@ -111,7 +111,7 @@ def same_attr_to_shp(inShps, interestCol, outFolder, basename="data_",
     
     import os; from gasp3 import goToList
     from gasp3.fm         import tbl_to_obj
-    from gasp3.pyt.df.mng import merge_df
+    from gasp3.df.mng     import merge_df
     from gasp3.gt.to.shp  import df_to_shp
     
     EXT = os.path.splitext(inShps[0])[1]

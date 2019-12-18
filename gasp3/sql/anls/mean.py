@@ -142,7 +142,7 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     
     import os;                import pandas
     from gasp3.pyt.tm         import day_to_intervals
-    from gasp3.pyt.df.joins   import combine_dfs
+    from gasp3.df.joins       import combine_dfs
     from gasp3.sql.fm         import Q_to_df
     from gasp3.sql.i          import cols_type
     from gasp3.to             import obj_to_tbl

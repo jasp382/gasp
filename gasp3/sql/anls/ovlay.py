@@ -62,9 +62,9 @@ def del_topoerror_shps(conParam, shps, epsg, outfolder):
     
     for t in range(len(NTABLE)):
         dbtbl_to_shp(
-            conParam, NTABLE[t],
+            conParam, NTABLE[t], "geom",
             os.path.join(outfolder, TABLES[t]), tableIsQuery=None,
-            api='pgsql2shp', geom_col="geom"
+            api='pgsql2shp'
         )
 
 
@@ -244,7 +244,8 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     resultTable = os.path.splitext(os.path.basename(outOverlaps))[0]
     q_to_ntbl(conParam, resultTable, q, api='psql')
     
-    dbtbl_to_shp(conParam, resultTable, outOverlaps, api='psql', epsg=epsg)
+    dbtbl_to_shp(
+        conParam, resultTable, "geom", outOverlaps, api='psql', epsg=epsg)
     
     return outOverlaps
 
@@ -424,7 +425,7 @@ def sgbd_get_feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
             from gasp3.gt.to.shp import dbtbl_to_shp
             
             dbtbl_to_shp(
-                conParam, Q, outTbl, api="pgsql2shp",
+                conParam, Q, "geom", outTbl, api="pgsql2shp",
                 geom_col=None, tableIsQuery=True)
         
         else:
@@ -485,7 +486,7 @@ def sgbd_get_feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl
             from gasp3.gt.to.shp import dbtbl_to_shp
             
             dbtbl_to_shp(
-                dbcon, Q, outTbl, api='pgsql2shp',
+                dbcon, Q, "geom", outTbl, api='pgsql2shp',
                 geom_col=None, tableIsQuery=True
             )
         

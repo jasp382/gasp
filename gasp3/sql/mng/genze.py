@@ -35,8 +35,8 @@ def st_dissolve(db, table, geomColumn, outTable, whrClause=None,
             from gasp3.gt.to.shp import dbtbl_to_shp
             
             dbtbl_to_shp(
-                db, table, outTable, api='pgsql2shp',
-                geom_col=geomColumn, tableIsQuery=True
+                db, table, geomColumn, outTable, api='pgsql2shp',
+                tableIsQuery=True
             )
     
     else:

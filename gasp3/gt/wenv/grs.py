@@ -11,7 +11,7 @@ from gasp3.pyt.oss import del_folder
 
 GRASS_BIN = 'grass78'
 
-def start_grass_linux_newLocation(gisdb, location, srs,
+def start_grass_linux_newLocation(gisdb, location, srs=None,
                                   grassBin=None, overwrite=True):
     """
     Method to open GRASS GIS on Linux Systems
@@ -54,13 +54,18 @@ def start_grass_linux_newLocation(gisdb, location, srs,
     sys.path.append(gpydir)
     
     if type(srs) == int:
+        srs = str(srs)
         startcmd = '{} -c epsg:{} -e {}'
     
     elif type(srs) == str:
         startcmd = '{} -c {} -e {}'
     
+    else:
+        srs = ""
+        startcmd = '{}{} -e {}'
+    
     outcmd = exec_cmd(startcmd.format(
-        grassbin, str(srs), location_path
+        grassbin, srs, location_path
     ))
     
     # Set GISDBASE environment variable
@@ -102,7 +107,7 @@ def start_grass_linux_existLocation(gisdb, grassBin=None):
     return gisbase
 
 
-def start_grass_win_newLocation(gisdb, location, srs, grassBin=None, overwrite=True):
+def start_grass_win_newLocation(gisdb, location, srs=None, grassBin=None, overwrite=True):
     """
     Method to open GRASS GIS on MS Windows Systems
     Creates a new location
@@ -146,15 +151,18 @@ def start_grass_win_newLocation(gisdb, location, srs, grassBin=None, overwrite=T
     
     # Define Command
     if type(srs) == int:
+        srs = str(srs)
         startcmd = '{} -c epsg:{} -e {}'
     
     elif type(srs) == str:
         startcmd = '{} -c {} -e {}'
     
+    else:
+        startcmd = '{}{} -e {}'
+    
     # open grass
-    outcmd = exec_cmd(
-        startcmd.format(grassbin, str(srs), location_path
-    ))
+    outcmd = exec_cmd(startcmd.format(
+        grassbin, srs, location_path))
     
     # Set GISDBASE environment variable
     os.environ['GISDBASE'] = gisdb
@@ -202,12 +210,24 @@ def run_grass(workspace, grassBIN=GRASS_BIN, location=None, srs=None):
     
     __os = os_name()
     
-    if location and srs:
-        base = start_grass_linux_newLocation(
-            workspace, location, srs, grassBin=grassBIN
-        ) if __os == 'Linux' else start_grass_win_newLocation(
-            workspace, location, srs, grassBin=grassBIN
-        ) if __os == 'Windows' else None
+    if location:
+        from gasp3.pyt.oss import list_folders
+        
+        # Check if location exists
+        flds = list_folders(workspace, name=True)
+        
+        if location in flds:
+            base = start_grass_linux_existLocation(
+                workspace, grassBin=grassBIN
+            ) if __os == 'Linux' else start_grass_win_exisLocation(
+                workspace, grassBin=grassBIN)
+        
+        else:
+            base = start_grass_linux_newLocation(
+                workspace, location, srs=srs, grassBin=grassBIN
+            ) if __os == 'Linux' else start_grass_win_newLocation(
+                workspace, location, srs=srs, grassBin=grassBIN
+            ) if __os == 'Windows' else None
     
     else:
         base = start_grass_linux_existLocation(

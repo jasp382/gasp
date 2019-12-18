@@ -29,7 +29,7 @@ def grs_rst(osmLink, polyTbl, api='SQLITE'):
     for cls in lulcCls:
         time_x = datetime.datetime.now().replace(microsecond=0)
         grsVect = db_to_grs(
-            osmLink, polyTbl, "rule1_{}".format(str(cls)),
+            osmLink, polyTbl, "geom", "rule1_{}".format(str(cls)),
             inDB='psql' if api == 'POSTGIS' else 'sqlite',
             where="selection = {}".format(str(cls)), notTable=True,
             filterByReg=True, outShpIsGRASS=True
@@ -75,7 +75,8 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     
     # Data to GRASS GIS
     grsVect = db_to_grs(
-        dbcon, polyTable, "sel_rule", where=WHR, filterByReg=True,
+        dbcon, polyTable, "geom", "sel_rule",
+        where=WHR, filterByReg=True,
         inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
         outShpIsGRASS=True
     )
@@ -135,7 +136,7 @@ def num_selection(osmcon, polyTbl, folder,
             )
         else:
             shp = sel_by_attr(
-                osmcon, SQL_Q.format(lc=str(CLS), tbl=polyTbl),
+                osmcon, SQL_Q.format(lc=str(CLS), tbl=polyTbl), "geom",
                 os.path.join(folder, 'sel_{}.shp'.format(str(CLS))),
                 api='pgsql2shp', geom_col="geometry", tableIsQuery=True
             )

@@ -87,15 +87,16 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     An raster based approach
     """
     
-    import os; import pandas; from geopandas import GeoDataFrame
+    import os; import pandas;
+    from geopandas import GeoDataFrame
     from gasp3.fm           import tbl_to_obj
     from gasp3.gt.to.shp    import df_to_shp, shpext_to_boundary
     from gasp3.gt.to.rst    import shp_to_rst
     from gasp3.gt.to.geom   import df_to_geodf
-    from gasp3.gt.wenv.grs  import run_grass
-    from gasp3.pyt.df.joins import join_dfs
-    from gasp3.pyt.df.agg   import df_groupBy
-    from gasp3.pyt.oss      import get_filename, create_folder 
+    from gasp3.gt.wenv.grs import run_grass
+    from gasp3.df.joins    import join_dfs
+    from gasp3.df.agg      import df_groupBy
+    from gasp3.pyt.oss     import get_filename, create_folder 
     
     workspace = create_folder(os.path.join(
         os.path.dirname(mainLines, 'tmp_dt')
@@ -336,9 +337,9 @@ def field_sum_two_tables(tableOne, tableTwo,
     4 |  15
     """
     
-    from gasp3.fm           import tbl_to_obj
-    from gasp3.to           import obj_to_tbl
-    from gasp3.pyt.df.joins import sum_field_of_two_tables
+    from gasp3.fm       import tbl_to_obj
+    from gasp3.to       import obj_to_tbl
+    from gasp3.df.joins import sum_field_of_two_tables
     
     # Open two tables
     df_one = tbl_to_obj(tableOne)

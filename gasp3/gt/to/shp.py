@@ -152,6 +152,81 @@ def getosm_to_featcls(inBoundary, outVector, boundaryEpsg=4326,
     )
 
 
+def eachfeat_to_newshp(inShp, outFolder, epsg=None):
+    """
+    Export each feature in inShp to a new/single File
+    """
+    
+    import os; from osgeo        import ogr
+    from gasp3.gt.prop.ff        import drv_name
+    from gasp3.gt.prop.feat      import get_gtype, lst_fld
+    from gasp3.gt.mng.fld.ogrfld import copy_flds
+    from gasp3.pyt.oss           import get_fileformat, get_filename
+    
+    inDt = ogr.GetDriverByName(
+        drv_name(inShp)).Open(inShp)
+    
+    lyr = inDt.GetLayer()
+    
+    # Get SRS for the output
+    if not epsg:
+        from gasp3.gt.prop.prj import get_shp_sref
+        srs = get_shp_sref(lyr)
+    
+    else:
+        from gasp3.gt.prop.prj import get_sref_from_epsg
+        srs = get_sref_from_epsg(epsg)
+    
+    # Get fields name
+    fields = lst_fld(lyr)
+    
+    # Get Geometry type
+    geomCls = get_gtype(inShp, gisApi='ogr', name=None, py_cls=True)
+    
+    # Read features and create a new file for each feature
+    RESULT_SHP = []
+    for feat in lyr:
+        # Create output
+        newShp = os.path.join(outFolder, "{}_{}{}".format(
+            get_filename(inShp), str(feat.GetFID()),
+            get_fileformat(inShp)
+        ))
+        
+        newData = ogr.GetDriverByName(
+            drv_name(newShp)).CreateDataSource(newShp)
+        
+        newLyr = newData.CreateLayer(
+            str(get_filename(newShp)), srs, geom_type=geomCls
+        )
+        
+        # Copy fields from input to output
+        copy_flds(lyr, newLyr)
+        
+        newLyrDefn = newLyr.GetLayerDefn()
+        
+        # Create new feature
+        newFeat = ogr.Feature(newLyrDefn)
+        
+        # Copy geometry
+        geom = feat.GetGeometryRef()
+        newFeat.SetGeometry(geom)
+        
+        # Set fields attributes
+        for fld in fields:
+            newFeat.SetField(fld, feat.GetField(fld))
+        
+        # Save feature
+        newLyr.CreateFeature(newFeat)
+        
+        newFeat.Destroy()
+        
+        del newLyr
+        newData.Destroy()
+        RESULT_SHP.append(newShp)
+    
+    return RESULT_SHP
+
+
 """
 GRASS GIS conversions
 """
@@ -225,15 +300,15 @@ def grs_to_shp(inLyr, outLyr, geomType, lyrN=1, asCMD=True, asMultiPart=None):
 Database Table to Shape
 """
 
-def dbtbl_to_shp(db, tbl, outShp, where=None, inDB='psql', notTable=None,
-                 filterByReg=None, outShpIsGRASS=None, tableIsQuery=None,
-                 api='psql', geom_col=None, epsg=None):
+def dbtbl_to_shp(db, tbl, geom_col, outShp, where=None, inDB='psql',
+                 notTable=None, filterByReg=None, outShpIsGRASS=None,
+                 tableIsQuery=None, api='psql', epsg=None):
     """
     Database Table to Feature Class file
     
     idDB Options:
-    * 'psql'
-    * 'sqlite'
+    * psql
+    * sqlite
     
     api Options:
     * psql
@@ -252,12 +327,11 @@ def dbtbl_to_shp(db, tbl, outShp, where=None, inDB='psql', notTable=None,
         
         cmd_str = (
             "v.in.ogr input=\"PG:host={} dbname={} user={} password={} "
-            "port={}\" output={} layer={}{}{}{} -o --overwrite --quiet"
+            "port={}\" output={} layer={} geometry={}{}{}{} -o --overwrite --quiet"
         ).format(
             db["HOST"], db["DATABASE"], db["USER"], db["PASSWORD"],
-            db["PORT"], outShp, tbl, whr,
-            " -t" if notTable else "",
-            " -r" if filterByReg else ""
+            db["PORT"], outShp, tbl, geom_col, whr,
+            " -t" if notTable else "", " -r" if filterByReg else ""
         ) if inDB == 'psql' else (
             "v.in.ogr -o -input={} layer={} output={}{}{}{}"
         ).format(db, tbl, outShp, whr,

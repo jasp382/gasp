@@ -67,8 +67,8 @@ def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
     """
     
     import pandas
-    from gasp3.pyt.tm       import day_to_intervals2
-    from gasp3.pyt.df.joins import combine_dfs
+    from gasp3.pyt.tm   import day_to_intervals2
+    from gasp3.df.joins import combine_dfs
     
     # Get Intervals
     INTERVALS = day_to_intervals2(PERIOD_INTERVAL)
@@ -250,12 +250,12 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     TODO: See if PGSQL crosstab works to solve this problem
     """
     
-    from gasp3.fm           import tbl_to_obj
-    from gasp3.sql.fm       import Q_to_df
-    from gasp3.pyt.df.to    import series_to_list
-    from gasp3.gt.to.shp    import df_to_shp
-    from gasp3.pyt.df.joins import combine_dfs
-    from gasp3.sql.mng.tbl  import q_to_ntbl, del_tables
+    from gasp3.fm          import tbl_to_obj
+    from gasp3.sql.fm      import Q_to_df
+    from gasp3.df.to       import series_to_list
+    from gasp3.gt.to.shp   import df_to_shp
+    from gasp3.df.joins    import combine_dfs
+    from gasp3.sql.mng.tbl import q_to_ntbl, del_tables
     
     
     # Get GROUP BYed data

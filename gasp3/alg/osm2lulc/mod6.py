@@ -57,8 +57,8 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     if N11:
         # Data to GRASS GIS
         grsBuild11 = db_to_shp(
-            osmLink, yes_build, "yes_builds", notTable=True, filterByReg=True,
-            inDB='psql' if api_db == 'POSTGIS' else 'sqlite',
+            osmLink, yes_build, "geom", "yes_builds", notTable=True,
+            filterByReg=True, inDB='psql' if api_db == 'POSTGIS' else 'sqlite',
             outShpIsGRASS=True
         )
         time_f = datetime.datetime.now().replace(microsecond=0)
@@ -90,7 +90,7 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     for cls in lulcCls:
         time_x = datetime.datetime.now().replace(microsecond=0)
         shp = db_to_shp(
-            osmLink, new_build, "nbuild_{}".format(str(cls)),
+            osmLink, new_build, "geom", "nbuild_{}".format(str(cls)),
             "cls = {}".format(cls), notTable=True, filterByReg=True
         )
         time_y = datetime.datetime.now().replace(microsecond=0)
@@ -166,7 +166,7 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     if N11:
         # Add data into grasss
         grsBuild11 = db_to_shp(
-            osmdb, yes_build, "yes_builds", filterByReg=True,
+            osmdb, yes_build, "geom", "yes_builds", filterByReg=True,
             inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
             outShpIsGRASS=True
         )
@@ -187,7 +187,7 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     if N12:
         # Add data into GRASS GIS
         grsBuild12 = db_to_shp(
-            osmdb, new_build, "pnt_build", filterByReg=True,
+            osmdb, new_build, "geom", "pnt_build", filterByReg=True,
             inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
             outShpIsGRASS=True
         )

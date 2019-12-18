@@ -29,8 +29,8 @@ def grs_rst_roads(osmdb, lineTbl, polyTbl, dataFolder, LULC_CLS):
     
     #roadGrs = shp_to_grs(roadFile, "bf_roads", filterByReg=True, asCMD=True)
     roadGrs = dbtbl_to_shp(
-        osmdb, "bfu_roads", 'bf_roads', notTable=True, outShpIsGRASS=True,
-        inDB='sqlite'
+        osmdb, "bfu_roads", "geom", 'bf_roads',
+        notTable=True, outShpIsGRASS=True, inDB='sqlite'
     )
     time_d = datetime.datetime.now().replace(microsecond=0)
     roadRst = shp_to_rst(
@@ -47,7 +47,7 @@ def grs_rst_roads(osmdb, lineTbl, polyTbl, dataFolder, LULC_CLS):
         from gasp3.gt.mng.rst.rcls import set_null, null_to_value
         
         buildsShp = dbtbl_to_shp(
-            osmdb, polyTbl, "all_builds", where="building IS NOT NULL",
+            osmdb, polyTbl, "geom", "all_builds", where="building IS NOT NULL",
             notTable=True, outShpIsGRASS=True, inDB='sqlite'
         )
         time_g = datetime.datetime.now().replace(microsecond=0)
@@ -112,7 +112,7 @@ def grs_vec_roads(osmdb, lineTbl, polyTbl):
     if not NR: return None, {0 : ('count_rows_roads', time_b - time_a)}
     
     roadsVect = dbtbl_to_shp(
-        osmdb, lineTbl, "all_roads", where="roads IS NOT NULL",
+        osmdb, lineTbl, "geom", "all_roads", where="roads IS NOT NULL",
         inDB='sqlite', outShpIsGRASS=True
     )
     time_c = datetime.datetime.now().replace(microsecond=0)
@@ -126,7 +126,7 @@ def grs_vec_roads(osmdb, lineTbl, polyTbl):
         from gasp3.gt.mng.grstbl import update_table
         
         builds = dbtbl_to_shp(
-            osmdb, polyTbl, "all_builds", where="building IS NOT NULL",
+            osmdb, polyTbl, "geom", "all_builds", where="building IS NOT NULL",
             filterByReg=True, inDB='sqlite', outShpIsGRASS=True
         )
         time_e = datetime.datetime.now().replace(microsecond=0)
@@ -258,7 +258,7 @@ def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
     
     # Send data to GRASS GIS
     roadsGrs = db_to_shp(
-        osmcon, bfTbl, "froads", notTable=None, filterByReg=True,
+        osmcon, bfTbl, "geom", "froads", notTable=None, filterByReg=True,
         inDB="psql" if apidb == 'POSTGIS' else 'sqlite',
         outShpIsGRASS=True
     )
