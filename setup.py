@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='gasp3',
+    name='gasp',
     version='0.0.1',
     description=(
         'gasp is a python package with methods to assist '
@@ -14,66 +14,68 @@ setup(
     license='GPL',
     packages=[
         # Main module
-        'gasp3',
+        'gasp',
         # ******************************************************************** #
-        'gasp3.adv', 'gasp3.adv.dsn', 'gasp3.adv.dsn.fb',
-        'gasp3.adv.sat', 'gasp3.adv.txtcls',
+        'gasp.adv', 'gasp.adv.dsn', 'gasp.adv.dsn.fb',
+        'gasp.adv.sat',
         # ******************************************************************** #
-        'gasp3.alg', 'gasp3.alg.lndsld', 
-        'gasp3.alg.osm2lulc', 'gasp3.alg.osm2lulc.utils',
-        'gasp3.alg.terrain',
+        'gasp.alg', 'gasp.alg.osm2lulc', 'gasp.alg.osm2lulc.utils',
         # ******************************************************************** #
-        'gasp3.cons',
+        'gasp.cons',
         # ******************************************************************** #
-        'gasp3.df',
+        'gasp.df',
         # ******************************************************************** #
-        'gasp3.g', 'gasp3.g.gop',
+        'gasp.dt', 'gasp.dt.txtcls',
         # ******************************************************************** #
-        'gasp3.gt',
-        'gasp3.gt.anls', 'gasp3.gt.anls.exct', 'gasp3.gt.anls.ovlay',
-        'gasp3.gt.anls.prox',
-        'gasp3.gt.fm',
-        'gasp3.gt.mng', 'gasp3.gt.mng.fld', 'gasp3.gt.mng.rst',
-        'gasp3.gt.nc', 'gasp3.gt.gop',
-        'gasp3.gt.prop', 'gasp3.gt.prop.feat',
-        'gasp3.gt.spnlst', 'gasp3.gt.spnlst.sat',
-        'gasp3.gt.to', 'gasp3.gt.stats', 'gasp3.gt.wenv',
+        'gasp.g', 'gasp.g.gop',
         # ******************************************************************** #
-        'gasp3.pyt', 'gasp3.pyt.xls',
+        'gasp.gd.floc', 'gasp.gd.terrain',
         # ******************************************************************** #
-        'gasp3.sql',
-        'gasp3.sql.anls', 'gasp3.sql.charts', 'gasp3.sql.mng', 'gasp3.sql.to',
-        'gasp3.sql.gop',
+        'gasp.gs',
         # ******************************************************************** #
-        'gasp3.web',
-        'gasp3.web.djg', 'gasp3.web.djg.ff', 'gasp3.web.djg.mdl',
-        'gasp3.web.geosrv', 'gasp3.web.geosrv.sld'
+        'gasp.gt',
+        'gasp.gt.anls', 'gasp.gt.anls.exct', 'gasp.gt.anls.ovlay',
+        'gasp.gt.anls.prox',
+        'gasp.gt.fm',
+        'gasp.gt.gop', 'gasp.gt.lyr',
+        'gasp.gt.mng', 'gasp.gt.nc',
+        'gasp.gt.nop', 'gasp.gt.nop.sat',
+        'gasp.gt.prop', 'gasp.gt.prop.feat',
+        'gasp.gt.spnlst',
+        'gasp.gt.to', 'gasp.gt.stats', 'gasp.gt.wenv',
+        # ******************************************************************** #
+        'gasp.pyt', 'gasp.pyt.xls',
+        # ******************************************************************** #
+        'gasp.sql',
+        'gasp.sql.anls', 'gasp.sql.charts', 'gasp.sql.mng', 'gasp.sql.to',
+        'gasp.sql.gop',
+        # ******************************************************************** #
+        'gasp.web',
+        'gasp.web.djg', 'gasp.web.djg.ff', 'gasp.web.djg.mdl',
+        'gasp.web.geosrv', 'gasp.web.geosrv.sld'
         # ******************************************************************** #
     ],
     install_requires=[
-        'numpy==1.16.4',
-        'psycopg2-binary==2.8.3',
-        'sqlalchemy==1.3.5', 'geoalchemy2==0.6.3',
+        'numpy==1.18.0',
+        'psycopg2-binary==2.8.4',
+        'sqlalchemy==1.3.12', 'geoalchemy2==0.6.3',
         'shapely==1.6.4', 'fiona==1.8.6',
-        'pyproj==2.2.1',
-        'pandas==0.24.2', 'geopandas==0.5.0',
-        'google-api-python-client==1.7.9',
-        'netCDF4==1.5.1', 'xlrd==1.2.0', 'xlwt==1.3.0',
-        'xlsxwriter==1.1.8',
-        'dbf==0.98.0',
-        'requests==2.22.0', 'requests-oauthlib==1.2.0',
+        'pyproj==2.4.2',
+        'pandas==0.25.3', 'geopandas==0.6.2',
+        'netCDF4==1.5.3', 'xlrd==1.2.0', 'xlwt==1.3.0',
+        'xlsxwriter==1.2.7',
+        'dbf==0.98.3',
+        'requests==2.22.0', 'requests-oauthlib==1.3.0',
         'requests-toolbelt==0.9.1', 'urllib3==1.25.3',
-        'flickrapi==2.4.0',
-        'tweepy==3.7.0',
+        'flickrapi==2.4.0', 'tweepy==3.8.0',
         'jupyter',
-        'scipy==1.3.0', 'sklearn==0.0', 'scikit-learn==0.21.2',
+        'scipy==1.4.1', 'scikit-learn==0.22',
         'pyexcel-ods==0.5.6',
         'bs4==0.0.1',
         'seaborn==0.9.0',
         'sentinelsat==0.13',
         'django==2.2.4', 'django-widget-tweaks==1.4.5',
-        'django-cors-headers==3.1.0', 'djangorestframework==3.10.2',
-        'sentinelsat==0.13',
+        'django-cors-headers==3.2.0', 'djangorestframework==3.11.0',
         'nltk==3.4.5',
         'simpledbf==0.2.6'
         #'mysqlclient==1.4.6'

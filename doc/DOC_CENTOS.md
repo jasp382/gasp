@@ -46,12 +46,12 @@ Install GASP Dependencies in CentOS 7
 	
 	# Download GRASS GIS source
 	mkdir /home/$user/grass_compile
-	wget https://grass.osgeo.org/grass74/source/grass-7.6.0.tar.gz -P /home/$user/grass_compile/
+	wget https://grass.osgeo.org/grass78/source/grass-7.8.0.tar.gz -P /home/$user/grass_compile/
 	
 	# Compile GRASS GIS and install it
 	cd /home/$user/grass_compile
-	tar xvzf grass-7.4.0.tar.gz
-	cd /home/$user/grass_compile/grass-7.4.0
+	tar xvzf grass-7.8.0.tar.gz
+	cd /home/$user/grass_compile/grass-7.8.0
 	./configure --with-cxx --enable-largefile --with-proj --with-proj-share=/usr/share/proj --with-gdal=/usr/local/bin/gdal-config --with-sqlite --with-python --with-cairo --with-cairo-ldflags=-lfontconfig --with-freetype --with-freetype-includes=/usr/include/freetype2 --with-wxwidgets=/usr/bin/wx-config --with-openmp --with-blas --with-blas-includes=/usr/include/atlas-x86_64-base/ --with-lapack --with-lapack-includes=/usr/include/atlas-x86_64-base/ --with-fftw --with-geos --with-netcdf --without-ffmpeg --without-mysql --without-postgres --without-odbc --without-fftw
 	make
 	sudo make install

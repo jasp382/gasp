@@ -11,7 +11,7 @@ GASP Components
 
 ##### Methods and Algorithms for Land Use/ Land Cover mapping #####
 
-- **OSM2LULC** - implementation in Python of an algorithm for the conversion of OpenStreetMap data into Land Use/Land Cover (LULC) maps. [Know more about OSM2LULC!](/gasp3/alg/osm2lulc/)
+- **OSM2LULC** - implementation in Python of an algorithm for the conversion of OpenStreetMap data into Land Use/Land Cover (LULC) maps. [Know more about OSM2LULC!](/gasp/alg/osm2lulc/)
 
 ### Implementation of GIS Software tools ###
 

@@ -45,4 +45,24 @@ Install GASP Dependencies in Ubuntu 18.04
 	sudo -u postgres psql -d postgis_template -f /usr/share/postgresql/11/contrib/postgis-2.5/raster_comments.sql
 	sudo -u postgres psql -d postgis_template -f /usr/share/postgresql/11/contrib/postgis-2.5/topology.sql
 	sudo -u postgres psql -d postgis_template -f /usr/share/postgresql/11/contrib/postgis-2.5/topology_comments.sql
+
+### 4 - Install SAGA GIS (optional): ###
+
+	# 
+	sudo apt install libwxgtk3.0-dev libtiff5-dev libexpat-dev wx-common unixodbc-dev
+
+	#
+	sudo apt install g++ make automake libtool git
+
+	# Downloading SAGA sources
+	cd /home/$user
+	git clone git://git.code.sf.net/p/saga-gis/code saga-gis-code
+
+	# Compile SAGA
+	cd /home/$user/saga-gis-code/saga-gis
+	autoreconf -fi
 	
+	./configure
+	make
+	sudo make install
+
