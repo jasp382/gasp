@@ -12,15 +12,17 @@ def slope(demRst, slopeRst, data=None, api="pygrass"):
     
     Data options:
     * percent;
-    * ?
-    
+    * degrees;
     """
+
+    dataf = data if data == 'percent' or data == 'degrees' else 'degrees'
+
     if api == "pygrass":
         from grass.pygrass.modules import Module
     
         sl = Module(
             "r.slope.aspect", elevation=demRst, slope=slopeRst,
-            format='percent',
+            format=dataf,
             overwrite=True, precision="FCELL", run_=False, quiet=True
         )
     
@@ -32,12 +34,40 @@ def slope(demRst, slopeRst, data=None, api="pygrass"):
         rcmd = exec_cmd((
             "r.slope.aspect elevation={} slope={} format={} "
             "precision=FCELL --overwrite --quiet"
-        ).format(demRst, slopeRst, data if data else "percent"))
+        ).format(demRst, slopeRst, dataf))
     
     else:
         raise ValueError("API {} is not available".format(api))
     
     return slopeRst
+
+
+def aspect(dem, rst_aspect, api="pygrass"):
+    """
+    Generate Aspect Raster
+    """
+
+    if api == 'pygrass':
+        from gass.pygrass.modules import Module
+
+        m = Module(
+            "r.slope", elevation=dem, aspect=rst_aspect,
+            overwrite=True, precision="FCELL", run_=False, quiet=True
+        )
+
+        m()
+    
+    elif api == 'grass':
+        from gasp import exec_cmd
+
+        rcmd = exec_cmd((
+            "r.slope.aspect elevation={} aspect={} "
+            "precision=FCELL --overwrite --quiet"
+        ).format(dem, rst_aspect))
+    else:
+        raise ValueError("API {} is not available".format(api))
+    
+    return rst_aspect
 
 
 def gdal_slope(dem, srs, slope, unit='DEGREES'):

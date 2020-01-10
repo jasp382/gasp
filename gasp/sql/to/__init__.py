@@ -427,7 +427,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     
     epsgs = [
         get_epsg_shp(i) for i in shapes
-    ] if not srsEpsgCode else srsEpsgCode
+    ] if not srsEpsgCode else [srsEpsgCode]
     
     if None in epsgs:
         raise ValueError((

@@ -17,17 +17,31 @@ def obj_to_rst(inArray, outRst, template, noData=None):
     gisApi = 'gdal'
     
     if gisApi == 'gdal':
-        from osgeo           import gdal, osr, gdal_array
-        from gasp.gt.prop.ff import drv_name
-    
-        img_template  = gdal.Open(template)
+        from osgeo            import gdal, osr, gdal_array
+        from gasp.gt.prop.ff  import drv_name
+        from gasp.gt.prop.rst import compress_option
+
+        if type(template).__name__ == 'Dataset':
+            img_template = template
+        else:
+            img_template  = gdal.Open(template)
         geo_transform = img_template.GetGeoTransform()
         rows, cols    = inArray.shape
-        driver        = gdal.GetDriverByName(drv_name(outRst))
-        out           = driver.Create(
-            outRst, cols, rows, 1,
-            gdal_array.NumericTypeCodeToGDALTypeCode(inArray.dtype)
-        )
+        drv_n         = drv_name(outRst)
+        driver        = gdal.GetDriverByName(drv_n)
+
+        c_opt = compress_option(drv_n)
+        if c_opt:
+            out       = driver.Create(
+                outRst, cols, rows, 1,
+                gdal_array.NumericTypeCodeToGDALTypeCode(inArray.dtype),
+                options=[c_opt]
+            )
+        else:
+            out       = driver.Create(
+                outRst, cols, rows, 1,
+                gdal_array.NumericTypeCodeToGDALTypeCode(inArray.dtype)
+            )
         out.SetGeoTransform(geo_transform)
         outBand       = out.GetRasterBand(1)
     

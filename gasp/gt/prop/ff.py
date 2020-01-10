@@ -10,7 +10,8 @@ def vector_formats():
 
 def raster_formats():
     return [
-        '.tiff', '.tif', '.img', '.nc', 'ecw', '.jpg', '.png', '.vrt', '.jp2'
+        '.tiff', '.tif', '.img', '.nc', 'ecw', '.jpg', '.png', '.vrt', '.jp2',
+        '.asc'
     ]
 
 
@@ -73,10 +74,10 @@ def drv_name(_file):
         '.jpg'    : 'JPEG',
         '.nc'     : 'netCDF',
         '.png'    : 'PNG',
-        '.vrt'    : 'VRT'
+        '.vrt'    : 'VRT',
+        '.asc'    : 'AAIGrid'
     }
-    name, ext = os.path.splitext(_file)
-    return str(drv[ext])
+    return str(drv[os.path.splitext(_file)[1]])
 
 
 """

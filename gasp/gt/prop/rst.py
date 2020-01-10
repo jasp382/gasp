@@ -2,6 +2,16 @@
 Get Raster properties
 """
 
+def compress_option(drv):
+    """
+    Return compress option for some gdal driver
+    """
+
+    if drv == 'GTiff':
+        return 'COMPRESS=LZW'
+    else:
+        return None
+
 
 def rst_ext(rst):
     """
@@ -210,12 +220,12 @@ def get_nodata(r):
     gisApi = 'gdal'
     
     if gisApi == 'gdal':
+        from gasp.g.prop.img import get_nd
         from osgeo import gdal
         
         img = gdal.Open(r)
-        band = img.GetRasterBand(1)
         
-        ndVal = band.GetNoDataValue()
+        ndVal = get_nd(img)
     
     else:
         raise ValueError('The api {} is not available'.format(gisApi))
@@ -324,7 +334,7 @@ def rst_stats(rst, bnd=None, api='gdal'):
     return dicStats
 
 
-def frequencies(r):
+def frequencies(r, excludeNoData=True):
     """
     Return frequencies table
     """
@@ -335,7 +345,7 @@ def frequencies(r):
     from gasp.gt.prop.rst import get_nodata
     from gasp.pyt.num     import count_where
     
-    if type(r) == str:
+    if type(r).__name__ == 'str':
         img = rst_to_array(r)
     else:
         img = r
@@ -343,7 +353,7 @@ def frequencies(r):
     unique = list(numpy.unique(img))
     
     nodataVal = get_nodata(r) if type(r) == str else None
-    if nodataVal in unique:
+    if nodataVal in unique and excludeNoData:
         unique.remove(nodataVal)
     
     return { v : count_where(img, img==v) for v in unique }

@@ -34,9 +34,9 @@ def fext_to_geof(inF, outF):
         isShp = check_isShp(outF)
         
         if isShp:
-            from gasp.gt.to.shp import coords_to_boundary
+            from gasp.gt.to.shp import coords_to_boundshp
             
-            return coords_to_boundary(
+            return coords_to_boundshp(
                 (left, top), (right, bottom), EPSG, outF
             )
         

@@ -63,7 +63,8 @@ def rsts_to_mosaic(inRasterS, o, api="grass", fformat='.tif'):
             "driver"    : drv_name(o),
             "height"    : mosaic.shape[1],
             "width"     : mosaic.shape[2],
-            "transform" : out_trans
+            "transform" : out_trans,
+            "compress"  : 'lzw'
         })
 
         with rasterio.open(o, "w", **out_meta) as dest:

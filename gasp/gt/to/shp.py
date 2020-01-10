@@ -481,7 +481,7 @@ def dbtbl_to_shp(db, tbl, geom_col, outShp, where=None, inDB='psql',
 Numerical to Shape
 """
 
-def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
+def coords_to_boundshp(topLeft, lowerRight, epsg, outshp,
                        outEpsg=None):
     """
     Top Left and Lower Right to Boundary
@@ -491,41 +491,10 @@ def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
     from gasp.gt.prop.ff  import drv_name
     from gasp.gt.prop.prj import get_sref_from_epsg
     from gasp.pyt.oss     import get_filename
-    
-    boundary_points = [
-        (   topLeft[0],    topLeft[1]),
-        (lowerRight[0],    topLeft[1]),
-        (lowerRight[0], lowerRight[1]),
-        (   topLeft[0], lowerRight[1]),
-        (   topLeft[0],    topLeft[1])
-    ]
-    
-    # Convert SRS if outEPSG
-    if outEpsg and epsg != outEpsg:
-        from gasp.gt.to.geom import create_polygon
-        from gasp.gt.prj     import proj
-        
-        poly = proj(create_polygon(
-            boundary_points), None, outEpsg, inEPSG=epsg, gisApi='OGRGeom')
-        
-        left, right, bottom, top = poly.GetEnvelope()
-        #bottom, top, left, right  = poly.GetEnvelope()
-        
-        boundary_points = [
-            (left, top), (right, top), (right, bottom),
-            (left, bottom), (left, top)
-        ]
-    
-    # Create Geometry
-    ring = ogr.Geometry(ogr.wkbLinearRing)
-    for pnt in boundary_points:
-        ring.AddPoint(pnt[0], pnt[1])
-    
-    polygon = ogr.Geometry(ogr.wkbPolygon)
-    polygon.AddGeometry(ring)
-    
-    if not outshp:
-        return polygon
+    from gasp.g.to        import coords_to_boundary
+
+    # Get boundary geometry
+    polygon = coords_to_boundary(topLeft, lowerRight, epsg, outEpsg=outEpsg)
     
     # Create outShapefile if a path is given
     shp = ogr.GetDriverByName(
@@ -554,7 +523,7 @@ def coords_to_boundary(topLeft, lowerRight, epsg, outshp,
 Extent to Shape
 """
 
-def shpext_to_boundary(inShp, outShp, epsg=None):
+def shpext_to_boundshp(inShp, outShp, epsg=None):
     """
     Read one feature class extent and create a boundary with that
     extent
@@ -566,15 +535,7 @@ def shpext_to_boundary(inShp, outShp, epsg=None):
     from gasp.gt.prop.ff  import drv_name
     from gasp.pyt.oss     import get_filename
     from gasp.gt.to.geom  import new_pnt
-    from gasp.gt.prop.ext import get_ext
-    
-    ext = get_ext(inShp)
-    
-    # Create points of the new boundary based on the extent
-    boundary_points = [
-        new_pnt(ext[0], ext[3]), new_pnt(ext[1], ext[3]),
-        new_pnt(ext[1], ext[2]), new_pnt(ext[0], ext[2]), new_pnt(ext[0], ext[3])
-    ]
+    from gasp.g.to        import shpext_to_boundary
     
     # Get SRS for the output
     if not epsg:
@@ -599,13 +560,7 @@ def shpext_to_boundary(inShp, outShp, epsg=None):
     outDefn = lyr.GetLayerDefn()
     
     feat = ogr.Feature(outDefn)
-    ring = ogr.Geometry(ogr.wkbLinearRing)
-    
-    for pnt in boundary_points:
-        ring.AddPoint(pnt.GetX(), pnt.GetY())
-    
-    polygon = ogr.Geometry(ogr.wkbPolygon)
-    polygon.AddGeometry(ring)
+    polygon = shpext_to_boundary(inShp)
     
     feat.SetGeometry(polygon)
     lyr.CreateFeature(feat)
@@ -694,7 +649,7 @@ def rstext_to_shp(inRst, outShp, epsg=None):
         epsg = get_rst_epsg(inRst)
     
     # Create Boundary
-    return coords_to_boundary((left, top), (right, bottom), epsg, outShp)
+    return coords_to_boundshp((left, top), (right, bottom), epsg, outShp)
 
 
 """

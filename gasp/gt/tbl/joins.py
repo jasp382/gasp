@@ -90,7 +90,7 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     import os;            import pandas;
     from geopandas        import GeoDataFrame
     from gasp.fm          import tbl_to_obj
-    from gasp.gt.to.shp   import df_to_shp, shpext_to_boundary
+    from gasp.gt.to.shp   import df_to_shp, shpext_to_boundshp
     from gasp.gt.to.rst   import shp_to_rst
     from gasp.gt.to.geom  import df_to_geodf
     from gasp.gt.wenv.grs import run_grass
@@ -103,7 +103,7 @@ def joinLines_by_spatial_rel_raster(mainLines, mainId, joinLines,
     ))
     
     # Create boundary file
-    boundary = shpext_to_boundary(
+    boundary = shpext_to_boundshp(
         mainLines, os.path.join(workspace, "bound.shp"),
         epsg
     )
