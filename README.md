@@ -7,48 +7,33 @@ It consistes of a set of Python Methods to support the automatization of spatial
 GASP Components
 ====================
 
-### Spatial Analysis algorithms or procedures ###
+- [Spatial Analysis algorithms or procedures;](/doc/components/spatial_analysis.md)
+- TODO
 
 ##### Methods and Algorithms for Land Use/ Land Cover mapping #####
 
-- **OSM2LULC** - implementation in Python of an algorithm for the conversion of OpenStreetMap data into Land Use/Land Cover (LULC) maps. [Know more about OSM2LULC!](/gasp3/alg/osm2lulc/)
-
-### Implementation of GIS Software tools ###
-
-- **TODO**
-
-### Data interoperability and data extraction tools ###
-
-- **TODO**
-
-### Tools for Web Frameworks ###
-
-- **TODO**
+- **OSM2LULC** - implementation in Python of an algorithm for the conversion of OpenStreetMap data into Land Use/Land Cover (LULC) maps. [Know more about OSM2LULC!](/gasp/alg/osm2lulc/)
 
 Installation
 ====================
 
 ### Install dependencies: ###
 
-- [Ubuntu/Debian;](/doc/DOC_DEBIAN.md)
-- [Lubuntu;](/doc/DOC_LUBUNTU.md)
-- [CentOS7;](/doc/DOC_CENTOS.md)
+- [Ubuntu/Debian;](/doc/instalation/DOC_DEBIAN.md)
+- [Lubuntu;](/doc/instalation/DOC_LUBUNTU.md)
+- [CentOS7;](/doc/instalation/DOC_CENTOS.md)
 - MS Windows (TODO).
 
 ### Install GASP: ###
 
-1 - Install GIT:
-
-	sudo apt install git
-
-2 - Clone GASP repository from github.com:
+1 - Clone GASP repository from github.com:
 
 	user="$(whoami)"
 	mkdir /home/$user/xpto
 	cd /home/$user/xpto
 	git clone https://github.com/jasp382/gasp3.git
 
-3 - Set PGPASSWORD as environment variable:
+2 - Set PGPASSWORD as environment variable:
 
 	echo "export PGPASSWORD=yourpostgresqlpassword" | sudo tee --append /home/$user/.bashrc
 	source /home/$user/.bashrc
@@ -57,7 +42,7 @@ Installation
 
 5 - Replace default osmconf.ini file in your GDAL-DATA configuration folder:
 
-	# For Ubuntu and CentOS
+	# For Ubuntu
 	sudo rm /usr/share/gdal/osmconf.ini
 	sudo cp /home/$user/xpto/gasp3/conf/osmconf-gdal.ini /usr/share/gdal/osmconf.ini
 
