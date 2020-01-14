@@ -257,3 +257,14 @@ def rst_to_region(__raster):
     
     r()
 
+
+def shp_to_region(shp, cellsize):
+    """
+    Feature Class to region
+    """
+
+    from grass.pygrass.modules import Module
+
+    r = Module("g.region", vector=shp, res=cellsize, run_=False, quiet=True)
+
+    r()

@@ -17,10 +17,10 @@ def create_fishnet(boundary, fishnet, width=None, height=None, rowN=None, colN=N
     from gasp.pyt.oss     import get_filename
     from gasp.gt.prop.ff  import drv_name
     from gasp.gt.prop.ext import get_ext
-    from gasp.gt.prop.prj import get_shp_sref
+    from gasp.gt.prop.prj import get_srs
     
     # Get boundary extent
-    xmin, xmax, ymin, ymax = [float(x) for x in get_ext(boundary)]
+    xmin, xmax, ymin, ymax = get_ext(boundary)
     
     if width and height:
         # Clean width and height
@@ -66,7 +66,7 @@ def create_fishnet(boundary, fishnet, width=None, height=None, rowN=None, colN=N
     out_fishnet = ogr.GetDriverByName(drv_name(
         fishnet)).CreateDataSource(fishnet)
     fishnet_lyr = out_fishnet.CreateLayer(
-        str(get_filename(fishnet)), srs=get_shp_sref(boundary),
+        str(get_filename(fishnet)), srs=get_srs(boundary),
         geom_type=ogr.wkbPolygon
     )
     

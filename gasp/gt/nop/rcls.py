@@ -26,10 +26,10 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
     """
     
     if api == 'gdal':
-        import numpy          as np
-        from osgeo            import gdal
-        from gasp.gt.to.rst   import obj_to_rst
-        from gasp.g.fm        import imgsrc_to_num
+        import numpy         as np
+        from osgeo           import gdal
+        from gasp.gt.to.rst  import obj_to_rst
+        from gasp.g.fm       import imgsrc_to_num
         from gasp.g.prop.img import get_nd
 
         # Open Raster
@@ -40,34 +40,31 @@ def rcls_rst(inrst, rclsRules, outrst, api='gdal'):
     
         nodataVal = get_nd(img)
     
-        rcls_num = np.zeros(rst_num.shape, rst_num.dtype)
+        rcls_num = np.full(rst_num.shape, 255, dtype=np.uint8)
     
         # Change values
         for k in rclsRules:
-            if type(k) == tuple:
-                np.place(
-                    rcls_num, (rst_num > k[0]) & (rst_num <= k[1]),
-                    rclsRules[k] if rclsRules != 'NoData' else nodataVal
-                )
-            elif type(k) == str:
+            if rclsRules[k] == 'NoData':
                 continue
+            
+            if type(k) == str:
+                continue
+            
+            elif type(k) == tuple:
+                q = (rst_num > k[0]) & (rst_num <= k[1])
+            
             else:
-                np.place(rcls_num, rst_num == k, rclsRules[k])
+                q = rst_num == k
+            
+            np.place(rcls_num, q, rclsRules[k])
     
-        if '*' in rclsRules:
-            np.place(
-                rcls_num, rcls_num == 0,
-                nodataVal if rclsRules['*'] == 'NoData' else rclsRules['*']
-            )
-        else:
-            np.place(rcls_num, rcls_num == 0, nodataVal)
+        if '*' in rclsRules and rclsRules['*'] != 'NoData':
+            np.place(rcls_num, rcls_num == 255, rclsRules['*'])
     
-        if 'NoData' in rclsRules:
+        if 'NoData' in rclsRules and rclsRules['NoData'] != 'NoData':
             np.place(rcls_num, rst_num == nodataVal, rclsRules['NoData'])
-        else:
-            np.place(rcls_num, rst_num == nodataVal, nodataVal)
     
-        return obj_to_rst(rcls_num, outrst, img, noData=nodataVal)
+        return obj_to_rst(rcls_num, outrst, img, noData=255)
     
     elif api == "pygrass":
         from grass.pygrass.modules import Module

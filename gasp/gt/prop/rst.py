@@ -92,49 +92,35 @@ def get_cellsize(rst, xy=False, bnd=None, gisApi='gdal'):
     import os
     
     if gisApi == 'gdal':
-        from osgeo import gdal
-        
-        def __get_cellsize(__rst):
-            img = gdal.Open(__rst)
-            (upper_left_x, x_size, x_rotation,
-             upper_left_y, y_rotation, y_size) = img.GetGeoTransform()
-        
-            return int(x_size), int(y_size)
-        
-        def __loop(files, __xy):
-            return {f : __get_cellsize(f) for f in files} if __xy \
-                else {f : __get_cellsize(f)[0] for f in files}
-        
-        if os.path.exists(rst):
-            if os.path.isfile(rst):
-                xs, ys = __get_cellsize(rst)
-                
-                if not xy:
-                    return xs
-                
-                else:
-                    return [xs, xy]
-            
-            elif os.path.isdir(rst):
+        from osgeo           import gdal
+        from gasp.g.prop.img import get_cell_size
+
+        if type(rst) != list:
+            if os.path.exists(rst) and os.path.isdir(rst):
                 from gasp.pyt.oss import lst_ff
-                
-                rsts = lst_ff(rst, file_format=gdal_drivers().keys())
-                
-                return __loop(rsts, xy)
+
+                rsts = lst_ff(rst, file_format=gdal_drivers.keys())
             
+            elif os.path.exists(rst) and os.path.isfile(rst):
+                rsts = [rst]
             else:
-                raise ValueError('The path exists but is not a file or dir')
-        
-        else:
-            if type(rst) == list:
-                return __loop(rst, xy)
-            
-            else:
-                raise ValueError((
+                raise ValueError(
                     'Invalid object rst. Please insert a path to a raster, '
                     'a path to a directory with rasters or a list with '
                     'rasters path.'
-                ))
+                )
+        
+        else:
+            rsts = rst
+        
+        cs = {}
+        for r in rsts:
+            imgsrc = gdal.Open(r)
+
+            cs[r] = get_cell_size(
+                imgsrc) if xy else get_cell_size(imgsrc)[0]
+        
+        return cs[rsts[0]] if len(rsts) == 1 else cs
     
     elif gisApi == 'qgis':
         from qgis.core import QgsRasterLayer
@@ -247,50 +233,6 @@ def rst_distinct(rst):
     v = numpy.unique(rst_to_array(rst, flatten=True, with_nodata=False))
     
     return list(v)
-
-
-def rst_dataType(rsts):
-    """
-    Get Raster dataType
-    
-    Only Available for GDAL
-    """
-    
-    from osgeo import gdal
-    
-    dataTypes = {
-        'Byte'    : gdal.GDT_Byte,
-        'Int16'   : gdal.GDT_Int16,
-        'UInt16'  : gdal.GDT_UInt16,
-        'Int32'   : gdal.GDT_Int32,
-        'UInt32'  : gdal.GDT_UInt32,
-        'Float32' : gdal.GDT_Float32,
-        'Float64' : gdal.GDT_Float64
-    }
-    
-    rsts = rsts if type(rsts) == list else rst.keys() if \
-        type(rsts) == dict else [rsts]
-    
-    types = []
-    for rst in rsts:
-        if type(rst) == gdal.Band:
-            band = rst
-        else:
-            src  = gdal.Open(rst)
-            band = src.GetRasterBand(1)
-    
-        dataType = gdal.GetDataTypeName(band.DataType)
-        
-        types.append(dataTypes[dataType])
-        
-        src  = None
-        band = None
-    
-    if len(types) == 1:
-        return types[0]
-    
-    else:
-        return types
 
 """
 Raster Statistics

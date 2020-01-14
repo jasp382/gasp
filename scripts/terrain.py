@@ -14,11 +14,11 @@ if __name__ == '__main__':
     Parameters
     """
 
-    lmt_fld       = '/home/gisuser/mdt/lmt_rst'
-    countours_fld = '/home/gisuser/mdt/countours'
-    dem_fld       = '/home/gisuser/mdt/dems'
+    lmt_fld       = '/home/jasp/mdt/mdt50_lmt'
+    countours_fld = '/home/jasp/mdt/countours'
+    dem_fld       = '/home/jasp/mdt/dems50'
     elv_fld       = 'data'
-    masks         = '/home/gisuser/mdt/rst_masks'
+    masks         = '/home/jasp/mdt/mdt50_masks'
 
     """
     Run Script
