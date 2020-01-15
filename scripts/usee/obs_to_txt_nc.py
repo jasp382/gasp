@@ -1,10 +1,26 @@
 """
-Undersee Database to SRM Files and NetCDF Files
+Undersee IN SITU Observations to SRM Files and NetCDF Files
+
+Execution instructions:
+1 - Produce a SRM file for a specific day:
+
+python db_to_txt_nc.py /home/user/folder --day 2019-09-20 --user diaryobs
+
+2 - Produce a netCDF4 file for a specific day:
+
+python db_to_txt_nc.py /home/user/folder --netcdf --day 2019-09-20 --user diaryobs
+
+3 - Produce a netCDF file for every day in a range
+
+python db_to_txt_nc.py /home/user/folder --netcdf --user diaryobs \
+    --firstday 2019-12-09 --lastday 2019-12-18 
 """
 
 # Python Packages
 import os
 import argparse
+import datetime as dt
+import json
 
 """
 Script Arguments
@@ -15,13 +31,37 @@ def args_parse():
     )
     
     p.add_argument(
+        'outpath', help="Path to the output file"
+    )
+    
+    p.add_argument(
         '-nc', '--netcdf', action='store_true',
         help="Use this flag to produce a netCDF4 file"
     )
     
     p.add_argument(
-        '-ng', '--netgeo', action='store_true',
-        help="Use this flag to produce a netCDF4 file"
+        '-d', '--day', default=None,
+        help="Day in the YYYY-MM-DD format"
+    )
+    
+    p.add_argument(
+        '-fd', '--firstday', default=None,
+        help="First Day in the YYYY-MM-DD format"
+    )
+    
+    p.add_argument(
+        '-ld', '--lastday', default=None,
+        help="Last Day in the YYYY-MM-DD format"
+    )
+    
+    p.add_argument(
+        '-u', '--user', default=None,
+        help="Username of FTP user"
+    )
+
+    p.add_argument(
+        '-p', '--position_quality', default=None,
+        help="Position quality: 1 means Good Quality; 0 means Bad Quality"
     )
     
     return p.parse_args()
@@ -74,7 +114,7 @@ def quality_assessment(df, tempCol, timeCol):
     badQR = [(i, i+130) for i in badQR]
     for i in badQR:
         df['rule2'] = np.where(
-            (df.myidx >= 1[0]) & (df.myidx < i[1]), 1, df.rule2
+            (df.myidx >= i[0]) & (df.myidx < i[1]), 1, df.rule2
         )
     
     df['rule3'] = np.where(
@@ -118,7 +158,8 @@ def txt_nodata(day, out):
 """
 Conversion Methods
 """
-def db_to_srm(conDB, TABLE, TIME, DAY, COLS_ORDER, COL_MAP, OUT_SRM):
+def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
+              macs=None):
     """
     Database to SRM
     
@@ -126,25 +167,45 @@ def db_to_srm(conDB, TABLE, TIME, DAY, COLS_ORDER, COL_MAP, OUT_SRM):
     """
     
     import codecs
-    from gasp3.sql.fm     import Q_to_df
-    from gasp3.gt.to.shp  import df_to_shp
+    from gasp.sql.fm    import Q_to_df
+    from gasp.gt.to.shp import df_to_shp
     
     # Get Data from the Database
-    df = Q_to_df(conDB, (
-        "SELECT {cols}, {tmCol} AS daytime{dep} "
-        "FROM {t} WHERE {tmCol} >= TIMESTAMP('{d} 00:00:00') "
-        "AND {tmCol} <= TIMESTAMP('{d} 23:59:59') "
-        "ORDER BY {tmCol}"
+    q = (
+        "SELECT {cols}, {t}.{tmCol} AS daytime{dep} "
+        "FROM {t} {lf}WHERE {_mac}"
+        "{t}.{tmCol} >= TIMESTAMP('{d} 00:00:00') "
+        "AND {t}.{tmCol} <= TIMESTAMP('{d} 23:59:59') "
+        "ORDER BY {t}.{tmCol}"
     ).format(
-        t=TABLE, d=DAY, tmCol=TIME, cols=", ".join(COLS_ORDER),
-        dep="" if 'depth' not in COL_MAP else ", 1 AS depth"
-    ), db_api='mysql')
+        t=TABLE, d=DAY, tmCol=TIME,
+        cols=", ".join(["{t}.{_c} AS {_c}".format(
+            t=TABLE, _c=c) for c in COLS_ORDER]),
+        dep="" if 'depth' not in COL_MAP else ", 1 AS depth",
+        lf="" if not macs else (
+            "LEFT JOIN products AS jtbl "
+            "ON {}.product_id = jtbl.id ").format(TABLE),
+        _mac="" if not macs else "({}) AND ".format(
+            " OR ".join(["jtbl.mac='{}'".format(m) for m in macs])
+        )
+    )
+    df = Q_to_df(conDB, q, db_api='mysql')
     
     if not df.shape[0]:
         return txt_nodata(DAY, OUT_SRM)
     
+    # Apply quality assessment
+    df = quality_assessment(df, TEMP, 'daytime')
+    df = df[df.quality == 1]
+    
+    df.reset_index(inplace=True)
+    
+    if not df.shape[0]:
+        return txt_nodata(DAY, OUT_SRM)
+    
+    cols_order = COLS_ORDER.copy()
     if 'depth' in COL_MAP:
-        COLS_ORDER.insert(2, 'depth')
+        cols_order.insert(2, 'depth')
     
     """
     Calculate time differences between the time of each row
@@ -182,235 +243,35 @@ def db_to_srm(conDB, TABLE, TIME, DAY, COLS_ORDER, COL_MAP, OUT_SRM):
         txt.write("TIME_UNITS              : SECONDS\n")
         
         txt.write("Seconds       {}\n".format(
-            "   ".join([COL_MAP[c] for c in COLS_ORDER])
+            "   ".join([COL_MAP[c] for c in cols_order])
         ))
         
         txt.write("<BeginTimeSerie>\n")
         
         # Write Rows
         df['txt'] = df.cumseconds.astype(str)
-        for c in COLS_ORDER:
+        for c in cols_order:
             df['txt'] = df.txt + "   " + df[c].astype(str)
         
         txt.write(df.txt.str.cat(sep="\n"))
             
-        txt.write("<EndTimeSerie>")
+        txt.write("\n<EndTimeSerie>")
     
     return OUT_SRM
 
 
-def db_to_nc(conDB, tbl, tm, daystr, varCols, latCol, lngCol, nc, cellsize=0.001):
-    """
-    Produce netCDF4 File
-    """
-    
-    import numpy as np;
-    import netCDF4
-    import datetime as dt
-    from osgeo            import gdal, osr, gdal_array
-    from gasp3.pyt.oss    import create_folder
-    from gasp3.sql.fm     import Q_to_df
-    from gasp3.gt.prop.ff import drv_name
-    
-    EPSG = 4326
-    
-    # Get Data From database
-    geoDf = Q_to_df(conDB, (
-        "SELECT {var}, {lat} AS latitude, "
-        "{lng} AS longitude, {tmCol} AS daytime "
-        "FROM {t} WHERE {tmCol} >= TIMESTAMP('{d} 00:00:00') "
-        "AND {tmCol} <= TIMESTAMP('{d} 23:59:59') "
-        "ORDER BY {tmCol}"
-    ).format(
-        t=tbl, d=daystr, tmCol=tm, lat=latCol, lng=lngCol,
-        var=", ".join(["{} AS {}".format(
-            k, varCols[k]["STANDARD_NAME"]) for k in varCols])
-    ), db_api='mysql')
-    
-    if not geoDf.shape[0]:
-        return txt_nodata(daystr, nc)
-    
-    # Rename axis columns
-    geoDf.rename(columns={'latitude' : 'y', 'longitude' : 'x'}, inplace=True)
-    
-    # Get Rasters Extent
-    left = geoDf.x.min(); right = geoDf.x.max()
-    bottom = geoDf.y.min(); top = geoDf.y.max()
-    
-    # Get row and col number
-    rows = int(round((top - bottom) / cellsize, 0))
-    cols = int(round((right - left) / cellsize, 0))
-    
-    # Get Geo Transform Object
-    geo_transform = (left, cellsize, 0, top, 0, -cellsize)
-    
-    # Create rasters for each point in geoDf and each variable
-    tmpFolder = create_folder(os.path.join(
-        os.path.dirname(nc), os.path.splitext(os.path.basename(nc))[0]
-    ))
-    geoDf['fid'] = geoDf.index
-    
-    def create_rsts(row):
-        timeval = row.daytime
-        for var in varCols:
-            # Create raster
-            OUT_RST_I = os.path.join(tmpFolder, 'rst_{}_{}.tif'.format(
-                str(int(row.fid)), varCols[var]["STANDARD_NAME"]))
-            
-            # Get var value in that time
-            varValue = row[varCols[var]["STANDARD_NAME"]]
-            
-            # Create array
-            dataArray = np.zeros((rows, cols))
-            
-            # Get index for that position
-            px = int((row.x - geo_transform[0]) / geo_transform[1])
-            py = int((row.y - geo_transform[3]) / geo_transform[5])
-            
-            # Add value to Array in the correct position
-            dataArray[py][px] = varValue
-            
-            # Save Raster just in case
-            driver = gdal.GetDriverByName(drv_name(OUT_RST_I))
-            outData = driver.Create(
-                OUT_RST_I, cols, rows, 1,
-                gdal_array.NumericTypeCodeToGDALTypeCode(dataArray.dtype)
-            )
-            
-            outData.SetGeoTransform(geo_transform)
-            
-            outBand = outData.GetRasterBand(1)
-            outBand.SetNoDataValue(0)
-            outBand.WriteArray(dataArray)
-            
-            proj = osr.SpatialReference()
-            proj.ImportFromEPSG(EPSG)
-            
-            outData.SetProjection(proj.ExportToWkt())
-            outBand.FlushCache()
-            
-            del outData
-            
-            row[varCols[var]["STANDARD_NAME"] + '_f'] = OUT_RST_I
-        
-        return row
-    
-    geoDf = geoDf.apply(lambda x: create_rsts(x), axis=1)
-    
-    # Get list with latitude and longitudes values for x and y variables
-    x = np.arange(cols)*geo_transform[1]+geo_transform[0]
-    y = np.arange(rows)*geo_transform[5]+geo_transform[3]
-    
-    # Get base time
-    year, month, day = daystr.split('-')
-    basedate = dt.datetime(int(year),int(month),int(day),0,0,0)
-    
-    # create NetCDF file
-    nco = netCDF4.Dataset(nc,'w',clobber=True)
-    
-    # chunking is optional, but can improve access a lot: 
-    # (see: http://www.unidata.ucar.edu/blogs/developer/entry/chunking_data_choosing_shapes)
-    chunk_x=2#16
-    chunk_y=2#16
-    chunk_time=12
-    
-    # create dimensions, variables and attributes:
-    nco.createDimension('lon', cols)
-    nco.createDimension('lat', rows)
-    nco.createDimension('time', None)
-    
-    # Time variable
-    timeo = nco.createVariable('time','f4',('time'))
-    timeo.units = 'days since {} 00:00:00'.format(daystr)
-    timeo.long_name= "Time"
-    timeo.standard_name = 'time'
-    timeo.axis = "T"
-    
-    # Longitude variable
-    xo = nco.createVariable('lon','f4',('lon'))
-    xo.long_name = "Longitude"
-    xo.units = 'degrees_east'
-    xo.standard_name = 'longitude'
-    xo.axis="X"
-    
-    # Latitude variable
-    yo = nco.createVariable('lat','f4',('lat'))
-    yo.long_name="Latitude"
-    yo.units = 'degrees_north'
-    yo.standard_name = 'latitude'
-    yo.axis="Y"
-    
-    # create container variable for CRS: x/y WGS84 datum
-    crso = nco.createVariable('crs','i4')
-    crso.grid_mapping_name='polar_stereographic'
-    crso.straight_vertical_longitude_from_pole = -45.
-    crso.latitude_of_projection_origin = 70.
-    crso.scale_factor_at_projection_origin = 1.0
-    crso.false_easting = 0.0
-    crso.false_northing = 0.0
-    crso.semi_major_axis = 6378137.0
-    crso.inverse_flattening = 298.257223563
-    
-    # create data variables
-    netcdfvar = {}
-    for var in varCols:
-        tmno = nco.createVariable(
-            varCols[var]["SLUG"], 'f4', ('time', 'lat', 'lon'), zlib=True,
-            #chunksizes=[chunk_time,chunk_y,chunk_x],
-            fill_value=-9999
-        )
-        tmno.units = varCols[var]["UNIT"]
-        tmno.scale_factor = 1
-        tmno.long_name = varCols[var]["LONG_NAME"]
-        tmno.standard_name = varCols[var]["STANDARD_NAME"]
-        tmno.grid_mapping = 'crs'
-        tmno.set_auto_maskandscale(False)
-        
-        netcdfvar[varCols[var]["SLUG"]] = tmno
-    
-    nco.Conventions='CF-1.6'
-    
-    #write x,y
-    xo[:]=x
-    yo[:]=y
-    
-    itime=0
-    # Write variables data
-    for idx, row in geoDf.iterrows():
-        tempo = row.daytime
-        date = dt.datetime(
-            int(tempo.year), int(tempo.month), int(tempo.day),
-            int(tempo.hour), int(tempo.minute), int(tempo.second)
-        )
-        dtime=(date-basedate).total_seconds()/86400
-        timeo[idx]=dtime
-        for var in varCols:
-            # Get var obj
-            varObj = netcdfvar[varCols[var]["SLUG"]]
-            # Open Raster
-            tmn=gdal.Open(row[varCols[var]["STANDARD_NAME"] + '_f'])
-            # Raster to Array
-            a = tmn.ReadAsArray()
-            # Write Array in netCDF4
-            a = np.where(a == 0, np.NaN, a)
-            a = a.astype(np.float32)
-            varObj[idx, :, :]=a
-    
-    # Close file
-    nco.close()
-    
-    return nc
-
-
-def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
+def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
+                pos_quality_flag, macs=None):
     """
     DB to NC according Copernicus specifications for data collected IN SITU
     """
     
     import netCDF4
-    import datetime as dt
     import numpy as np
-    from gasp3.sql.fm import Q_to_df
+    from gasp.sql.fm import Q_to_df
+    
+    dimCols = _dimCols.copy()
+    varCols = _varCols.copy()
     
     ############################################################################
     ########################## Global Variables ################################
@@ -432,16 +293,26 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
     """
     Get Data From Database
     """
-    geoDf = Q_to_df(conDB, (
-        "SELECT {dim}, {var} FROM {t} "
-        "WHERE {tmCol} >= TIMESTAMP('{d} 00:00:00') AND "
-        "{tmCol} <= TIMESTAMP('{d} 23:59:59') "
-        "ORDER BY {tmCol}"
+    Q = (
+        "SELECT {dim}, {var} FROM {t} {lf}"
+        "WHERE {_mac}{t}.{tmCol} >= TIMESTAMP('{d} 00:00:00') AND "
+        "{t}.{tmCol} <= TIMESTAMP('{d} 23:59:59') "
+        "ORDER BY {t}.{tmCol}"
     ).format(
-        dim=", ".join(["{} AS {}".format(d["DB_COL"], d["SLUG"]) for d in dimCols]),
-        var=", ".join(["{} AS {}".format(v["DB_COL"], v["SLUG"]) for v in varCols]),
-        t=tbl, d=daystr, tmCol=timeCol
-    ), db_api='mysql')
+        dim=", ".join(["{} AS {}".format(
+            d["DB_COL"], d["SLUG"]) for d in dimCols]),
+        var=", ".join(["{} AS {}".format(
+            v["DB_COL"], v["SLUG"]) for v in varCols]),
+        t=tbl, d=daystr, tmCol=timeCol,
+        lf="" if not macs else (
+            "LEFT JOIN products AS jtbl "
+            "ON {}.product_id = jtbl.id "
+        ).format(tbl),
+        _mac="" if not macs else "({}) AND ".format(
+            " OR ".join(["jtbl.mac='{}'".format(m) for m in macs])
+        )
+    )
+    geoDf = Q_to_df(conDB, Q, db_api='mysql')
     
     if not geoDf.shape[0]:
         return txt_nodata(daystr, outNc)
@@ -450,18 +321,46 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
     temperatureCol = None
     timeDim        = None
     for i in dimCols:
-        if i['DB_COL'] == timeCol:
+        if i['DB_COL'] == "{}.{}".format(tbl, timeCol):
             timeDim = i["SLUG"]
         else:
             continue
     for i in varCols:
-        if i['DB_COL'] == tempCol:
+        if i['DB_COL'] == "{}.{}".format(tbl, tempCol):
             temperatureCol = i["SLUG"]
         else: continue
     geoDf = quality_assessment(geoDf, temperatureCol, timeDim)
+    geoDf = geoDf[geoDf.quality == 1]
+    
+    geoDf.reset_index(inplace=True)
+    
+    if not geoDf.shape[0]:
+        return txt_nodata(daystr, outNc)
+    
+    # Get Dimensions X and Y
+    for i in dimCols:
+        if i["AXIS"] == 'X':
+            lngDim = i["SLUG"]
+        elif i["AXIS"] == 'Y':
+            latDim = i["SLUG"]
     
     """ Create NC File """
     ncObj = netCDF4.Dataset(outNc, 'w', clobber=True)
+    
+    """ Add Global Attributes """
+    ncObj.data_type = " "
+    ncObj.format_version = " "
+    ncObj.plaform_code = "TTDAFUNDO"
+    ncObj.data_mode = "R"
+    ncObj.id = os.path.splitext(os.path.basename(outNc))[0]
+    ncObj.geospatial_lat_min = str(geoDf[latDim].min())
+    ncObj.geospatial_lat_max = str(geoDf[latDim].max())
+    ncObj.geospatial_lon_min = str(geoDf[lngDim].min())
+    ncObj.geospatial_lon_max = str(geoDf[lngDim].max())
+    ncObj.geospatial_vertical_min = "1"
+    ncObj.geospatial_vertical_max = "1"
+    ncObj.time_coverage_start = str(geoDf[timeDim].min())
+    ncObj.time_coverage_end   = str(geoDf[timeDim].max())
     
     """ Create Default Dimensions """
     ncObj.createDimension("POSITION", geoDf.shape[0])
@@ -470,21 +369,22 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
     
     """ Create User Dimensions and Related Variables """
     for d in dimCols:
-        if d["AXIS"] == 'X' or d["AXIS"] == 'Y':
-            varValues = geoDf[d["SLUG"]]
-        elif d["AXIS"] == 'T':
-            varValues = None
-        else:
-            varValues = geoDf[d["SLUG"]].unique()
-        
         # Create Dimension
-        ncObj.createDimension(
-            d["SLUG"], varValues.shape[0] if d["AXIS"] != 'T' else None)
+        if d["AXIS"] == 'T':
+            varValues = None
+            ncObj.createDimension(d["SLUG"], None)
+        else:
+            if d["AXIS"] == 'X' or d["AXIS"] == 'Y':
+                varValues = geoDf[d["SLUG"]]
+            else:
+                varValues = geoDf[d["SLUG"]].unique()
+            ncObj.createDimension(d["SLUG"], varValues.shape[0])
         
         # Create Variable
         d["VAROBJ"] = ncObj.createVariable(
             d["SLUG"], d["TYPE"],
-            (d["SLUG"]) if 'IS_CHILD' not in d else d["IS_CHILD"]
+            (d["SLUG"]) if 'IS_CHILD' not in d else d["IS_CHILD"],
+            fill_value=d["FILL"]
         )
         
         # Add Attributes to Variable
@@ -569,7 +469,7 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
     pqc.valid_max = 9
     pqc.flag_values = QFlags
     pqc.flag_meanings = QC_STR
-    pqc[:] = np.full(geoDf.shape[0], 1)
+    pqc[:] = np.full(geoDf.shape[0], 1 if pos_quality_flag != 0 else 4)
     
     # Create DC Reference
     dcref = ncObj.createVariable('DC_REFERENCE', 'S1', (timeDim, "STRING32"))
@@ -585,7 +485,7 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
     
     """ Add data to Variables """
     year, month, day = daystr.split('-')
-    basedate = dt.datetime(int(year),int(month),int(day),0,0,0)
+    basedate = dt.datetime(1950,1,1,0,0,0)
     
     for d in dimCols:
         if d["SLUG"] != timeDim:
@@ -594,6 +494,7 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
             timeDimObj = d
             break
     
+    i = 0
     for idx, row in geoDf.iterrows():
         tempo = row[timeDim]
         date = dt.datetime(
@@ -601,18 +502,19 @@ def db_to_nc_v2(conDB, tbl, daystr, dimCols, varCols, tempCol, timeCol, outNc):
             int(tempo.hour), int(tempo.minute), int(tempo.second)
         )
         dtime = (date - basedate).total_seconds()/86400
-        timeDimObj["VAROBJ"][idx] = dtime
+        timeDimObj["VAROBJ"][i] = dtime
         
         for d in dimCols:
             if d["AXIS"] == 'Z':
-                d["VAROBJ"][idx, :] = [row[d["SLUG"]]]
+                d["VAROBJ"][i, :] = [row[d["SLUG"]]]
                 break
             else:
                 continue
         
         for v in varCols:
-            v["VAROBJ"][idx, :] = [row[v["SLUG"]]]
-            v["QC"][idx, :] = row.quality
+            v["VAROBJ"][i, :] = [row[v["SLUG"]]]
+            v["QC"][i, :] = row.quality
+        i+=1
     
     """ Close File """
     ncObj.close()
@@ -636,67 +538,82 @@ if __name__ == '__main__':
     Parameters to connect to Database
     """
     
-    con_db = {
-        'HOST' : 'localhost', 'PORT' : '3306', 'USER' : 'jasp',
-        'PASSWORD' : 'admin', 'DATABASE' : 'undersee'
-    }
+    thisFile = os.path.abspath(__file__)
+    glb_var = json.load(open(os.path.join(
+        os.path.dirname(thisFile),
+        os.path.splitext(os.path.basename(thisFile))[0]+ '.json'
+    ), 'r'))
     
     # Database Meta
-    data_table = "buoys"
-    time_col   = 'created_at'
-    day        = "2019-09-30"
+    con_db     = glb_var["DBCON"]
+    data_table = glb_var["DATA_TABLE"]
+    time_col   = glb_var["TIME_COL"]
+    temp_col   = glb_var["TEMP_COL"]
     
-    BASE_FOLDER = '/home/jasp/undersee'
-    if ARGS.netcdf:
-        out_file = os.path.join(
-            BASE_FOLDER, 'nc', "GL_LATEST_TS_TS_FGG8669_{}.nc".format(
-                day.replace('-', '')
-            )
-        )
+    """ Processing Day or Days """
+    if ARGS.firstday and ARGS.lastday:
+        fYear, fMonth, fDay = ARGS.firstday.split("-")
+        lYear, lMonth, lDay = ARGS.lastday.split("-")
+        
+        firstDay = dt.date(int(fYear), int(fMonth), int(fDay))
+        lastDay  = dt.date(int(lYear), int(lMonth), int(lDay))
+        
+        ndays = lastDay - firstDay
+        
+        day = [firstDay] + [firstDay + dt.timedelta(
+            days=i+1) for i in range(ndays.days)]
+        
+        day = ["{}-{}-{}".format(str(d.year),
+            str(d.month) if len(str(d.month)) == 2 else "0" + str(d.month),
+            str(d.day) if len(str(d.day)) == 2 else "0" + str(d.day)
+        ) for d in day]
     else:
-        out_file = os.path.join(
-            BASE_FOLDER, 'srm' if not ARGS.netgeo else 'nc',
-            'timeseries_{}.{}'.format(
-                day.replace('-', ''), 'srm' if not ARGS.netgeo else 'nc'
-            )
-        )
+        day = [str(dt.datetime.now().replace(
+            microsecond=0).date() - dt.timedelta(
+                days=1))] if not ARGS.day else [ARGS.day]
     
-    if not ARGS.netcdf and not ARGS.netgeo:
+    """ User Macs """
+    USERS = glb_var["USERS"]
+    MACS = None if not ARGS.user else USERS[ARGS.user] if \
+        ARGS.user in USERS else None
+    
+    """ Ouput Path """
+    BASE_FOLDER = ARGS.outpath
+    
+    file_b = "IR_TS_FB_TTDAFUNDO"
+    out_file = [os.path.join(
+        BASE_FOLDER, "{}_{}.{}".format(
+            file_b, d.replace('-', ''),
+            'nc' if ARGS.netcdf else 'srm'
+        )
+    ) for d in day]
+    
+    if not ARGS.netcdf:
         """
         Produce SRM File
         """
-        cols_order = ['value19', 'value18', 'value1', 'value4']
-        cols_map   = {
-            'value1' : 'temperature(C)', 'value18' : 'latitude',
+        cols_order = [
+            'value19', 'value18', 'value1', 'value4',
+            'value2', 'value8', 'value6', 'value15', 'value16'
+        ]; cols_map   = {
+            'value1'  : 'temperature(C)',
+            'value18' : 'latitude',
             'value19' : 'longitude',
-            'value4' : 'practical_salinity(psu)', 'depth' : 'depth(m)'
+            'value4'  : 'practical_salinity(psu)',
+            'depth'   : 'depth(m)',
+            'value2'  : 'electrical_conductivity(Sm-1)',
+            'value8'  : 'dissolved_oxygen(mg_l-1)',
+            'value6'  : 'ph',
+            'value15' : 'chla_fluorescence(mg_m-3)',
+            'value16' : 'turbidity'
         }
         
-        # Produce file
-        db_to_srm(con_db, data_table, time_col, day, cols_order, cols_map, out_file)
-    
-    elif not ARGS.netcdf and ARGS.netgeo:
-        """
-        Produce netCDF4 file with geo reference
-        """
-        
-        variableCols = {
-            'value1'  : {
-                "STANDARD_NAME" : 'temperature', 
-                "LONG_NAME" : 'Sea Surface Temperature', 
-                "UNIT" : 'degC', 'SLUG': 'sst'},
-            'value4'  : {
-                "STANDARD_NAME" : 'practical_salinity', 
-                "LONG_NAME" : 'Salinity', 
-                "UNIT" : 'degC', 'SLUG' : 'sal'
-            }
-        }
-        
-        latitudeCol = 'value18'
-        longitudeCol = 'value19'
-        
-        db_to_nc(con_db, data_table, time_col, day, variableCols,
-                 latitudeCol, longitudeCol, out_file)
+        # Produce file or files
+        for i in range(len(day)):
+            db_to_srm(
+                con_db, data_table, time_col, temp_col, day[i],
+                cols_order, cols_map, out_file[i], macs=MACS
+            )
     
     else:
         """
@@ -705,61 +622,87 @@ if __name__ == '__main__':
         
         dimensionCols = [
             {
-                "DB_COL" : 'value18',
+                "DB_COL" : '{}.value18'.format(data_table),
                 "STANDARD_NAME" : 'latitude',
                 "LONG_NAME" : 'Latitude of each location',
                 "UNIT" : "degree_north",
                 "AXIS" : "Y", "SLUG" : "LATITUDE",
                 "MIN" : -90.0, "MAX" : 90.0,
-                "TYPE" : 'f4'
+                "TYPE" : 'f4', "FILL" : 99999.0
             },{
-                "DB_COL" : 'value19',
+                "DB_COL" : '{}.value19'.format(data_table),
                 "STANDARD_NAME" : 'longitude',
                 "LONG_NAME" : 'Longitude of each location',
                 "UNIT" : 'degree_east', "SLUG" : "LONGITUDE",
                 "AXIS" : "X", "MIN" : -180.0, "MAX" : 180.0,
-                "TYPE" : 'f4'
+                "TYPE" : 'f4', "FILL" : 99999.0
             }, {
-                "DB_COL" : 'created_at',
+                "DB_COL" : '{}.created_at'.format(data_table),
                 "STANDARD_NAME" : 'time',
                 "LONG_NAME" : 'Time', "SLUG" : "TIME",
-                "UNIT" : "days since {}T00:00:00Z".format(day),
+                "UNIT" : "days since 1950-01-01T00:00:00Z",
                 "MIN" : -90000.0, "MAX" : 90000.0,
-                "AXIS" : 'T', "TYPE" : 'f4'
+                "AXIS" : 'T', "TYPE" : 'd', "FILL" : 999999.0
             }, {
                 "DB_COL" : '1',
                 "STANDARD_NAME" : 'depth',
                 "LONG_NAME" : 'Depth', 'UNIT' : 'm',
                 "SLUG" : 'DEPH', "AXIS" : "Z",
                 "MIN" : -12000.0, "MAX" : 12000,
-                "TYPE" : 'i4', "IS_CHILD" : ("TIME", "DEPH")
+                "TYPE" : 'i4', "IS_CHILD" : ("TIME", "DEPH"),
+                "FILL" : -99999.0
             }
         ]
         
         variableCols = [
             {
-                "DB_COL" : 'value1',
+                "DB_COL" : '{}.value1'.format(data_table),
                 "STANDARD_NAME" : 'sea_water_temperature', 
                 "LONG_NAME" : 'Sea temperature', 
                 "UNIT" : 'degrees_C', 'SLUG': 'TEMP',
                 "TYPE" : 'f4',
                 "DIM" : ("TIME", "DEPH")
             }, {
-                "DB_COL" : '(value2 / 10000.0)',
+                "DB_COL" : '({}.value2 / 10000.0)'.format(data_table),
                 "STANDARD_NAME" : 'sea_water_electrical_conductivity',
                 "LONG_NAME" : 'Electrical conductivity',
                 "UNIT" : 'S m-1', "SLUG" : "CNDC",
                 "TYPE" : 'f4', "DIM" : ("TIME", "DEPH")
             }, {
-                "DB_COL" : 'value4',
+                "DB_COL" : '{}.value4'.format(data_table),
                 "STANDARD_NAME" : 'sea_water_practical_salinity', 
                 "LONG_NAME" : 'Practical salinity', 
                 "UNIT" : '0.001', 'SLUG' : 'PSAL',
                 "TYPE" : 'f4', "DIM" : ("TIME", "DEPH")
+            }, {
+                "DB_COL" : '({}.value8 / 1.33)'.format(data_table),
+                "STANDARD_NAME" : 'volume_fraction_of_oxygen_in_sea_water',
+                "LONG_NAME" : 'Dissolved oxygen',
+                "UNIT" : 'ml l-1', 'SLUG' : 'DOX1',
+                "TYPE" : "f4", "DIM" : ("TIME", "DEPH")
+            }, {
+                "DB_COL" : '{}.value6'.format(data_table),
+                "STANDARD_NAME" : 'sea_water_ph_reported_on_total_scale',
+                "LONG_NAME" : 'Ph', "UNIT" : "1", "SLUG" : 'PHPH',
+                "TYPE" : "f4", "DIM" : ("TIME", "DEPH")
+            }, {
+                "DB_COL" : '{}.value15'.format(data_table),
+                "STANDARD_NAME" : 'mass_concentration_of_chlorophyll_a_fluorescence_in_sea_water',
+                "LONG_NAME" : 'Chlorophyll-a fluorescence',
+                "UNIT" : 'mg m-3', "SLUG" : "FLU2",
+                "TYPE" : "f4", "DIM" : ("TIME", "DEPH")
+            }, {
+                "DB_COL" : '{}.value16'.format(data_table),
+                "STANDARD_NAME" : 'sea_water_turbidity',
+                "LONG_NAME" : 'Turbidity',
+                "UNIT" : '1', "SLUG" : "TUR4",
+                "TYPE" : "f4", "DIM" : ("TIME", "DEPH")
             }
         ]
-        tempCol = 'value1'
+
+        POSITION_QFLAG = 1 if ARGS.position_quality != 0 else 0
         
-        db_to_nc_v2(
-            con_db, data_table, day, dimensionCols, variableCols, tempCol,
-            time_col, out_file)
+        for i in range(len(day)):
+            db_to_nc_v2(
+                con_db, data_table, day[i], dimensionCols, variableCols,
+                temp_col, time_col, out_file[i], POSITION_QFLAG, macs=MACS)
