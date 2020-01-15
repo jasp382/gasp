@@ -240,7 +240,7 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
         from gasp.pyt.oss   import get_filename
         from gasp.sql.to    import shp_to_psql
         from gasp.gt.to.shp import dbtbl_to_shp
-        from gasp.gs.prj    import sql_proj
+        from gasp.gql.prj   import sql_proj
 
         con_db = {
             "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',

@@ -1,7 +1,7 @@
 {
 	"DBCON" : {
 		"HOST" : "localhost", "PORT" : "3306",
-		"USER" : "jasp", "PASSWORD" : "admin",
+		"USER" : "jasp", "PASSWORD" : "jasppP@1",
 		"DATABASE" : "undersee"
 	},
 	"USERS" : {

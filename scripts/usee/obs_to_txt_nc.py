@@ -13,7 +13,11 @@ python db_to_txt_nc.py /home/user/folder --netcdf --day 2019-09-20 --user diaryo
 3 - Produce a netCDF file for every day in a range
 
 python db_to_txt_nc.py /home/user/folder --netcdf --user diaryobs \
-    --firstday 2019-12-09 --lastday 2019-12-18 
+    --firstday 2019-12-09 --lastday 2019-12-18
+
+python obs_to_txt_nc.py /mnt/d/gpto/undersee/ --user diaryobs --position_quality 0 \
+    --default_longitude -9.144344 --default_latitude 38.696150\
+    --netcdf --firstday 2019-12-26 2020-02-12
 """
 
 # Python Packages
@@ -60,8 +64,18 @@ def args_parse():
     )
 
     p.add_argument(
-        '-p', '--position_quality', default=None,
+        '-p', '--position_quality', default=1, type=int,
         help="Position quality: 1 means Good Quality; 0 means Bad Quality"
+    )
+
+    p.add_argument(
+        '-lt', '--default_latitude', default=0, type=float,
+        help="Latitude value to apply when position_quality is 0"
+    )
+
+    p.add_argument(
+        '-lg', '--default_longitude', default=0, type=float,
+        help="Longitude value to apply when position_quality is 0"
     )
     
     return p.parse_args()
@@ -159,7 +173,7 @@ def txt_nodata(day, out):
 Conversion Methods
 """
 def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
-              macs=None):
+              macs=None, deflong=None, deflat=None):
     """
     Database to SRM
     
@@ -193,6 +207,21 @@ def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
     
     if not df.shape[0]:
         return txt_nodata(DAY, OUT_SRM)
+    
+    if deflong and deflat:
+        latcol=None; lngcol=None
+        for k in cols_map:
+            if cols_map[k] == 'latitude':
+                latcol = k
+            
+            elif cols_map[k] == 'longitude':
+                lngcol = k
+            
+            if latcol and lngcol:
+                break
+        
+        df[lngcol] = deflong
+        df[latcol] = deflat
     
     # Apply quality assessment
     df = quality_assessment(df, TEMP, 'daytime')
@@ -261,7 +290,7 @@ def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
 
 
 def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
-                pos_quality_flag, macs=None):
+                pos_quality_flag, deflong=None, deflat=None, macs=None):
     """
     DB to NC according Copernicus specifications for data collected IN SITU
     """
@@ -375,7 +404,12 @@ def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
             ncObj.createDimension(d["SLUG"], None)
         else:
             if d["AXIS"] == 'X' or d["AXIS"] == 'Y':
-                varValues = geoDf[d["SLUG"]]
+                if not pos_quality_flag and d["AXIS"] == 'X' and deflong:
+                    varValues = np.full(geoDf.shape[0], deflong)
+                elif not pos_quality_flag and d["AXIS"] == 'Y' and deflat:
+                    varValues = np.full(geoDf.shape[0], deflat)
+                else:
+                    varValues = geoDf[d["SLUG"]]
             else:
                 varValues = geoDf[d["SLUG"]].unique()
             ncObj.createDimension(d["SLUG"], varValues.shape[0])
@@ -469,7 +503,7 @@ def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
     pqc.valid_max = 9
     pqc.flag_values = QFlags
     pqc.flag_meanings = QC_STR
-    pqc[:] = np.full(geoDf.shape[0], 1 if pos_quality_flag != 0 else 4)
+    pqc[:] = np.full(geoDf.shape[0], 1 if pos_quality_flag != 0 else 9)
     
     # Create DC Reference
     dcref = ncObj.createVariable('DC_REFERENCE', 'S1', (timeDim, "STRING32"))
@@ -552,21 +586,22 @@ if __name__ == '__main__':
     
     """ Processing Day or Days """
     if ARGS.firstday and ARGS.lastday:
-        fYear, fMonth, fDay = ARGS.firstday.split("-")
-        lYear, lMonth, lDay = ARGS.lastday.split("-")
+        from gasp.pyt.tm import timerange
         
-        firstDay = dt.date(int(fYear), int(fMonth), int(fDay))
-        lastDay  = dt.date(int(lYear), int(lMonth), int(lDay))
-        
-        ndays = lastDay - firstDay
-        
-        day = [firstDay] + [firstDay + dt.timedelta(
-            days=i+1) for i in range(ndays.days)]
-        
-        day = ["{}-{}-{}".format(str(d.year),
-            str(d.month) if len(str(d.month)) == 2 else "0" + str(d.month),
-            str(d.day) if len(str(d.day)) == 2 else "0" + str(d.day)
-        ) for d in day]
+        day = timerange(ARGS.firstday, ARGS.lastday)
+    
+    elif not ARGS.firstday and ARGS.lastday:
+        day = [ARGS.lastday]
+    
+    elif ARGS.firstday and not ARGS.lastday:
+        # Create time range from firstday to yesterday
+        from gasp.pyt.tm import timerange
+
+        day = timerange(ARGS.firstday, str(
+            dt.datetime.now().replace(
+                microsecond=0).date() - dt.timedelta(days=1)
+        ))
+    
     else:
         day = [str(dt.datetime.now().replace(
             microsecond=0).date() - dt.timedelta(
@@ -612,7 +647,9 @@ if __name__ == '__main__':
         for i in range(len(day)):
             db_to_srm(
                 con_db, data_table, time_col, temp_col, day[i],
-                cols_order, cols_map, out_file[i], macs=MACS
+                cols_order, cols_map, out_file[i], macs=MACS,
+                deflong=None if not ARGS.default_longitude else ARGS.default_longitude,
+                deflat=None if not ARGS.default_latitude else ARGS.default_latitude
             )
     
     else:
@@ -701,8 +738,13 @@ if __name__ == '__main__':
         ]
 
         POSITION_QFLAG = 1 if ARGS.position_quality != 0 else 0
+        DEFAULT_LAT = None if not ARGS.default_latitude else \
+            ARGS.default_latitude
+        DEFAULT_LNG = None if not ARGS.default_longitude else \
+            ARGS.default_longitude 
         
         for i in range(len(day)):
             db_to_nc_v2(
                 con_db, data_table, day[i], dimensionCols, variableCols,
-                temp_col, time_col, out_file[i], POSITION_QFLAG, macs=MACS)
+                temp_col, time_col, out_file[i], POSITION_QFLAG,
+                deflong=DEFAULT_LNG, deflat=DEFAULT_LAT, macs=MACS)

@@ -134,3 +134,36 @@ def day_to_intervals2(intervaltime):
     PERIODS[-1] = (PERIODS[-1][0], '23:59:59')
     
     return PERIODS
+
+
+def timerange(firstday, lastday):
+    """
+    Return a list with all days between firstday and lastday.
+
+    Firstday and lastday must be strings like:
+    YYYY-MM-DD
+    """
+
+    import datetime as dt
+
+    f_year, f_month, f_day = firstday.split("-")
+    l_year, l_month, l_day = lastday.split("-")
+
+    # String to datetime
+    fday = dt.date(int(f_year), int(f_month), int(f_day))
+    lday = dt.date(int(l_year), int(l_month), int(l_day))
+
+    # Days of difference
+    ndays = lday - fday
+
+    # Get days between 
+    all_days = [fday] + [fday + dt.timedelta(
+        days=i+1) for i in range(ndays.days)]
+    
+    # Convert days to string
+    all_days = ["{}-{}-{}".format(str(d.year),
+        str(d.month) if len(str(d.month)) == 2 else "0" + str(d.month),
+        str(d.day) if len(str(d.day)) == 2 else "0" + str(d.day)
+    ) for d in all_days]
+
+    return all_days
