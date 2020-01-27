@@ -42,16 +42,22 @@ def slope(demRst, slopeRst, data=None, api="pygrass"):
     return slopeRst
 
 
-def aspect(dem, rst_aspect, api="pygrass"):
+def aspect(dem, rst_aspect, from_north=None, api="pygrass"):
     """
     Generate Aspect Raster
     """
+
+    aspect_tmp = rst_aspect if not from_north else rst_aspect + '_normal'
+
+    expression = None if not from_north else (
+        "if({r} == 0, -1, if({r} < 90, 90 - {r}, 450 - {r}))"
+    ).format(r=aspect_tmp)
 
     if api == 'pygrass':
         from gass.pygrass.modules import Module
 
         m = Module(
-            "r.slope", elevation=dem, aspect=rst_aspect,
+            "r.slope", elevation=dem, aspect=aspect_tmp,
             overwrite=True, precision="FCELL", run_=False, quiet=True
         )
 
@@ -63,9 +69,15 @@ def aspect(dem, rst_aspect, api="pygrass"):
         rcmd = exec_cmd((
             "r.slope.aspect elevation={} aspect={} "
             "precision=FCELL --overwrite --quiet"
-        ).format(dem, rst_aspect))
+        ).format(dem, aspect_tmp))
+    
     else:
         raise ValueError("API {} is not available".format(api))
+    
+    if from_north:
+        from gasp.gt.nop.alg import rstcalc
+
+        rrcmd = rstcalc(expression, rst_aspect, api=api)
     
     return rst_aspect
 

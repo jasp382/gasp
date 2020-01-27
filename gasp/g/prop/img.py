@@ -11,3 +11,11 @@ def get_nd(img):
 
     return band.GetNoDataValue()
 
+
+def get_cell_size(img):
+    """Return Cellsize"""
+
+    (tlx, x, xr, tly, yr, y) = img.GetGeoTransform()
+
+    return x, y
+

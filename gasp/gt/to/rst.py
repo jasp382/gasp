@@ -200,7 +200,7 @@ def grs_to_rst(grsRst, rst, as_cmd=None, allBands=None):
         m = Module(
             "r.out.gdal", input=grsRst, output=rst,
             format=rstDrv[rstExt], flags='c' if not allBands else '',
-            createopt="INTERLEAVE=PIXEL,TFW=YES" if allBands else '',
+            createopt="INTERLEAVE=PIXEL,TFW=YES" if allBands else 'TFW=YES',
             overwrite=True, run_=False, quiet=True
         )
         
@@ -211,10 +211,11 @@ def grs_to_rst(grsRst, rst, as_cmd=None, allBands=None):
         
         rcmd = exec_cmd((
             "r.out.gdal input={} output={} format={} "
-            "{} --overwrite --quiet"
+            "{} -c --overwrite --quiet"
         ).format(
             grsRst, rst, rstDrv[rstExt],
-            "-c" if not allBands else "createopt=\"INTERLEAVE=PIXEL,TFW=YES\""
+            "createopt=\"TFW=YES\"" if not allBands else \
+                "createopt=\"INTERLEAVE=PIXEL,TFW=YES\""
         ))
     
     return rst

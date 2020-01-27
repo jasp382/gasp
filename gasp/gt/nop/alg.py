@@ -3,18 +3,20 @@ Algebra tools
 """
 
 
-def gdal_mapcalc(expression, exp_val_paths, outRaster, epsg, outNodata=-99999):
+def gdal_mapcalc(expression, exp_val_paths, outRaster, template_rst,
+    outNodata=-99999):
     """
     GDAL Raster Calculator
     
     TODO: Check if rasters dimensions are equal
     """
     
-    import numpy
+    import numpy as np
     import os; from osgeo   import gdal, osr
     from gasp.gt.prop.ff    import drv_name
     from py_expression_eval import Parser
-    from gasp.gt.prop.rst   import rst_dataType
+    from gasp.g.prop.img    import get_nd
+    from gasp.gt.to.rst     import obj_to_rst
     
     parser = Parser()
     
@@ -22,69 +24,21 @@ def gdal_mapcalc(expression, exp_val_paths, outRaster, epsg, outNodata=-99999):
     
     evalValue = {}
     noDatas   = {}
-    rstTypes  = []
-    c = 0
     for x in EXPRESSION.variables():
         img = gdal.Open(exp_val_paths[x])
-        arr = numpy.array(img.ReadAsArray())
-        
-        band = img.GetRasterBand(1)
-        no_value = band.GetNoDataValue()
-        
-        if not c:
-            template = img
-            c+=1
+        arr = img.ReadAsArray().astype(float)
         
         evalValue[x] = arr
-        noDatas[x]   = no_value
-        rstTypes.append(rst_dataType(band))
+        noDatas[x]   = get_nd(img)
     
     result = EXPRESSION.evaluate(evalValue)
     
     for v in noDatas:
-        numpy.place(result, evalValue[v]==noDatas[v], outNodata)
-        
-    if gdal.GDT_Float64 in rstTypes:
-        resultType = gdal.GDT_Float64
-    else:
-        if gdal.GDT_Float32 in rstTypes:
-            resultType = gdal.GDT_Float32
-        else:
-            if gdal.GDT_UInt32:
-                resultType = gdal.GDT_UInt32
-            else:
-                if gdal.GDT_UInt16:
-                    resultType = gdal.GDT_UInt16
-                else:
-                    if gdal.GDT_Int32:
-                        resultType = gdal.GDT_Int32
-                    else:
-                        if gdal.GDT_Int16:
-                            resultType = gdal.GDT_Int16
-                        else:
-                            resultType = gdal.GDT_Byte
+        np.place(result, evalValue[v]==noDatas[v], outNodata)
     
-    # Write output
-    geo_transform = template.GetGeoTransform()
-    rows, cols = result.shape
+    # Write output and return
     
-    driver = gdal.GetDriverByName(drv_name(outRaster))
-    out    = driver.Create(outRaster, cols, rows, 1, resultType)
-    out.SetGeoTransform(geo_transform)
-    
-    outBand = out.GetRasterBand(1)
-    
-    outBand.SetNoDataValue(outNodata)
-    outBand.WriteArray(result)
-    
-    outRstSRS = osr.SpatialReference()
-    
-    outRstSRS.ImportFromEPSG(epsg)
-    out.SetProjection(outRstSRS.ExportToWkt())
-    
-    outBand.FlushCache()
-    
-    return outRaster
+    return obj_to_rst(result, outRaster, template_rst, noData=outNodata)
 
 
 def rstcalc(expression, output, api='saga', grids=None):
@@ -139,3 +93,113 @@ def rstcalc(expression, output, api='saga', grids=None):
     
     return output
 
+
+def floatrst_to_intrst(in_rst, out_rst):
+    """
+    Raster with float data to Raster with Integer Values
+    """
+
+    import numpy         as np
+    from osgeo           import gdal
+    from gasp.g.prop.img import get_nd
+    from gasp.gt.to.rst  import obj_to_rst
+
+    nds = {
+        'int8' : -128, 'int16' : -32768, 'int32' : -2147483648,
+        'uint8' : 255, 'uint16' : 65535, 'uint32' : 4294967295
+    }
+
+    # Open Raster
+    img = gdal.Open(in_rst)
+
+    # Raster to Array
+    rstnum = img.ReadAsArray()
+
+    # Round data
+    rstint = np.around(rstnum, decimals=0)
+
+    # Get min and max
+    tstmin = rstint.min()
+    tstmax = rstint.max()
+
+    try:
+        nd = int(round(get_nd(img), 0))
+    except:
+        nd = None
+
+    if tstmin == nd:
+        np.place(rstint, rstint == nd, np.nan)
+        rstmin = rstint.min()
+        rstmax = tstmax
+    else:
+        rstmin = tstmin
+    
+        if tstmax == nd:
+            np.place(rstint, rstint == nd, np.nan)
+            rstmax = rstint.max()
+        else:
+            rstmax = tstmax
+    
+    # Get dtype for output raster
+    if rstmin < 0:
+        if rstmin <= -128:
+            if rstmin <= -32768:
+                tmin = 'int32'
+            else:
+                tmin = 'int16'
+        else:
+            tmin = 'int8'
+    else:
+        tmin = 'u'
+    
+    if tmin == 'u':
+        if rstmax >= 255:
+            if rstmax >= 65535:
+                tmax = 'uint32'
+            else:
+                tmax = 'uint16'
+        else:
+            tmax = 'uint8'
+
+    else:
+        if tmin == 'int8':
+            if rstmax >= 127:
+                if rstmax >= 32767:
+                    tmax = 'int32'
+                else:
+                    tmax = 'int16'
+            else:
+                tmax = 'int8'
+    
+        elif tmin == 'int16':
+            if rstmax >= 32767:
+                tmax = 'int32'
+            else:
+                tmax = 'int16'
+        else:
+            tmax = 'int32'
+    
+    if tmax == 'int8':
+        nt = np.int8
+    elif tmax == 'int16':
+        nt = np.int16
+    elif tmax == 'int32':
+        nt = np.int32
+    elif tmax == 'uint8':
+        nt = np.uint8
+    elif tmax == 'uint16':
+        nt = np.uint16
+    else:
+        nt = np.uint32
+    
+    # Get nodata for new raster
+    new_nd = nds[tmax]
+    
+    # Place NoData value
+    np.nan_to_num(rstint, copy=False, nan=new_nd)
+
+    # Convert array type to integer
+    rstint = rstint.astype(nt)
+
+    # Export result to file and return
+    return obj_to_rst(rstint, out_rst, img, noData=new_nd)

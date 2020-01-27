@@ -214,3 +214,13 @@ def get_epsg(inFile):
         else:
             return None
 
+
+def get_srs(in_file):
+    """
+    Get SRS Object of any GIS File
+    """
+
+    epsg = get_epsg(in_file)
+
+    return None if not epsg else get_sref_from_epsg(epsg)
+

@@ -41,7 +41,6 @@ setup(
         'gasp.gt.mng', 'gasp.gt.nc',
         'gasp.gt.nop', 'gasp.gt.nop.sat',
         'gasp.gt.prop', 'gasp.gt.prop.feat',
-        'gasp.gt.spnlst',
         'gasp.gt.to', 'gasp.gt.stats', 'gasp.gt.wenv',
         # ******************************************************************** #
         'gasp.pyt', 'gasp.pyt.xls',
