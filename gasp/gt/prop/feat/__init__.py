@@ -86,43 +86,29 @@ def get_gtype(shp, name=True, py_cls=None, geomCol="geometry",
         from osgeo           import ogr
         from gasp.gt.prop.ff import drv_name
         
-        def geom_types():
-            return {
-                "POINT"           : ogr.wkbPoint,
-                "MULTIPOINT"      : ogr.wkbMultiPoint,
-                "LINESTRING"      : ogr.wkbLineString,
-                "MULTILINESTRING" : ogr.wkbMultiLineString,
-                "POLYGON"         : ogr.wkbPolygon,
-                "MULTIPOLYGON"    : ogr.wkbMultiPolygon
-            }
+        geom_types = {
+            "POINT"           : ogr.wkbPoint,
+            "MULTIPOINT"      : ogr.wkbMultiPoint,
+            "LINESTRING"      : ogr.wkbLineString,
+            "MULTILINESTRING" : ogr.wkbMultiLineString,
+            "POLYGON"         : ogr.wkbPolygon,
+            "MULTIPOLYGON"    : ogr.wkbMultiPolygon
+        }
         
         d = ogr.GetDriverByName(drv_name(shp)).Open(shp, 0)
         l = d.GetLayer()
-        
-        geomTypes = []
-        for f in l:
-            g = f.GetGeometryRef()
-            n = str(g.GetGeometryName())
-            
-            if n not in geomTypes:
-                geomTypes.append(n)
-        
-        if len(geomTypes) == 1:
-            n = geomTypes[0]
-        
-        elif len(geomTypes) == 2:
-            for i in range(len(geomTypes)):
-                if geomTypes[i].startswith('MULTI'):
-                    n = geomTypes[i]
-        
-        else:
-            n = None
+        gtype = l.GetGeomType()
+
+        for g in geom_types:
+            if gtype == geom_types[g]:
+                gname = g; gcls = geom_types[g]
+                break
         
         d.Destroy()
         del l
         
-        return {n: geom_types()[n]} if name and py_cls else n \
-                if name and not py_cls else geom_types()[n] \
+        return {gname: gcls} if name and py_cls else gname \
+                if name and not py_cls else gcls \
                 if not name and py_cls else None
     
     else:
