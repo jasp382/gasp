@@ -222,11 +222,10 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
             print('Skipping {} - there is no file for this table'.format(table))
 
 
-def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
+def psql_to_djgdb(sql_dumps, db_name, path_djgProj=None, psql_con={
     'HOST': 'localhost', 'USER': 'postgres',
     'PORT' : '5432', 'PASSWORD': 'admin',
-    'TEMPLATE': 'postgis_template'}, mapTbl=None, usePGRestore=None,
-    userDjgAPI=None):
+    'TEMPLATE': 'postgis_template'}, mapTbl=None, userDjgAPI=None):
     """
     Import PGSQL database in a SQL Script into the database
     controlled by one Django Project
@@ -237,32 +236,37 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
     
     import os
     from gasp                 import __import
-    if not usePGRestore:
-        from gasp.sql.to      import restore_db
-    else:
-        from gasp.sql.to      import restore_tbls as restore_db
+    from gasp.pyt             import obj_to_lst
+    from gasp.sql.to          import restore_tbls 
     from gasp.sql.db          import create_db
     from gasp.sql.i           import lst_tbl
     from gasp.sql.fm          import tbl_to_dict
-    from gasp.web.djg.mdl.i   import get_special_tables
-    from gasp.web.djg.mdl.rel import order_models_by_relation
-    
+    from gasp.web.djg.mdl.rel import order_mdl_by_rel
+    from gasp.web.djg.mdl.i   import lst_mdl_proj
+
+    # Global variables
     TABLES_TO_EXCLUDE = [
         'geography_columns', 'geometry_columns',
         'spatial_ref_sys', 'raster_columns', 'raster_columns',
         'raster_overviews', 'pointcloud_formats', 'pointcloud_columns'
     ]
-    
-    SPECIAL_TABLES = get_special_tables()
-    
-    # Import SQL to a new database
+
+    # Several SQL Files are expected
+    sql_scripts = obj_to_lst(sql_dumps)
+
+    # Create Database
+    tmp_db_name = db_name + '_xxxtmp'
     create_db(psql_con, tmp_db_name)
+    
+    # Restore tables in SQL files
     psql_con["DATABASE"] = tmp_db_name
-    restore_db(psql_con, sql_file)
+    for sql in sql_scripts:
+        restore_tbls(psql_con, sql)
     
     # List tables in the database
-    tables = {x : x for x in lst_tbl(
-        psql_con, excludeViews=True, api='psql')} if not mapTbl else mapTbl
+    tables = [x for x in lst_tbl(
+        psql_con, excludeViews=True, api='psql'
+    )] if not mapTbl else mapTbl
     
     # Open Django Project
     if path_djgProj:
@@ -270,52 +274,45 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
         application = open_Django_Proj(path_djgProj)
     
     # List models in project
-    from gasp.web.djg.mdl.i import lst_mdl_proj
-    appModels = lst_mdl_proj(path_djgProj, thereIsApp=True)
+    app_mdls = lst_mdl_proj(path_djgProj, thereIsApp=True, returnClassName=True)
     
-    data_tables = {}
-    for table in tables:
-        if tables[table].startswith('auth') or tables[table].startswith('django') \
-           or tables[table] in TABLES_TO_EXCLUDE:
-            if tables[table] == 'auth_user':
-                data_tables[table] = tables[table]
-            else:
-                continue
+    data_tbl = {}
+    for t in tables:
+        if t == 'auth_user':
+            data_tbl[t] = t
         
-        elif tables[table] not in appModels:
+        elif t.startswith('auth') or t.startswith('django'):
+            continue
+        
+        elif t not in app_mdls or t in TABLES_TO_EXCLUDE:
             continue
         
         else:
-            data_tables[table] = tables[table]
-    
-    __tbls = {data_tables[t] : t for t in data_tables}
+            data_tbl[app_mdls[t]] = t
     
     from django.contrib.gis.db import models
-    orderned_table = order_models_by_relation(__tbls.keys())
+    mdl_cls = ["{}.models.{}".format(m.split('_')[0], app_mdls[m]) for m in app_mdls]
+    orderned_table = order_mdl_by_rel(mdl_cls)
+    if 'auth_user' in data_tbl:
+        orderned_table = ['auth_user'] + orderned_table
     
     if userDjgAPI:
         for table in orderned_table:
             # Map pgsql table data
-            # TODO: table could not be in the restore db
-            tableData = tbl_to_dict(__tbls[table], psql_con)
+            tableData = tbl_to_dict(data_tbl[table], psql_con)
         
             # Table data to Django Model
-            if table in SPECIAL_TABLES:
-                djangoCls = __import(SPECIAL_TABLES[table])
+            if table == 'auth_user':
+                mdl_cls = __import('django.contrib.auth.models.User')
             else:
-                djg_app = table.split('_')[0]
-                djg_model_name = '_'.join(table.split('_')[1:])
+                mdl_cls = __import(table)
         
-                djangoCls = __import('{a}.models.{t}'.format(
-                    a=djg_app, t=djg_model_name
-                ))
-        
-            __model = djangoCls()
+            __mdl = mdl_cls()
         
             for row in tableData:
                 for col in row:
                     # Check if field is a foreign key
-                    field_obj = djangoCls._meta.get_field(col)
+                    field_obj = mdl_cls._meta.get_field(col)
                 
                     if not isinstance(field_obj, models.ForeignKey):
                         # If not, use the value
@@ -324,7 +321,7 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
                         if row[col] != row[col]:
                             row[col] = None
                         
-                        setattr(__model, col, row[col])
+                        setattr(__mdl, col, row[col])
                 
                     else:
                         # If yes, use the model instance of the related table
@@ -332,31 +329,29 @@ def psql_to_djgdb(sql_file, tmp_db_name, path_djgProj=None, psql_con={
                         # estao a ser restaurados
                         related_name = field_obj.related_model.__name__
                         related_model = __import('{a}.models.{m}'.format(
-                            a=djg_app, m=related_name
+                            a=table.split('_')[0], m=related_name
                         ))
                     
                         # If NULL, continue
                         if not row[col]:
-                            setattr(__model, col, row[col])
+                            setattr(__mdl, col, row[col])
                             continue
                     
                         related_obj = related_model.objects.get(
                             pk=int(row[col])
                         )
                     
-                        setattr(__model, col, related_obj)
-                __model.save()
+                        setattr(__mdl, col, related_obj)
+                __mdl.save()
     else:
         import json
         from gasp.sql.fm import Q_to_df
         from gasp.sql.to import df_to_db
         
-        DB_SET = json.load(open(os.path.join(
-            path_djgProj, 'ctx_setup.json'
-        ), 'r'))["DATABASES"]['default']
-        
         for tbl in orderned_table:
-            data = Q_to_df(psql_con, "SELECT * FROM {}".format(tbl))
-            
-            df_to_db(DB_SET, data, tbl, append=True)
+            data = Q_to_df(psql_con, "SELECT * FROM {}".format(data_tbl[tbl]))
+
+            psql_con['DATABASE'] = db_name
+            df_to_db(psql_con, data, data_tbl[tbl], append=True)
+            psql_con["DATABASE"] = tmp_db_name
 
