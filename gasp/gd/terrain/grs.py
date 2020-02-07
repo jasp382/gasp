@@ -65,6 +65,12 @@ def make_dem(grass_workspace, data, field, output, extent_template,
             )
         )
     
+    # Know if data geometry are points
+    if method == 'BSPLINE' or method == 'SPLINE':
+        from gasp.gt.prop.feat import get_gtype
+
+        data_gtype = get_gtype(data, gisApi='ogr')
+    
     # Create GRASS GIS Location
     grass_base = run_grass(grass_workspace, location=LOC_NAME, srs=EPSG)
     
@@ -93,20 +99,27 @@ def make_dem(grass_workspace, data, field, output, extent_template,
     OUTPUT_NAME = get_filename(output, forceLower=True)
     
     if method == "BSPLINE":
-        # Convert to points
-        from gasp.gt.mng.feat import feat_vertex_to_pnt
-        from gasp.gt.nop.itp  import bspline
+        from gasp.gt.nop.itp import bspline
+
+        # Convert to points if necessary
+        if data_gtype != 'POINT' and data_gtype != 'MULTIPOINT':
+            from gasp.gt.toshp.cgeo import feat_vertex_to_pnt
+
+            elev_pnt = feat_vertex_to_pnt(elv, "elev_pnt", nodes=None)
+        else:
+            elev_pnt = elv
         
-        elev_pnt = feat_vertex_to_pnt(elv, "elev_pnt", nodes=None)
-        
-        outRst = bspline(elev_pnt, field, OUTPUT_NAME, lyrN=1, asCMD=True)
+        outRst = bspline(elev_pnt, field, OUTPUT_NAME, mway='bicubic', lyrN=1, asCMD=True)
     
     elif method == "SPLINE":
-        # Convert to points
-        from gasp.gt.mng.feat import feat_vertex_to_pnt
-        from gasp.gt.nop.itp  import surfrst
-        
-        elev_pnt = feat_vertex_to_pnt(elv, "elev_pnt", nodes=None)
+        from gasp.gt.nop.itp import surfrst
+
+        # Convert to points if necessary
+        if data_gtype != 'POINT' and data_gtype != 'MULTIPOINT':
+            from gasp.gt.toshp.cgeo import feat_vertex_to_pnt
+            elev_pnt = feat_vertex_to_pnt(elv, "elev_pnt", nodes=None)
+        else:
+            elev_pnt = elv
         
         outRst = surfrst(elev_pnt, field, OUTPUT_NAME, lyrN=1, ascmd=True)
     
@@ -151,7 +164,8 @@ def make_dem(grass_workspace, data, field, output, extent_template,
 
 def thrd_dem(countours_folder, ref_folder, dem_folder, attr,
     refFormat='.tif', countoursFormat='.shp', demFormat='.tif',
-    cellsize=10, masksFolder=None, masksFormat='.tif'):
+    cellsize=10, masksFolder=None, masksFormat='.tif',
+    method="COUNTOURS"):
     """
     Produce DEM using GRASS GIS for all Feature Classes in countours_Folder
 
@@ -165,6 +179,12 @@ def thrd_dem(countours_folder, ref_folder, dem_folder, attr,
 
     Filenames must have their id before the extension; '_' must be used to
     separate id from basename.
+
+    Methods Available:
+    * IDW;
+    * BSPLINE;
+    * SPLINE;
+    * CONTOUR;
     """
 
     import os

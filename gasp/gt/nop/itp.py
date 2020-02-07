@@ -73,7 +73,7 @@ def ridw(inRst, outRst, numberPoints=None):
     idw()
 
 
-def bspline(inPnt, attrCol, rstOutput, lyrN=1, asCMD=None):
+def bspline(inPnt, attrCol, rstOutput, lyrN=1, asCMD=None, mway="bilinear"):
     """
     v.surf.bspline performs a bilinear/bicubic spline interpolation
     with Tykhonov regularization. The input is a 2D or 3D vector points
@@ -91,7 +91,7 @@ def bspline(inPnt, attrCol, rstOutput, lyrN=1, asCMD=None):
         
         t = Module(
             "v.surf.bspline", input=inPnt, layer=lyrN, column=attrCol,
-            raster_output=rstOutput, method="bilinear", overwrite=True,
+            raster_output=rstOutput, method=mway, overwrite=True,
             quiet=True, run_=False
         )
         
@@ -102,8 +102,8 @@ def bspline(inPnt, attrCol, rstOutput, lyrN=1, asCMD=None):
         
         tcmd = (
             "v.surf.bspline input={} layer={} column={} raster_output={} "
-            "method=bilinear --overwrite --quiet"
-        ).format(inPnt, lyrN, attrCol, rstOutput)
+            "method={} --overwrite --quiet"
+        ).format(inPnt, lyrN, attrCol, rstOutput, mway)
         
         rcmd = exec_cmd(tcmd)
     
