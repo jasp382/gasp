@@ -1,8 +1,8 @@
 """ OSM to DB """
 
 
-def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
-                        outSQL=None):
+def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
+                        outSQL=None, db_name=None):
     """
     PostgreSQL - OSM Data to Relational Model
     
@@ -47,26 +47,24 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTb
     }
     """
     
-    from gasp.sql.fm import q_to_obj
-    from gasp.sql.i  import cols_name
-    from gasp.sql.to import q_to_ntbl
-    from gasp.sql.to import osm_to_pgsql
-    from gasp.sql.db import create_db
+    from gasp.pyt.oss import fprop
+    from gasp.sql.i   import cols_name
+    from gasp.sql.to  import q_to_ntbl
+    from gasp.sql.to  import osm_to_pgsql
+    from gasp.sql.db  import create_db
     
     # Create DB
-    conDB["NEW_DB"] = conDB["DATABASE"]
-    del conDB["DATABASE"]
-    conDB["DATABASE"] = create_db(conDB, conDB["NEW_DB"], api='psql')
+    db = create_db(fprop(osmData, 'fn') if not db_name else db_name, api='psql')
     
     # Send OSM data to Database
-    osm_to_pgsql(osmData, conDB)
+    osm_to_pgsql(osmData, db)
     
     # Get KEYS COLUMNS
-    cols = cols_name(conDB, inSchema["TBL"], sanitizeSpecialWords=None)
+    cols = cols_name(db, inSchema["TBL"], sanitizeSpecialWords=None)
     transcols = [c for c in cols if c not in inSchema["NOT_KEYS"]]
     
     # Create osmGeoTbl 
-    osmgeotbl = q_to_ntbl(conDB, osmGeoTbl['TBL'], (
+    osmgeotbl = q_to_ntbl(db, osmGeoTbl['TBL'], (
         "SELECT {} AS {}, {} FROM {}"
     ).format(
         inSchema["FID"], osmGeoTbl["FID"],
@@ -83,7 +81,7 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTb
         valC=osmCatTbl["VAL_COL"]
     ) for c in transcols]
     
-    osmcatbl = q_to_ntbl(conDB, osmCatTbl["TBL"], (
+    osmcatbl = q_to_ntbl(db, osmCatTbl["TBL"], (
         "SELECT row_number() OVER(ORDER BY {keyC}) "
         "AS {osmcatid}, {keyC}, {valC}{ocols} "
         "FROM ({q}) AS foo"
@@ -103,7 +101,7 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTb
         fid=inSchema["FID"], keyV=c, t=inSchema["TBL"]
     ) for c in transcols]
     
-    osmreltbl = q_to_ntbl(conDB, osmRelTbl["TBL"], (
+    osmreltbl = q_to_ntbl(db, osmRelTbl["TBL"], (
         "SELECT foo.{fid}, catbl.{osmcatfid} "
         "FROM ({mtbl}) AS foo INNER JOIN {catTbl} AS catbl "
         "ON foo.key = catbl.keycategory AND foo.osmval = catbl.value"
@@ -117,5 +115,5 @@ def osm_to_relationaldb(conDB, osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTb
     else:
         from gasp.sql.fm import dump_tbls
         
-        return dump_tbls(conDB, [osmgeotbl, osmcatbl, osmreltbl], outSQL)
+        return dump_tbls(db, [osmgeotbl, osmcatbl, osmreltbl], outSQL)
 

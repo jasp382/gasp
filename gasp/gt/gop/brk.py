@@ -115,7 +115,7 @@ def vedit_break(inShp, pntBreakShp,
     m()
 
 
-def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correct,
+def v_break_at_points(workspace, loc, lineShp, pntShp, db, srs, out_correct,
             out_tocorrect):
     """
     Break lines at points - Based on GRASS GIS v.edit
@@ -127,12 +127,12 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     """
     
     import os
-    from gasp.sql.to      import shp_to_psql
-    from gasp.gt.toshp.db import dbtbl_to_shp
-    from gasp.gt.wenv.grs import run_grass
-    from gasp.pyt.oss     import fprop
-    from gasp.sql.db      import create_db
-    from gasp.sql.to      import q_to_ntbl
+    from gasp.sql.to       import shp_to_psql
+    from gasp.gt.toshp.db  import dbtbl_to_shp
+    from gasp.gt.wenv.grs  import run_grass
+    from gasp.pyt.oss      import fprop
+    from gasp.sql.db       import create_db
+    from gasp.sql.to       import q_to_ntbl
     
     tmpFiles = os.path.join(workspace, loc)
     
@@ -151,15 +151,14 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     
     vedit_break(grsLine, pntShp, geomType='line')
     
-    LINES = grass_converter(
-        grsLine, os.path.join(tmpFiles, grsLine + '_v1.shp'), 'line')
+    LINES = grs_to_shp(grsLine, os.path.join(
+        tmpFiles, grsLine + '_v1.shp'), 'line')
     
     # Sanitize output of v.edit.break using PostGIS
-    create_db(conParam, conParam["DB"], overwrite=True)
-    conParam["DATABASE"] = conParam["DB"]
+    create_db(db, overwrite=True, api='psql')
     
     LINES_TABLE = shp_to_psql(
-        conParam, LINES, srsEpsgCode=srs,
+        db, LINES, srsEpsgCode=srs,
         pgTable=fprop(LINES, 'fn', forceLower=True), api="shp2pgsql"
     )
     
@@ -175,7 +174,7 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     ).format(t=LINES_TABLE)
     
     CORR_LINES = q_to_ntbl(
-        conParam, "{}_corrected".format(LINES_TABLE), Q, api='psql'
+        db, "{}_corrected".format(LINES_TABLE), Q, api='psql'
     )
     
     # TODO: Delete Rows that have exactly the same geometry
@@ -189,22 +188,22 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, conParam, srs, out_correc
     ).format(t=LINES_TABLE)
     
     ERROR_LINES = q_to_ntbl(
-        conParam, "{}_not_corr".format(LINES_TABLE), Q, api='psql'
+        db, "{}_not_corr".format(LINES_TABLE), Q, api='psql'
     )
     
     dbtbl_to_shp(
-        conParam, CORR_LINES, "geom", out_correct,
+        db, CORR_LINES, "geom", out_correct,
         api="pgsql2shp"
     )
     
     dbtbl_to_shp(
-        conParam, ERROR_LINES, "geom", out_tocorrect,
+        db, ERROR_LINES, "geom", out_tocorrect,
         api="pgsql2shp"
     )
 
 
 def break_lines_on_points(lineShp, pntShp, outShp, lnhidonpnt,
-                          api='shply', conDB=None):
+                          api='shply', db=None):
     """
     Break lines on points location
     
@@ -224,41 +223,32 @@ def break_lines_on_points(lineShp, pntShp, outShp, lnhidonpnt,
         from gasp.gt.toshp.db import dbtbl_to_shp
         from gasp.gql.brk     import split_lines_on_pnt
         
-        conDB = {
-            "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',
-            'PASSWORD' : 'admin', 'TEMPLATE' : 'postgis_template'
-        } if not conDB else conDB
-        
         # Create DB
-        if "DATABASE" not in conDB:
-            conDB["DATABASE"] = create_db(conDB, fprop(
-                lineShp, 'fn', forceLower=True
-            ))
+        if not db:
+            db = create_db(fprop(lineShp, 'fn', forceLower=True), api='psql')
         
         else:
             from gasp.sql.i import db_exists
-            isDb = db_exists(conDB, conDB["DATABASE"])
+
+            isDb = db_exists(db)
             
             if not isDb:
-                conDB["DB"] = conDB["DATABASE"]
-                del conDB["DATABASE"]
-                
-                conDB["DATABASE"] = create_db(conDB, conDB["DB"])
+                db = create_db(db, api='psql')
         
         # Send Data to BD
-        lnhTbl = shp_to_psql(conDB, lineShp, api="shp2pgsql")
-        pntTbl = shp_to_psql(conDB,  pntShp, api="shp2pgsql")
+        lnhTbl = shp_to_psql(db, lineShp, api="shp2pgsql")
+        pntTbl = shp_to_psql(db,  pntShp, api="shp2pgsql")
         
         # Get result
         outTbl = split_lines_on_pnt(
-            conDB, lnhTbl, pntTbl,
+            db, lnhTbl, pntTbl,
             fprop(outShp, 'fn', forceLower=True),
             lnhidonpnt, 'gid'
         )
         
         # Export result
         result = dbtbl_to_shp(
-            conDB, outTbl, "geom", outShp, inDB='psql', tableIsQuery=None,
+            db, outTbl, "geom", outShp, inDB='psql', tableIsQuery=None,
             api="pgsql2shp"
         )
     

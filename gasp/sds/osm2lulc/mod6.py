@@ -5,7 +5,7 @@ Rule 6
 import os
 from gasp.sds.osm2lulc import DB_SCHEMA
 
-def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
+def rst_pnt_to_build(osmdb, pntTable, polyTable, api_db='SQLITE'):
     """
     Replace buildings with tag yes using the info in the Points Layer
     
@@ -21,7 +21,7 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     
     time_a = dt.datetime.now().replace(microsecond=0)
     new_build = feat_within(
-        osmLink, (
+        osmdb, (
             "(SELECT buildings AS pnt_build, geometry AS pnt_geom "
             "FROM {} WHERE buildings IS NOT NULL)"
         ).format(pntTable), "pnt_geom", (
@@ -36,7 +36,7 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     time_b = dt.datetime.now().replace(microsecond=0)
     
     yes_build = feat_not_within(
-        osmLink, (
+        osmdb, (
             "(SELECT buildings AS poly_build, geometry AS poly_geom "
             "FROM {} WHERE buildings IS NOT NULL)"
         ).format(polyTable), "poly_geom", (
@@ -51,14 +51,14 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     time_c = dt.datetime.now().replace(microsecond=0)
     
     resLayers = {}
-    N11 = cnt_row(osmLink, yes_build,
+    N11 = cnt_row(osmdb, yes_build,
         api='psql' if api_db == 'POSTGIS' else 'sqlite')
     time_d = dt.datetime.now().replace(microsecond=0)
     
     if N11:
         # Data to GRASS GIS
         grsBuild11 = db_to_shp(
-            osmLink, yes_build, "geometry", "yes_builds", notTable=True,
+            osmdb, yes_build, "geometry", "yes_builds", notTable=True,
             filterByReg=True, inDB='psql' if api_db == 'POSTGIS' else 'sqlite',
             outShpIsGRASS=True
         )
@@ -76,7 +76,7 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     
     # Add data into GRASS GIS
     lulcCls = q_to_obj(
-        osmLink, "SELECT cls FROM {} GROUP BY cls".format(new_build),
+        osmdb, "SELECT cls FROM {} GROUP BY cls".format(new_build),
         db_api='psql' if api_db == 'POSTGIS' else 'sqlite'
     ).cls.tolist()
     
@@ -91,7 +91,7 @@ def rst_pnt_to_build(osmLink, pntTable, polyTable, api_db='SQLITE'):
     for cls in lulcCls:
         time_x = dt.datetime.now().replace(microsecond=0)
         shp = db_to_shp(
-            osmLink, new_build, "geometry", "nbuild_{}".format(str(cls)),
+            osmdb, new_build, "geometry", "nbuild_{}".format(str(cls)),
             "cls = {}".format(cls), notTable=True, filterByReg=True,
             outShpIsGRASS=True
         )
@@ -223,7 +223,7 @@ def vector_assign_pntags_to_build(osmdb, pntTable, polyTable, apidb='SQLITE'):
     }
 
 
-def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
+def num_assign_builds(osmdb, pntTbl, polTbl, folder, cells, srscode, rstT,
                       apidb='SQLITE'):
     """
     Replace buildings with tag yes using the info in the Points Layer
@@ -243,7 +243,7 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
     
     time_a = dt.datetime.now().replace(microsecond=0)
     build12 = feat_within(
-        osmLink, (
+        osmdb, (
             "(SELECT buildings as pnt_build, geometry AS pnt_geom "
             "FROM {} WHERE buildings IS NOT NULL)"
         ).format(pntTbl), "pnt_geom", (
@@ -258,7 +258,7 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
     time_b = dt.datetime.now().replace(microsecond=0)
     
     build11 = feat_not_within(
-        osmLink, (
+        osmdb, (
             "(SELECT building AS poly_build, geometry AS poly_geom "
             "FROM {} WHERE buildings IS NOT NULL)"
         ).format(polTbl), "poly_geom", (
@@ -296,7 +296,7 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
     
     def build12_torst(buildTbl):
         LulcCls = q_to_obj(
-            osmLink, "SELECT cls FROM {} GROUP BY cls".format(buildTbl),
+            osmdb, "SELECT cls FROM {} GROUP BY cls".format(buildTbl),
             db_api='psql' if apidb == 'POSTGIS' else 'sqlite'
         ).cls.tolist()
         
@@ -305,7 +305,7 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
             
             # To SHP
             if apidb == 'SQLITE':
-                shpB = sel_by_attr(osmLink,
+                shpB = sel_by_attr(osmdb,
                     "SELECT * FROM {} WHERE cls={}".format(
                         buildTbl, str(lulc_cls)
                     ), os.path.join(
@@ -314,7 +314,7 @@ def num_assign_builds(osmLink, pntTbl, polTbl, folder, cells, srscode, rstT,
                 )
             
             else:
-                shpB = sel_by_attr(osmLink,
+                shpB = sel_by_attr(osmdb,
                     "SELECT * FROM {} WHERE cls={}".format(
                         buildTbl, str(lulc_cls)
                     ), "geometry", os.path.join(

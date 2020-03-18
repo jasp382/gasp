@@ -2,7 +2,39 @@
 Clean Geometries
 """
 
-def rm_deadend(con_db, in_tbl, out_tbl):
+
+def fix_geom(db, table, geom, out_tbl, colsSelect=None, whr=None):
+    """
+    Remove some topological incorrections on the PostGIS data
+    """
+    
+    from gasp.sql.to import q_to_ntbl
+    
+    if not colsSelect:
+        from gasp.sql.i import cols_name
+        
+        cols_tbl = ['{}.{}'.format(table, x) for x in cols_name(
+            db, table, sanitizeSpecialWords=None
+        ) if x != geom]
+    
+    else:
+        from gasp.pyt import obj_to_lst
+        
+        cols_tbl = ['{}.{}'.format(
+            table, x) for x in obj_to_lst(colsSelect) if x != geom
+        ]
+    
+    Q = "SELECT {c}, ST_MakeValid({g}) AS {g} FROM {t}{w}".format(
+        c=", ".join(cols_tbl), g=geom, t=table,
+        w="" if not whr else " WHERE {}".format(whr)
+    )
+    
+    ntbl = q_to_ntbl(db, out_tbl, Q, api='psql')
+    
+    return ntbl
+
+
+def rm_deadend(db, in_tbl, out_tbl):
     """
     Remove deadend
     """
@@ -13,10 +45,10 @@ def rm_deadend(con_db, in_tbl, out_tbl):
     
     # Sanitize In table
     cols = ", ".join([c for c in cols_name(
-        con_db, in_tbl, sanitizeSpecialWords=True, api='psql'
+        db, in_tbl, sanitizeSpecialWords=True, api='psql'
     ) if c != 'geom' and c != 'gid'])
     
-    _t = q_to_ntbl(con_db, "san_geom", (
+    _t = q_to_ntbl(db, "san_geom", (
         "SELECT gid, {cln}, geom, "
         "ST_AsText(ST_StartPoint(geom)) AS pnt_start, "
         "ST_AsText(ST_EndPoint(geom)) AS pnt_end FROM ("
@@ -29,7 +61,7 @@ def rm_deadend(con_db, in_tbl, out_tbl):
     i = 1
     while run_:
         # Get Table with Points of lines to delete
-        delpnt = q_to_ntbl(con_db, "del_pnt_{}".format(str(i)), (
+        delpnt = q_to_ntbl(db, "del_pnt_{}".format(str(i)), (
             "SELECT ROW_NUMBER() OVER (ORDER BY txtgeom) AS idx, "
             "txtgeom FROM ("
                 "SELECT txtgeom, COUNT(txtgeom) AS npnt FROM ("
@@ -41,7 +73,7 @@ def rm_deadend(con_db, in_tbl, out_tbl):
             ") AS delg WHERE npnt=1"
         ).format(t=_t))
         
-        npnt = row_num(con_db, delpnt, api='psql')
+        npnt = row_num(db, delpnt, api='psql')
         
         if not npnt:
             run_ = None
@@ -58,11 +90,11 @@ def rm_deadend(con_db, in_tbl, out_tbl):
             "end_tbl.txtgeom IS NULL"
         ).format(cls=cols, mtbl=_t, ptbl=delpnt)
         
-        _t = q_to_ntbl(con_db, "rows_{}".format(str(i)), Q)
+        _t = q_to_ntbl(db, "rows_{}".format(str(i)), Q)
         
         i += 1
     
-    rename_tbl(con_db, {_t : out_tbl})
+    rename_tbl(db, {_t : out_tbl})
     
     return out_tbl
 

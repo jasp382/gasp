@@ -2,7 +2,8 @@
 Multi-Files to Single File
 """
 
-def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp'):
+def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp',
+    dbname=None):
     """
     Get all features in several Shapefiles and save them in one file
     """
@@ -14,8 +15,8 @@ def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp'):
         if os.path.isdir(shps):
             from gasp.pyt.oss import lst_ff
             # List shps in dir
-
             shps = lst_ff(shps, file_format=fformat)
+        
         else:
             raise ValueError((
                 'shps should be a list with paths for Feature Classes or a path to '
@@ -60,6 +61,39 @@ def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp'):
             result = result.append(df, ignore_index=True, sort=True)
         
         df_to_shp(result, outShp)
+    
+    elif api == 'psql':
+        import os
+        from gasp.sql.tbl import tbls_to_tbl, del_tables
+        from gasp.sql.to  import shp_to_psql
+
+        if not dbname:
+            from gasp.sql.db import create_db
+
+            create_db(dbname, api='psql')
+
+        pg_tbls = shp_to_psql(
+            dbname, shps, api="shp2pgsql"
+        )
+
+        if os.path.isfile(outShp):
+            from gasp.pyt.oss import fprop
+            outbl = fprop(outShp, 'fn')
+        
+        else:
+            outbl = outShp
+
+        tbls_to_tbl(dbname, pg_tbls, outbl)
+
+        if outbl != outShp:
+            from gasp.gt.toshp.db import dbtbl_to_shp
+
+            dbtbl_to_shp(
+                dbname, outbl, 'geom', outShp, inDB='psql',
+                api="pgsql2shp"
+            )
+
+        del_tables(dbname, pg_tbls)
     
     else:
         raise ValueError(

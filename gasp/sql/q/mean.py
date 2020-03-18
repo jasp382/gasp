@@ -3,7 +3,7 @@ Get Means
 """
 
 
-def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
+def meandays_by_entity(db, pgtable, DAY_FIELD, ENTITY_FIELD,
                        COUNT_FIELD_NAME, OUTPUT_FILE, EXCLUDE_DAYS=None):
     """
     For every day in a pgtable, count the number of rows for each interest entity.
@@ -17,7 +17,7 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
     from gasp.to     import obj_to_tbl
     
     # Get days
-    VALUES = q_to_obj(conParam, 
+    VALUES = q_to_obj(db, 
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=DAY_FIELD, t=pgtable
         ), db_api='psql'
@@ -38,7 +38,7 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
             table=pgtable, dayF=DAY_FIELD, d=day[0]
         )
         
-        countTbl = q_to_obj(conParam, QUERY, db_api='psql')
+        countTbl = q_to_obj(db, QUERY, db_api='psql')
         
         tableArray.append(countTbl)
     
@@ -71,7 +71,7 @@ def meandays_by_entity(conParam, pgtable, DAY_FIELD, ENTITY_FIELD,
     obj_to_tbl(main_table, OUTPUT_FILE)
 
 
-def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
+def meanrowsday_by_entity(psqldb, pgtable, dayField, entityField, out_file,
                           filterData=None, newMeanField=None, numberDays=None):
     """
     For every day in a pgtable, count the number of rows for each interest entity.
@@ -123,14 +123,14 @@ def meanrowsday_by_entity(conParam, pgtable, dayField, entityField, out_file,
         getD=ndaysQ
     )
     
-    data = q_to_obj(conParam, q, db_api='psql')
+    data = q_to_obj(psqldb, q, db_api='psql')
     
     obj_to_tbl(data, out_file)
     
     return out_file
 
 
-def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
+def meanday_of_periods_by_entity(psqldb, pgtable, DAY_FIELD, HOUR_FIELD,
                                  MINUTES_FIELD, ENTITY_FIELD, OUTPUT_FILE,
                                  PERIODS=None, PERIODS_INTERVAL=None,
                                  EXCLUDE_DAYS=None, workspace_day_tables=None):
@@ -141,13 +141,12 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     At the end, calculate the mean between every day for each period.
     """
     
-    import os;               import pandas
-    from gasp.pyt.tm         import day_to_intervals
-    from gasp.pyt.df.joins   import combine_dfs
-    from gasp.sql.fm         import q_to_obj
-    from gasp.sql.i          import cols_type
-    from gasp.to             import obj_to_tbl
-    from gasp.sql.anls.count import count_by_period_entity
+    import os;             import pandas
+    from gasp.pyt.tm       import day_to_intervals
+    from gasp.pyt.df.joins import combine_dfs
+    from gasp.sql.fm       import q_to_obj
+    from gasp.to           import obj_to_tbl
+    from gasp.sql.q.count  import count_by_period_entity
     
     if not PERIODS and not PERIODS_INTERVAL:
         raise ValueError((
@@ -159,9 +158,9 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     INTERVALS = day_to_intervals(PERIODS_INTERVAL) if not PERIODS else PERIODS
     
     # Get unique values
-    VALUES = q_to_obj(conParam,
-        "SELECT {col} FROM {t} GROUP BY {col}".format(col=DAY_FIELD, t=pgtable)
-    )[DAY_FIELD].tolist()
+    VALUES = q_to_obj(psqldb, "SELECT {col} FROM {t} GROUP BY {col}".format(
+        col=DAY_FIELD, t=pgtable
+    ))[DAY_FIELD].tolist()
     
     DAYS_ARRAY       = []
     INTERVAL_COLUMNS = []
@@ -185,7 +184,7 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
                 INTERVAL_COLUMNS.append(COUNT_FIELD)
             
             countTbl = count_by_period_entity(
-                conParam, start, end,
+                psqldb, start, end,
                 pgtable, DAY_FIELD, day,
                 HOUR_FIELD, MINUTES_FIELD, ENTITY_FIELD
             )
@@ -193,7 +192,7 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
         
         main_table = COUNTING[0]
         for i in range(1, len(COUNTING)):
-            main_table = combine_dataframes(main_table, COUNTING[i], ENTITY_FIELD)
+            main_table = combine_dfs(main_table, COUNTING[i], ENTITY_FIELD)
         
         if workspace_day_tables:
             obj_to_tbl(
@@ -242,7 +241,7 @@ def meanday_of_periods_by_entity(conParam, pgtable, DAY_FIELD, HOUR_FIELD,
     obj_to_tbl(main_table, OUTPUT_FILE)
 
 
-def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
+def meanrowsday_of_periods_by_entity(psql_con, pgtable, dayField, hourField,
                                      minutesField, secondField, entityField,
                                      PERIODS, outFile,
                                      filterData=None, numberDays=None):
@@ -331,7 +330,7 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
         getND=ndaysQ
     )
     
-    data = q_to_obj(conParam, q, db_api='psql')
+    data = q_to_obj(psql_con, q, db_api='psql')
     
     obj_to_tbl(data, outFile)
     
@@ -340,7 +339,7 @@ def meanrowsday_of_periods_by_entity(conParam, pgtable, dayField, hourField,
 
 def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
                                  GROUP_ORIGIN_NAME, GROUP_DESTINA_ID,
-                                 GROUP_DESTINA_NAME, TIME_COL, epsg, conParam,
+                                 GROUP_DESTINA_NAME, TIME_COL, epsg, db,
                                  RESULT_MATRIX):
     """
     Calculate Mean GROUP distance from OD Matrix
@@ -361,16 +360,14 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     from gasp.sql.to  import q_to_ntbl
     from gasp.to      import db_to_tbl
     
-    db_name = fprop(MATRIX_OD, 'fn')
-    create_db(conParam, db_name, overwrite=True)
-    conParam["DATABASE"] = db_name
+    db = create_db(fprop(MATRIX_OD, 'fn'), overwrite=True, api='psql')
     
     TABLE = shp_to_psql(
-        conParam, MATRIX_OD, pgTable="tbl_{}".format(db_name),
+        db, MATRIX_OD, pgTable="tbl_{}".format(db),
         api="pandas", srsEpsgCode=epsg
     )
     
-    OUT_TABLE = q_to_ntbl(conParam, fprop(RESULT_MATRIX, 'fn'), (
+    OUT_TABLE = q_to_ntbl(db, fprop(RESULT_MATRIX, 'fn'), (
         "SELECT {groupOriginCod}, {groupOriginName}, {groupDestCod}, "
         "{groupDestName}, AVG(mean_time) AS mean_time FROM ("
             "SELECT {origin}, {groupOriginCod}, {groupOriginName}, "
@@ -390,8 +387,7 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     ), api='psql')
     
     return db_to_tbl(
-        conParam,
-        "SELECT * FROM {}".format(OUT_TABLE), RESULT_MATRIX,
+        db, "SELECT * FROM {}".format(OUT_TABLE), RESULT_MATRIX,
         sheetsNames="matrix", dbAPI='psql'
     )
 

@@ -5,24 +5,24 @@ Tools to manage Table Keys
 
 from gasp.sql.c import sqlcon
 
-def create_pk(lnk, tbl, new_col):
+def create_pk(db, tbl, new_col):
     """
     Creates a new primary key field on a existent table
     """
-    conn = sqlcon(lnk)
+    conn = sqlcon(db)
     
     cs = conn.cursor()
-    cs.execute(
-        "ALTER TABLE {t} ADD COLUMN {new_fid} BIGSERIAL PRIMARY KEY;".format(
-            t=tbl, new_fid=new_col
-        )
-    )
+    cs.execute((
+        "ALTER TABLE {} ADD COLUMN {} "
+        "BIGSERIAL PRIMARY KEY;"
+    ).format(tbl, new_col))
+
     conn.commit()
     cs.close()
     conn.close()
 
 
-def multiCols_FK_to_singleCol(conParam, tbl_wPk, pkCol, tbl_multiFk,
+def multiCols_FK_to_singleCol(db, tbl_wPk, pkCol, tbl_multiFk,
                               fkCols, newTable,
                               colsSel=None, whrCls=None):
     """
@@ -84,7 +84,7 @@ def multiCols_FK_to_singleCol(conParam, tbl_wPk, pkCol, tbl_multiFk,
         whr="" if not whrCls else " WHERE {}".format(whrCls)
     )
     
-    outbl = q_to_ntbl(conParam, newTable, q, api='psql')
+    outbl = q_to_ntbl(db, newTable, q, api='psql')
     
     return outbl
 

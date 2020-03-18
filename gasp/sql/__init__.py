@@ -3,13 +3,16 @@ Tools for DBMS and SQL
 """
 
 
-def psql_cmd(lnk, sqlfile):
+def psql_cmd(db_name, sqlfile):
     """
     Run a sql file do whatever is on that script
     """
     
     import os
     from gasp import exec_cmd
+    from gasp.cons.psql import con_psql
+
+    cdb = con_psql()
 
     if os.path.isdir(sqlfile):
         from gasp.pyt.oss import lst_ff
@@ -22,9 +25,9 @@ def psql_cmd(lnk, sqlfile):
     
     for s in sqls:
         outcmd = exec_cmd(cmd.format(
-            lnk['HOST'], lnk['USER'], lnk['PORT'],
-            lnk["DATABASE"], s
+            cdb['HOST'], cdb['USER'], cdb['PORT'],
+            db_name, s
         ))
     
-    return lnk["DATABASE"]
+    return db_name
 

@@ -4,7 +4,7 @@ with that data
 """
 
 
-def bar_chart_by_query(conParam, query, xaxis_col, chart_data_fld_name,
+def bar_chart_by_query(db, query, xaxis_col, chart_data_fld_name,
                        series, outxls):
     """
     Execute some query for each serie in series.
@@ -21,7 +21,7 @@ def bar_chart_by_query(conParam, query, xaxis_col, chart_data_fld_name,
     
     dataDf = []
     for serie in series:
-        data = q_to_obj(conParam, query.format(serie), db_api='psql')
+        data = q_to_obj(db, query.format(serie), db_api='psql')
         data.rename(columns={chart_data_fld_name : serie}, inplace=True)
         
         dataDf.append(data)

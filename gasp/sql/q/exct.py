@@ -3,7 +3,7 @@ Extract data from DATABASE
 """
 
 
-def get_distinct_values(lnk, pgtable, column):
+def distinct_val(db, pgtable, column):
     """
     Get distinct values in one column of one pgtable
     """
@@ -11,7 +11,7 @@ def get_distinct_values(lnk, pgtable, column):
     from gasp.pyt    import obj_to_lst
     from gasp.sql.fm import q_to_obj
     
-    data = q_to_obj(lnk,
+    data = q_to_obj(db,
         "SELECT {col} FROM {t} GROUP BY {col};".format(
             col=", ".join(obj_to_lst(column)), t=pgtable
         ), db_api='psql'
@@ -20,7 +20,7 @@ def get_distinct_values(lnk, pgtable, column):
     return data
 
 
-def run_query_for_values_in_col(conParam, query,
+def run_query_for_values_in_col(db, query,
                                table_interest_col, interest_col,
                                outworkspace):
     """
@@ -59,14 +59,15 @@ def run_query_for_values_in_col(conParam, query,
     be iterated one by one
     """
     
+    import os
     from gasp.sql.fm import q_to_obj
     from gasp.sql.i  import cols_type
     from gasp.to     import obj_to_tbl
     
-    fields_types = cols_type(conParam, table_interest_col)
+    fields_types = cols_type(db, table_interest_col)
     
     # Get  unique values
-    VALUES = q_to_obj(conParam,
+    VALUES = q_to_obj(db,
         "SELECT {col} FROM {t} GROUP BY {col}".format(
             col=interest_col, t=table_interest_col
         ), db_api='psql'
@@ -75,22 +76,19 @@ def run_query_for_values_in_col(conParam, query,
     # Aplly query for every value in VALUES
     # Write data in excel
     for value in VALUES:
-        data = q_to_obj(conParam, query.format(
+        data = q_to_obj(db, query.format(
             str(value[0]) if fields_types[interest_col] != str else \
             "'{}'".format(str(value[0]))
         ), db_api='psql')
         
-        obj_to_tbl(data,
-            os.path.join(
-                outworkspace,
-                '{}_{}.xlsx'.format(table_interest_col, str(value[0]))
-            )
-        )
+        obj_to_tbl(data, os.path.join(outworkspace, '{}_{}.xlsx'.format(
+            table_interest_col, str(value[0])
+        )))
 
 
-def get_rows_notin_query(conParam, tblA, tblB, joinCols, newTable,
-                         cols_to_mantain=None, tblAisQuery=None,
-                         tblBisQuery=None):
+def rows_notin_q(db, tblA, tblB, joinCols, newTable,
+                 cols_to_mantain=None, tblAisQuery=None,
+                 tblBisQuery=None):
     """
     Get rows from tblA that are not present in tblB
     
@@ -114,6 +112,6 @@ def get_rows_notin_query(conParam, tblA, tblB, joinCols, newTable,
         ) for k in joinCols])
     )
     
-    newTable = q_to_ntbl(conParam, newTable, q, api='psql')
+    newTable = q_to_ntbl(db, newTable, q, api='psql')
     
     return newTable

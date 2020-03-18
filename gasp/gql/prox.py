@@ -3,96 +3,91 @@ Tools for process geographic data on PostGIS
 """
 
 
-def st_near(link, inTbl, inTblPK, inGeom, nearTbl, nearGeom, output,
-            near_col='near', untilDist=None, colsInTbl=None, colsNearTbl=None):
+def st_near(db, inTbl, inGeom, nearTbl, nearGeom, output,
+            near_col='near', api='psql', whrNear=None, outIsFile=None,
+            until_dist=None, cols_in_tbl=None, intbl_pk=None,
+            cols_near_tbl=None):
     """
-    Near tool for PostGIS
-    """
-    
-    from gasp.pyt    import obj_to_lst
-    from gasp.sql.to import q_to_ntbl
-    
-    _out = q_to_ntbl(link, output, (
-        "SELECT DISTINCT ON (s.{colPk}) "
-        "{inTblCols}, {nearTblCols}"
-        "ST_Distance("
-            "s.{ingeomCol}, h.{negeomCol}"
-        ") AS {nearCol} FROM {in_tbl} AS s "
-        "LEFT JOIN {near_tbl} AS h "
-        "ON ST_DWithin(s.{ingeomCol}, h.{negeomCol}, {dist_v}) "
-        "ORDER BY s.{colPk}, ST_Distance(s.{ingeomCol}, h.{negeomCol})"
-    ).format(
-        colPk=inTblPK,
-        inTblCols="s.*" if not colsInTbl else ", ".join([
-            "s.{}".format(x) for x in obj_to_lst(colsInTbl)
-        ]),
-        nearTblCols="" if not colsNearTbl else ", ".join([
-            "h.{}".format(x) for x in obj_to_lst(colsNearTbl)
-        ]) + ", ",
-        ingeomCol=inGeom, negeomCol=nearGeom,
-        nearCol=near_col, in_tbl=inTbl, near_tbl=nearTbl,
-        dist_v="100000" if not untilDist else untilDist
-    ), api='psql')
-    
-    
-    return output
+    Near tool for PostGIS and Spatialite
 
+    api options:
+    * psql
+    * splite or spatialite
+    """
+    
+    if api == 'psql' and not intbl_pk:
+        from gasp.pyt    import obj_to_lst
+        from gasp.sql.to import q_to_ntbl
+    
+        _out = q_to_ntbl(db, output, (
+            "SELECT m.*, ST_Distance(m.{ingeom}, j.geom) AS {distCol} "
+            "FROM {t} AS m, ("
+                "SELECT ST_UnaryUnion(ST_Collect({neargeom})) AS geom "
+                "FROM {tblNear}{nearwhr}"
+            ") AS j"
+        ).format(
+            ingeom=inGeom, distCol=near_col, t=inTbl, neargeom=nearGeom,
+            tblNear=nearTbl
+        ), api='psql')
 
-def st_near2(link, inTbl, inGeom, nearTbl, nearGeom, output,
-            near_col='near'):
-    """
-    Near tool for PostGIS
-    """
+        return output
     
-    from gasp.pyt    import obj_to_lst
-    from gasp.sql.to import q_to_ntbl
-    
-    _out = q_to_ntbl(link, output, (
-        "SELECT m.*, ST_Distance(m.{ingeom}, j.geom) AS {distCol} "
-        "FROM {t} AS m, ("
-            "SELECT ST_UnaryUnion(ST_Collect({neargeom})) AS geom "
-            "FROM {tblNear}"
-        ") AS j"
-    ).format(
-        ingeom=inGeom, distCol=near_col, t=inTbl, neargeom=nearGeom,
-        tblNear=nearTbl
-    ), api='psql')
-    
-    
-    return output
+    elif api == 'psql' and intbl_pk:
+        from gasp.pyt    import obj_to_lst
+        from gasp.sql.to import q_to_ntbl
 
+        _out = q_to_ntbl(db, output, (
+            "SELECT DISTINCT ON (s.{col_pk}) "
+            "{inTblCols}, {nearTblCols}"
+            "ST_Distance("
+                "s.{ingeomCol}, h.{negeomCol}"
+            ") AS {nearCol} FROM {in_tbl} AS s "
+            "LEFT JOIN {near_tbl} AS h "
+            "ON ST_DWithin(s.{ingeomCol}, h.{negeomCol}, {dist_v}) "
+            "ORDER BY s.{colPk}, ST_Distance(s.{ingeomCol}, h.{negeomCol})"
+        ).format(
+            col_pk=intbl_pk, 
+            inTblCols="s.*" if not cols_in_tbl else ", ".join([
+                "s.{}".format(x) for x in obj_to_lst(cols_in_tbl)
+            ]),
+            nearTblCols="" if not cols_near_tbl else ", ".join([
+                "h.{}".format(x) for x in obj_to_lst(cols_near_tbl)
+            ]) + ", ",
+            ingeomCol=inGeom, negeomCol=nearGeom,
+            nearCol=near_col, in_tbl=inTbl, near_tbl=nearTbl,
+            dist_v="100000" if not until_dist else until_dist
+        ), api='psql')
+    
+    elif api == 'splite' or api == 'spatialite':
+        Q = (
+            "SELECT m.*, ST_Distance(m.{ingeom}, j.geom) AS {distCol} "
+            "FROM {t} AS m, ("
+                "SELECT ST_UnaryUnion(ST_Collect({neargeom})) AS geom "
+                "FROM {tblNear}{nearwhr}"
+            ") AS j"
+        ).format(
+            ingeom=inGeom, distCol=near_col, t=inTbl,
+            neargeom=nearGeom, tblNear=nearTbl,
+            nearwhr="" if not whrNear else " WHERE {}".format(whrNear)
+        )
 
-def splite_near(sqdb, tbl, nearTbl, tblGeom, nearGeom, output, whrNear=None,
-            outIsFile=None):
-    """
-    Near Analysis using Spatialite
-    """
-    
-    Q = (
-        "SELECT m.*, ST_Distance(m.{inGeom}, j.geom) AS dist_near "
-        "FROM {t} AS m, ("
-            "SELECT ST_UnaryUnion(ST_Collect({neargeom})) AS geom "
-            "FROM {tblNear}{nearwhr}"
-        ") AS j"
-    ).format(
-        inGeom=tblGeom, t=tbl, neargeom=nearGeom, tblNear=nearTbl,
-        nearwhr="" if not whrNear else " WHERE {}".format(whrNear)
-    )
-    
-    if outIsFile:
-        from gasp.gt.attr import sel_by_attr
+        if outIsFile:
+            from gasp.gt.attr import sel_by_attr
+
+            sel_by_attr(db, Q, output, api_gis='ogr')
         
-        sel_by_attr(sqdb, Q, output, api_gis='ogr')
+        else:
+            from gasp.sql.to import q_to_ntbl
+
+            q_to_ntbl(db, output, Q, api='ogr2ogr')
+    
+        return output
     
     else:
-        from gasp.sql.to import q_to_ntbl
-        
-        q_to_ntbl(sqdb, output, Q, api='ogr2ogr')
-    
-    return output
+        raise ValueError("api {} does not exist!".format(api))
 
 
-def st_buffer(conParam, inTbl, bfDist, geomCol, outTbl, bufferField="geometry",
+def st_buffer(db, inTbl, bfDist, geomCol, outTbl, bufferField="geometry",
               whrClause=None, dissolve=None, cols_select=None, outTblIsFile=None):
     """
     Using Buffer on PostGIS Data
@@ -126,11 +121,12 @@ def st_buffer(conParam, inTbl, bfDist, geomCol, outTbl, bufferField="geometry",
     if not outTblIsFile:
         from gasp.sql.to import q_to_ntbl
         
-        outTbl = q_to_ntbl(conParam, outTbl, Q, api='psql')
+        outTbl = q_to_ntbl(db, outTbl, Q, api='psql')
+    
     else:
         from gasp.gt.toshp.db import dbtbl_to_shp
         
-        dbtbl_to_shp(conParam, Q, bufferField, outTbl, api='pgsql2shp',
+        dbtbl_to_shp(db, Q, bufferField, outTbl, api='pgsql2shp',
             tableIsQuery=True
         )
     

@@ -2,7 +2,7 @@
 Break Operations using SQL Sintax
 """
 
-def split_lines_on_pnt(conDB, inTbl, pntTbl, outTbl, idlnhPnt,
+def split_lines_on_pnt(db, inTbl, pntTbl, outTbl, idlnhPnt,
                        lnhid):
     """
     Split lines on point locations
@@ -13,7 +13,7 @@ def split_lines_on_pnt(conDB, inTbl, pntTbl, outTbl, idlnhPnt,
     
     # Get cols of lnhTbl
     cols = ", ".join([c for c in cols_name(
-        conDB, inTbl, sanitizeSpecialWords=True, api='psql'
+        db, inTbl, sanitizeSpecialWords=True, api='psql'
     ) if c != 'geom' and c != idlnhPnt])
     
     # Force MultiLineString to LineString
@@ -42,5 +42,5 @@ def split_lines_on_pnt(conDB, inTbl, pntTbl, outTbl, idlnhPnt,
     )
     
     # Produce new table and return it
-    return q_to_ntbl(conDB, outTbl, Q)
+    return q_to_ntbl(db, outTbl, Q)
 

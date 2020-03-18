@@ -2,7 +2,7 @@
 Rule 1 - Selection
 """
 
-def grs_rst(osmLink, polyTbl, api='SQLITE'):
+def grs_rst(db, polyTbl, api='SQLITE'):
     """
     Simple selection, convert result to Raster
     """
@@ -14,7 +14,7 @@ def grs_rst(osmLink, polyTbl, api='SQLITE'):
     
     # Get Classes 
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = q_to_obj(osmLink, (
+    lulcCls = q_to_obj(db, (
         "SELECT selection FROM {} "
         "WHERE selection IS NOT NULL "
         "GROUP BY selection"
@@ -29,7 +29,7 @@ def grs_rst(osmLink, polyTbl, api='SQLITE'):
     for cls in lulcCls:
         time_x = datetime.datetime.now().replace(microsecond=0)
         grsVect = db_to_grs(
-            osmLink, polyTbl, "geometry", "rule1_{}".format(str(cls)),
+            db, polyTbl, "geometry", "rule1_{}".format(str(cls)),
             inDB='psql' if api == 'POSTGIS' else 'sqlite',
             where="selection = {}".format(str(cls)), notTable=True,
             filterByReg=True, outShpIsGRASS=True
@@ -51,7 +51,7 @@ def grs_rst(osmLink, polyTbl, api='SQLITE'):
     return clsRst, timeGasto
 
 
-def grs_vector(dbcon, polyTable, apidb='SQLITE'):
+def grs_vector(db, polyTable, apidb='SQLITE'):
     """
     Simple Selection using GRASS GIS
     """
@@ -66,7 +66,7 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     
     # Check if we have interest data
     time_a = datetime.datetime.now().replace(microsecond=0)
-    N = cont_row(dbcon, polyTable, where=WHR,
+    N = cont_row(db, polyTable, where=WHR,
         api='psql' if apidb == 'POSTGIS' else 'sqlite'
     )
     time_b = datetime.datetime.now().replace(microsecond=0)
@@ -75,7 +75,7 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     
     # Data to GRASS GIS
     grsVect = db_to_grs(
-        dbcon, polyTable, "geometry", "sel_rule",
+        db, polyTable, "geometry", "sel_rule",
         where=WHR, filterByReg=True,
         inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
         outShpIsGRASS=True
@@ -95,7 +95,7 @@ def grs_vector(dbcon, polyTable, apidb='SQLITE'):
     }
 
 
-def num_selection(osmcon, polyTbl, folder,
+def num_selection(osmdb, polyTbl, folder,
                   cellsize, srscode, rstTemplate, api='SQLITE'):
     """
     Select and Convert to Raster
@@ -112,7 +112,7 @@ def num_selection(osmcon, polyTbl, folder,
     
     # Get classes in data
     time_a = datetime.datetime.now().replace(microsecond=0)
-    classes = q_to_obj(osmcon, (
+    classes = q_to_obj(osmdb, (
         "SELECT selection FROM {} "
         "WHERE selection IS NOT NULL "
         "GROUP BY selection"
@@ -130,13 +130,13 @@ def num_selection(osmcon, polyTbl, folder,
         time_x = datetime.datetime.now().replace(microsecond=0)
         if api == 'SQLITE':
             shp = sel_by_attr(
-                osmcon, SQL_Q.format(lc=str(CLS), tbl=polyTbl),
+                osmdb, SQL_Q.format(lc=str(CLS), tbl=polyTbl),
                 os.path.join(folder, 'sel_{}.shp'.format(str(CLS))),
                 api_gis='ogr'
             )
         else:
             shp = sel_by_attr(
-                osmcon, SQL_Q.format(lc=str(CLS), tbl=polyTbl), "geometry",
+                osmdb, SQL_Q.format(lc=str(CLS), tbl=polyTbl), "geometry",
                 os.path.join(folder, 'sel_{}.shp'.format(str(CLS))),
                 api='pgsql2shp', tableIsQuery=True
             )

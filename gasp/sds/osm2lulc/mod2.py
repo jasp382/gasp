@@ -30,7 +30,7 @@ def grs_rst_roads(osmdb, lineTbl, polyTbl, dataFolder, LULC_CLS):
     
     #roadGrs = shp_to_grs(roadFile, "bf_roads", filterByReg=True, asCMD=True)
     roadGrs = dbtbl_to_shp(
-        osmdb, "bfu_roads", "geom", 'bf_roads',
+        osmdb, roadFile, "geom", 'bf_roads',
         notTable=True, outShpIsGRASS=True, inDB='sqlite'
     )
     time_d = datetime.datetime.now().replace(microsecond=0)
@@ -170,7 +170,7 @@ def grs_vec_roads(osmdb, lineTbl, polyTbl):
     }
 
 
-def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
+def roads_sqdb(osmdb, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
     """
     Raods procedings using SQLITE
     """
@@ -184,35 +184,35 @@ def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
         from gasp.gql.prox import st_buffer
     
     time_a = datetime.datetime.now().replace(microsecond=0)
-    NR = cnt_rows(osmcon, lnhTbl, where="roads IS NOT NULL",
+    NR = cnt_rows(osmdb, lnhTbl, where="roads IS NOT NULL",
         api='psql' if apidb == 'POSTGIS' else 'sqlite'
     )
     time_b = datetime.datetime.now().replace(microsecond=0)
     
     if not NR: return None, {0 : ('count_rows_roads', time_b - time_a)}
     
-    NB = cnt_rows(osmcon, plTbl, where="building IS NOT NULL",
+    NB = cnt_rows(osmdb, plTbl, where="building IS NOT NULL",
         api='psql' if apidb == 'POSTGIS' else 'sqlite'
     )
     time_c = datetime.datetime.now().replace(microsecond=0)
     
     if NB:
-        from gasp.sql.q import exec_write_q
+        from gasp.sql.q    import exec_write_q
+        from gasp.gql.prox import st_near
         
         ROADS_Q = "(SELECT{} roads, bf_roads, geometry FROM {} WHERE roads IS NOT NULL)".format(
             "" if apidb == 'SQLITE' else " gid,", lnhTbl)
         if apidb == 'SQLITE':
-            from gasp.gql.prox import splite_near
-        
-            nroads = splite_near(
-                osmcon, ROADS_Q,
-                plTbl, "geometry", "geometry", "near_roads",
-                whrNear="building IS NOT NULL"
+            nroads = st_near(
+                osmdb, ROADS_Q, "geometry",
+                plTbl, "geometry", "near_roads",
+                whrNear="building IS NOT NULL", api='splite',
+                near_col='dist_near'
             )
             time_d = datetime.datetime.now().replace(microsecond=0)
         
             # Update buffer distance field
-            exec_write_q(osmcon, [(
+            exec_write_q(osmdb, [(
                 "UPDATE near_roads SET bf_roads = CAST(round(dist_near, 0) AS integer) "
                 "WHERE dist_near >= 1 AND dist_near <= 12"
             ), (
@@ -222,16 +222,15 @@ def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
             time_e = datetime.datetime.now().replace(microsecond=0)
         
         else:
-            from gasp.gql.prox import st_near
-            
             nroads = st_near(
-                osmcon, ROADS_Q, 'gid', 'geometry',
+                osmdb, ROADS_Q, 'geometry',
                 "(SELECT * FROM {} WHERE building IS NOT NULL)".format(plTbl),
-                "geometry", "near_roads", untilDist="12", near_col="dist_near"
+                "geometry", "near_roads", intbl_pk="gid",
+                until_dist="12", near_col="dist_near"
             )
             time_d = datetime.datetime.now().replace(microsecond=0)
             
-            exec_write_q(osmcon, [(
+            exec_write_q(osmdb, [(
                 "UPDATE near_roads SET "
                 "bf_roads = CAST(round(CAST(dist_near AS numeric), 0) AS integer) "
                 "WHERE dist_near >= 1 AND dist_near <= 12"
@@ -253,14 +252,14 @@ def roads_sqdb(osmcon, lnhTbl, plTbl, apidb='SQLITE', asRst=None):
     
     # Execute Buffer
     bfTbl = st_buffer(
-        osmcon, nroads, "bf_roads", "geometry", "bf_roads",
+        osmdb, nroads, "bf_roads", "geometry", "bf_roads",
         cols_select="roads", outTblIsFile=None, dissolve="ALL"
     )
     time_f = datetime.datetime.now().replace(microsecond=0)
     
     # Send data to GRASS GIS
     roadsGrs = db_to_shp(
-        osmcon, bfTbl, "geometry", "froads", notTable=None, filterByReg=True,
+        osmdb, bfTbl, "geometry", "froads", notTable=None, filterByReg=True,
         inDB="psql" if apidb == 'POSTGIS' else 'sqlite',
         outShpIsGRASS=True
     )
@@ -400,7 +399,7 @@ def num_roads(osmdata, nom, lineTbl, polyTbl, folder, cellsize, srs, rstTemplate
     return {int(LULC_CLS) : newRaster}, timeGasto
 
 
-def pg_num_roads(osmLink, nom, lnhTbl, polyTbl, folder, cellsize, srs, rstT):
+def pg_num_roads(osmdb, nom, lnhTbl, polyTbl, folder, cellsize, srs, rstT):
     """
     Select, Calculate Buffer distance using POSTGIS, make buffer of roads
     and convert roads to raster
@@ -414,31 +413,30 @@ def pg_num_roads(osmLink, nom, lnhTbl, polyTbl, folder, cellsize, srs, rstT):
     
     # There are roads?
     time_a = datetime.datetime.now().replace(microsecond=0)
-    NR = row_num(osmLink, lnhTbl, where="roads IS NOT NULL", api='psql')
+    NR = row_num(osmdb, lnhTbl, where="roads IS NOT NULL", api='psql')
     time_b = datetime.datetime.now().replace(microsecond=0)
     
     if not NR: return None, {0 : ('count_rows_roads', time_b - time_a)}
     
     # There are buildings?
-    NB = row_num(osmLink, polyTbl, where="building IS NOT NULL", api='psql')
+    NB = row_num(osmdb, polyTbl, where="building IS NOT NULL", api='psql')
     time_c = datetime.datetime.now().replace(microsecond=0)
     
     if NB:
         from gasp.gql.prox import st_near
         from gasp.sql.q    import exec_write_q
         
-        nroads = st_near(
-            osmLink, (
-                "(SELECT gid, roads, bf_roads, geometry FROM {} "
-                "WHERE roads IS NOT NULL)"
-            ).format(lnhTbl), "gid", "geometry", (
-                "(SELECT * FROM {} WHERE building IS NOT NULL)"
-            ).format(polyTbl), "geometry", "near_roads", untilDist="12",
-            near_col="dist_near"
+        nroads = st_near(osmdb, (
+            "(SELECT gid, roads, bf_roads, geometry FROM {} "
+            "WHERE roads IS NOT NULL)"
+        ).format(lnhTbl), "geometry", (
+            "(SELECT * FROM {} WHERE building IS NOT NULL)"
+        ).format(polyTbl), "geometry", "near_roads", until_dist="12",
+            near_col="dist_near", intbl_pk="gid"
         )
         time_d = datetime.datetime.now().replace(microsecond=0)
         
-        exec_write_q(osmLink, [(
+        exec_write_q(osmdb, [(
             "UPDATE near_roads SET "
             "bf_roads = CAST(round(CAST(dist_near AS numeric), 0) AS integer) "
             "WHERE dist_near >= 1 AND dist_near <= 12"
@@ -455,7 +453,7 @@ def pg_num_roads(osmLink, nom, lnhTbl, polyTbl, folder, cellsize, srs, rstT):
     
     # Execute Buffer
     bufferShp = st_buffer(
-        osmLink, nroads, "bf_roads", "geometry",
+        osmdb, nroads, "bf_roads", "geometry",
         os.path.join(folder, "bf_roads.shp"),
         cols_select="roads", outTblIsFile=True, dissolve=None
     )

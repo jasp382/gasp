@@ -2,8 +2,8 @@
 Sanitize data for Text Classification
 """
 
-def get_stop_words(conPSQL, inTbl, fidCol, txtCol, outFile,
-                   lang='portuguese', inSheet=None):
+def get_stop_words(inTbl, fidCol, txtCol, outFile,
+                   lang='portuguese', inSheet=None, db=None):
     """
     Pick a text column and save it in a new column only with the stop words.
     
@@ -13,19 +13,18 @@ def get_stop_words(conPSQL, inTbl, fidCol, txtCol, outFile,
     from gasp.pyt.oss import fprop
     from gasp.sql.i   import cols_name
     from gasp.sql.db  import create_db
-    from gasp.to      import tbl_to_db, db_to_tbl
-    
+    from gasp.sql.to  import tbl_to_db
+    from gasp.to      import db_to_tbl
     
     FILENAME = fprop(inTbl, 'fn')
     
     # Create Temp database
-    db = conPSQL["DATABASE"] if "DATABASE" in conPSQL else "db_" + FILENAME
-    conPSQL["DATABASE"] = create_db(conPSQL, db)
+    db = create_db("db_" + FILENAME if not db else db)
     
     # Send table to PostgreSQL
-    tbl = tbl_to_db(inTbl, conPSQL, FILENAME, sheet=inSheet, api_db='psql')
+    tbl = tbl_to_db(inTbl, db, FILENAME, sheet=inSheet, api_db='psql')
     
-    cols = cols_name(conPSQL, tbl, sanitizeSpecialWords=None, api='psql')
+    cols = cols_name(db, tbl, sanitizeSpecialWords=None, api='psql')
     
     # Sanitize data  and create a new column only with stop words
     Q1 = (
@@ -60,5 +59,5 @@ def get_stop_words(conPSQL, inTbl, fidCol, txtCol, outFile,
     )
     
     # Export new table
-    return db_to_tbl(conPSQL, Q2, outFile, sheetsNames=inSheet)
+    return db_to_tbl(db, Q2, outFile, sheetsNames=inSheet)
 

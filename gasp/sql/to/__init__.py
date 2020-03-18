@@ -31,15 +31,18 @@ def restore_db(conDB, sqlScript, api='psql'):
     return conDB["DATABASE"]
 
 
-def restore_tbls(conParam, sql, tablenames=None):
+def restore_tbls(dbn, sql, tablenames=None):
     """
     Restore one table from a sql Script
     
     TODO: add mysql option
     """
     
-    from gasp import exec_cmd
-    from gasp.pyt import obj_to_lst
+    from gasp           import exec_cmd
+    from gasp.cons.psql import con_psql
+    from gasp.pyt       import obj_to_lst
+
+    condb = con_psql()
     
     tbls = obj_to_lst(tablenames)
     
@@ -50,8 +53,8 @@ def restore_tbls(conParam, sql, tablenames=None):
         "pg_restore -U {user} -h {host} -p {port} "
         "-w{tbl} -d {db} {sqls}"
     ).format(
-        user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], db=conParam["DATABASE"], sqls=sql, tbl=tblStr
+        user=condb["USER"], host=condb["HOST"],
+        port=condb["PORT"], db=dbn, sqls=sql, tbl=tblStr
     ))
     
     return tablenames
@@ -59,7 +62,7 @@ def restore_tbls(conParam, sql, tablenames=None):
 ###############################################################################
 ###############################################################################
 
-def q_to_ntbl(lnk, outbl, query, ntblIsView=None, api='psql'):
+def q_to_ntbl(db, outbl, query, ntblIsView=None, api='psql'):
     """
     Create table by query
     
@@ -71,7 +74,7 @@ def q_to_ntbl(lnk, outbl, query, ntblIsView=None, api='psql'):
     if api == 'psql':
         from gasp.sql.c import sqlcon
     
-        con = sqlcon(lnk)
+        con = sqlcon(db)
     
         curs = con.cursor()
     
@@ -98,7 +101,7 @@ def q_to_ntbl(lnk, outbl, query, ntblIsView=None, api='psql'):
             'ogr2ogr -update -append -f "SQLite" {db} -nln "{nt}" '
             '-dialect sqlite -sql "{q}" {db}' 
         ).format(
-             db=lnk, nt=outbl, q=query
+             db=db, nt=outbl, q=query
         )
         
         outcmd = exec_cmd(cmd)
@@ -112,7 +115,7 @@ def q_to_ntbl(lnk, outbl, query, ntblIsView=None, api='psql'):
 ###############################################################################
 
 
-def df_to_db(conParam, df, table, append=None, api='psql',
+def df_to_db(db, df, table, append=None, api='psql',
              epsg=None, geomType=None, colGeom='geometry'):
     """
     Pandas Dataframe/GeoDataFrame to PGSQL table
@@ -127,7 +130,7 @@ def df_to_db(conParam, df, table, append=None, api='psql',
     
     from gasp.sql.c import alchemy_engine
     
-    pgengine = alchemy_engine(conParam, api=api)
+    pgengine = alchemy_engine(db, api=api)
     
     if epsg and geomType:
         from geoalchemy2 import Geometry, WKTElement
@@ -157,7 +160,7 @@ def df_to_db(conParam, df, table, append=None, api='psql',
     return table
 
 
-def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
+def tbl_to_db(tblFile, db, sqlTbl, delimiter=None, encoding_='utf-8',
               sheet=None, isAppend=None, api_db='psql', colsMap=None):
     """
     Table file to Database Table
@@ -224,7 +227,7 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
     
         # Send data to database
         _rtbl = df_to_db(
-            dbCon, data,
+            db, data,
             outSQLTbl[i] if i+1 <= len(tbls) else fn,
             append=isAppend, api=api_db
         )
@@ -234,7 +237,7 @@ def tbl_to_db(tblFile, dbCon, sqlTbl, delimiter=None, encoding_='utf-8',
     return RTBL[0] if len(RTBL) == 1 else RTBL
 
 
-def db_to_db(conDBA, conDBB, typeDBA, typeDBB):
+def db_to_db(db_a, db_b, typeDBA, typeDBB):
     """
     All tables in one Database to other database
     
@@ -251,36 +254,21 @@ def db_to_db(conDBA, conDBB, typeDBA, typeDBB):
     from gasp.sql.db import create_db
     
     # List Tables in DB A
-    tbls = lst_tbl(conDBA, excludeViews=True, api=typeDBA)
+    tbls = lst_tbl(db_a, excludeViews=True, api=typeDBA)
     
     # Create database B
-    if typeDBB == 'psql':
-        con_param = {
-            "HOST" : conDBB["HOST"], "USER" : conDBB["USER"],
-            "PORT" : conDBB["PORT"], "PASSWORD" : conDBB["PASSWORD"]
-        }
-        
-        if "TEMPLATE" in conDBB:
-            con_param["TEMPLATE"] = conDBB["TEMPLATE"]
-        
-        NEW_DB = conDBB["DATABASE"]
-    
-    else:
-        con_param = os.path.dirname(conDBB)
-        NEW_DB = os.path.basename(conDBB)
-    
-    db_b = create_db(con_param, NEW_DB, overwrite=False, api=typeDBB)
+    db_b = create_db(db_b, overwrite=False, api=typeDBB)
     
     # Table to Database B
     for tbl in tbls:
         df = q_to_obj(
-            conDBA, "SELECT * FROM {}".format(tbl), db_api=typeDBA
+            db_a, "SELECT * FROM {}".format(tbl), db_api=typeDBA
         )
         
-        df_to_db(conDBB, df, tbl, append=None, api=typeDBB)
+        df_to_db(db_b, df, tbl, append=None, api=typeDBB)
 
 
-def tbl_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
+def tbl_fromdb_todb(from_db, to_db, tables, qForTbl=None, api='pandas'):
     """
     Send PGSQL Tables from one database to other
     """
@@ -296,18 +284,18 @@ def tbl_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
     
         for table in tables:
             if not qForTbl:
-                tblDf = q_to_obj(conFromDb, "SELECT * FROM {}".format(
+                tblDf = q_to_obj(from_db, "SELECT * FROM {}".format(
                     table), db_api='psql')
         
             else:
                 if table not in qForTbl:
-                    tblDf = q_to_obj(conFromDb, "SELECT * FROM {}".format(
+                    tblDf = q_to_obj(from_db, "SELECT * FROM {}".format(
                         table), db_api='psql')
             
                 else:
-                    tblDf = q_to_obj(conFromDb, qForTbl[table], db_api='psql')
+                    tblDf = q_to_obj(from_db, qForTbl[table], db_api='psql')
         
-            df_to_db(conToDb, tblDf, table, api='psql')
+            df_to_db(to_db, tblDf, table, api='psql')
     
     else:
         import os
@@ -320,17 +308,17 @@ def tbl_fromdb_todb(conFromDb, conToDb, tables, qForTbl=None, api='pandas'):
         )
         
         # Dump 
-        sqlScript = dump_tbls(conFromDb, tables, os.path.join(
+        sqlScript = dump_tbls(from_db, tables, os.path.join(
             tmpFolder, "tables_data.sql"
         ))
             
         # Restore
-        tblnames = restore_tbls(conToDb, sqlScript, tables)
+        restore_tbls(to_db, sqlScript, tables)
         
         del_folder(tmpFolder)
 
 
-def apndtbl_in_otherdb(conA, conB, tblA, tblB, mapCols,
+def apndtbl_in_otherdb(db_a, db_b, tblA, tblB, mapCols,
                        geomCol=None, srsEpsg=None):
     """
     Append data of one table to another table in other database.
@@ -339,12 +327,12 @@ def apndtbl_in_otherdb(conA, conB, tblA, tblB, mapCols,
     from gasp.sql.fm import q_to_obj
     
     if geomCol and srsEpsg:
-        df = q_to_obj(conA, "SELECT {} FROM {}".format(
+        df = q_to_obj(db_a, "SELECT {} FROM {}".format(
             ", ".join(list(mapCols.keys())), tblA
         ), db_api='psql', geomCol=geomCol, epsg=srsEpsg)
     
     else:
-        df = q_to_obj(conA, "SELECT {} FROM {}".format(
+        df = q_to_obj(db_b, "SELECT {} FROM {}".format(
             ", ".join(list(mapCols.keys())), tblA
         ), db_api='psql', geomCol=None, epsg=None)
     
@@ -365,80 +353,17 @@ def apndtbl_in_otherdb(conA, conB, tblA, tblB, mapCols,
         gType = get_gtype(df, geomCol=geomCol, gisApi='pandas')
         
         df_to_db(
-            conB, df, tblB, append=True, api='psql', epsg=srsEpsg,
+            db_b, df, tblB, append=True, api='psql', epsg=srsEpsg,
             geomType=gType, colGeom=geomCol
         )
     
     else:
-        df_to_db(conB, df, tblB, append=True, api='psql')
+        df_to_db(db_b, df, tblB, append=True, api='psql')
     
     return tblB
 
 
-def psql_insert_query(dic_pgsql, query, execute_many_data=None):
-    """
-    Insert data into a PGSQL Table
-    """
-    
-    from gasp.sql.c      import sqlcon
-    from psycopg2.extras import execute_values
-    
-    con = sqlcon(dic_pgsql)
-    
-    cursor = con.cursor()
-    if execute_many_data:
-        execute_values(cursor, query, execute_many_data)
-    
-    else:
-        cursor.execute(query)
-    
-    con.commit()
-    cursor.close()
-    con.close()
-
-
-def sqlite_insert_query(db, table, cols, new_values, execute_many=None):
-    """
-    Method to insert data into SQLITE Database
-    """
-    
-    import sqlite3
-    from gasp.pyt import obj_to_lst
-    
-    cols = obj_to_lst(cols)
-    
-    if not cols:
-        raise ValueError('cols value is not valid')
-    
-    conn = sqlite3.connect(db)
-    cs = conn.cursor()
-    
-    if not execute_many:
-        cs.execute(
-            "INSERT INTO {} ({}) VALUES {}".join(
-                table, ', '.join(cols),
-                ', '.join(
-                    ['({})'.format(', '.join(row)) for row in new_values]
-                )
-            )
-        )
-    
-    else:
-        cs.executemany(
-            '''INSERT INTO {} ({}) VALUES ({})'''.format(
-                table, ', '.join(cols),
-                ', '.join(['?' for i in range(len(cols))])
-            ),
-            new_values
-        )
-    
-    conn.commit()
-    cs.close()
-    conn.close()
-
-
-
-def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
+def shp_to_psql(dbname, shpData, pgTable=None, api="pandas",
                 mapCols=None, srsEpsgCode=None, encoding="UTF-8"):
     """
     Send Shapefile to PostgreSQL
@@ -526,7 +451,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
             
             # GeoDataFrame to PSQL
             df_to_db(
-                con_param, df, tname, append=True, api='psql',
+                dbname, df, tname, append=True, api='psql',
                 epsg=epsgs[_i] if not srsEpsgCode else srsEpsgCode,
                 colGeom=geomCol,
                 geomType=get_gtype(shapes[_i], name=True, py_cls=False, gisApi='ogr')
@@ -548,7 +473,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
             
             outcmd = exec_cmd(cmd)
             
-            psql_cmd(con_param, sql_script)
+            psql_cmd(dbname, sql_script)
             
             del_file(sql_script)
         
@@ -557,28 +482,7 @@ def shp_to_psql(con_param, shpData, pgTable=None, api="pandas",
     return tables[0] if len(tables) == 1 else tables
 
 
-def shps_to_onepsql(folder_shp, epsg, conParam, out_table):
-    """
-    Send all shps to PGSQL and merge the data into a single table
-    """
-    
-    from gasp.sql.tbl import tbls_to_tbl, del_tables
-    
-    pgTables = shp_to_psql(
-        conParam, folder_shp, srsEpsgCode=epsg, api="shp2pgsql"
-    )
-    
-    tbls_to_tbl(conParam, pgTables, out_table)
-    
-    del_tables(conParam, pgTables)
-    
-    return out_table
-
-
-def rst_to_psql(rst, srs, lnk={
-        'HOST': 'localhost', 'PORT': '5432',
-        'PASSWORD': 'admin', 'USER': 'postgres',
-        'DATABASE': 'db_name'}, sql_script=None):
+def rst_to_psql(rst, srs, dbname, sql_script=None):
     """
     Run raster2pgsql to import a raster dataset into PostGIS Database
     """
@@ -592,20 +496,20 @@ def rst_to_psql(rst, srs, lnk={
     if not sql_script:
         sql_script = os.path.join(os.path.dirname(rst), rst_name + '.sql')
     
-    cmd = (
+    cmd = exec_cmd((
         'raster2pgsql -s {epsg} -I -C -M {rfile} -F -t 100x100 '
         'public.{name} > {sqls}'
     ).format(
         epsg=str(srs), rfile=rst, name=rst_name, sqls=sql_script
-    )
+    ))
     
-    psql_cmd(lnk, sql_script)
+    psql_cmd(dbname, sql_script)
     
     return rst_name
 
 
-def txts_to_db(folder, conDB, delimiter, __encoding='utf-8', apidb='psql',
-               dbIsNew=None, rewrite=None, toDBViaPandas=True):
+def txts_to_db(folder, db, delimiter, __encoding='utf-8', apidb='psql',
+               rewrite=None):
     """
     Executes tbl_to_db for every file in a given folder
     
@@ -613,119 +517,62 @@ def txts_to_db(folder, conDB, delimiter, __encoding='utf-8', apidb='psql',
     """
     
     from gasp.pyt.oss import lst_ff, fprop
+    from gasp.sql.i   import db_exists
     
-    if dbIsNew:
+    if not db_exists(db):
         # Create database
         from gasp.sql.db import create_db
         
-        if api == 'psql':
-            __con = {
-                'HOST' : conDB["HOST"], 'PORT' : conDB["PORT"],
-                'USER' : conDB["USER"], 'PASSWORD' : conDB["PASSWORD"]
-            }
-            
-            DB = conDB["DATABASE"]
-        
-        else:
-            import os
-            __con = os.path.dirname(conDB)
-            DB = os.path.basename(conDB)
-        
-        create_db(__con, DB, api=apidb, overwrite=rewrite)
+        create_db(db, api=apidb, overwrite=None)
+    
+    else:
+        if rewrite:
+            from gasp.sql.db import create_db
+            create_db(db, api=db, overwrite=True)
     
     __files = lst_ff(folder, file_format=['.txt', '.csv', '.tsv'])
     
-    if toDBViaPandas:
-        """
-        Send data to DB using Pandas
-        """
-        for __file in __files:
-            tbl_to_db(
-                __file, conDB, fprop(__file, 'fn'),
-                delimiter=delimiter, encoding_=__encoding, api_db=apidb
-            )
-    
-    else:
-        """
-        Send data to DB using regular Python API
-        """
-        
-        from gasp.sql.mng.fld import pgtypes_from_pnddf
-        from gasp.sql.tbl     import create_tbl
-        from gasp.fm          import tbl_to_obj
-        
-        # Get Table data
-        table_data = {fprop(f, 'fn') : tbl_to_obj(
-            f, _delimiter=delimiter, encoding_=__encoding
-        ) for f in __files}
-        
-        
-        if apidb == 'psql':
-            # Create Tables
-            dicColsT = {}
-            for table in table_data:
-                cols = list(table_data[table].columns)
-            
-                colsT = pgtypes_from_pnddf(table_data[table])
-                dicColsT[table] = colsT
-            
-                create_tbl(conDB, table, colsT, orderFields=cols)
-            
-            # Insert data into tables
-            for table in table_data:
-                cols = list(table_data[table].columns)
-                
-                tableDf = table_data[table]
-                
-                for i in range(len(cols)):
-                    if not i:
-                        if dicColsT[table][cols[i]] == "text":
-                            tableDf["row"] = "('" + \
-                                tableDf[cols[i]].astype(str) + "'"
-                        
-                        else:
-                            tableDf["row"] = "(" + \
-                                tableDf[cols[i]].astype(str)
-                    
-                    else:
-                        if dicColsT[table][cols[i]] == "text":
-                            tableDf["row"] = tableDf["row"] + ", '" + \
-                                tableDf[cols[i]].astype(str) + "'"
-                        
-                        else:
-                            tableDf["row"] = tableDf["row"] + ", " + \
-                                tableDf[cols[i]].astype(str)
-                
-                str_a = tableDf["row"].str.cat(sep="), ") + ")"
-                sql = u"INSERT INTO {} ({}) VALUES {}".format(
-                    table, ", ".join(cols), str_a
-                )
-                
-                psql_insert_query(conDB, sql)
-        else:
-            raise ValueError("API {} is not available".format(apidb))
+    """
+    Send data to DB using Pandas
+    """
+    for __file in __files:
+        tbl_to_db(
+            __file, db, fprop(__file, 'fn'),
+            delimiter=delimiter, encoding_=__encoding, api_db=apidb
+        )
 
 
 """
 OSM Related
 """
 
-def osm_to_pgsql(osmXml, conPGSQL):
+def osm_to_pgsql(osmXml, osmdb):
     """
     Use GDAL to import osmfile into PostGIS database
     """
     
-    from gasp import exec_cmd
+    from gasp           import exec_cmd
+    from gasp.cons.psql import con_psql
+    from gasp.sql.i     import db_exists
+
+    is_db = db_exists(osmdb)
+
+    if not is_db:
+        from gasp.sql.db import create_db
+
+        create_db(osmdb, api='psql')
+
+    con = con_psql()
     
     cmd = (
         "ogr2ogr -f PostgreSQL \"PG:dbname='{}' host='{}' port='{}' "
         "user='{}' password='{}'\" {} -lco COLUM_TYPES=other_tags=hstore"
     ).format(
-        conPGSQL["DATABASE"], conPGSQL["HOST"], conPGSQL["PORT"],
-        conPGSQL["USER"], conPGSQL["PASSWORD"], osmXml
+        osmdb, con["HOST"], con["PORT"],
+        con["USER"], con["PASSWORD"], osmXml
     )
     
     cmdout = exec_cmd(cmd)
     
-    return conPGSQL["DATABASE"]
+    return osmdb
 

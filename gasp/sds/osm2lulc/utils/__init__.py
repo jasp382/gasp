@@ -74,11 +74,11 @@ def osm_project(osmDb, srs_epsg, api='SQLITE', isGlobeLand=None):
     """
     
     if api != 'POSTGIS':
-        from gasp.gt.prj       import proj
+        from gasp.gt.prj   import proj
     else:
-        from gasp.sql.to       import q_to_ntbl as proj
-        from gasp.sql.mng.geom import add_idx_to_geom
-    from gasp.sds.osm2lulc     import osmTableData, GEOM_AREA
+        from gasp.sql.to   import q_to_ntbl as proj
+        from gasp.gql.idx  import idx_for_geom
+    from gasp.sds.osm2lulc import osmTableData, GEOM_AREA
     
     osmtables = {}
     

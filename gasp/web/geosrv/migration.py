@@ -4,13 +4,9 @@ Import data to Geoserver
 
 
 def pgtables_to_layer_withStyle_by_col(
-    pgtables, sldData, pgsql_con, workName=None, storeName=None, geoserver_con={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }, sldGeom='Polygon', DATATYPE='QUANTITATIVE',
-    TABLE_DESIGNATION=None,
-    COL_DESIGNATION=None, exclude_cols=None,
-    pathToSLDfiles=None):
+    pgtables, sldData, db, workName=None, storeName=None, sldGeom='Polygon',
+    DATATYPE='QUANTITATIVE', TABLE_DESIGNATION=None,
+    COL_DESIGNATION=None, exclude_cols=None, pathToSLDfiles=None):
     """
     Create a new Geoserver Workspace, create a postgis store and one layer
     for each table in 'pgtables'. Each layer will have
@@ -162,15 +158,13 @@ def pgtables_to_layer_withStyle_by_col(
         raise ValueError('{} is not avaiable at the moment'.format(DATATYPE))
     
     # Create Workspace
-    workName = 'w_{}'.format(
-        pgsql_con['DATABASE']
-    ) if not workName else workName
+    workName = 'w_{}'.format(db) if not workName else workName
     
-    create_ws(workName, conf=geoserver_con, overwrite=True)
+    create_ws(workName, overwrite=True)
     
     # Create Store
-    storeName = pgsql_con['DATABASE'] if not storeName else storeName
-    create_pgstore(storeName, workName, pgsql_con, gs_con=geoserver_con)
+    storeName = db if not storeName else storeName
+    create_pgstore(storeName, workName, db)
     
     # Create folder for sld's
     wTmp = mkdir(os.path.join(
@@ -178,16 +172,16 @@ def pgtables_to_layer_withStyle_by_col(
     )) if not pathToSLDfiles else pathToSLDfiles
     
     # List styles in geoserver
-    STYLES = lst_styles(conf=geoserver_con)
+    STYLES = lst_styles()
     
     # For each table in PGTABLES
     for PGTABLE in pgtables:
         # Publish Postgis table
         TITLE = None if not LYR_DESIGNATION else LYR_DESIGNATION[PGTABLE][0]
-        pub_pglyr(workName, storeName, PGTABLE, title=TITLE, gs_con=geoserver_con)
+        pub_pglyr(workName, storeName, PGTABLE, title=TITLE)
         
         # List PGTABLE columns
-        pgCols = cols_name(pgsql_con, PGTABLE)
+        pgCols = cols_name(db, PGTABLE)
         
         # For each column
         for col in pgCols:
@@ -199,7 +193,7 @@ def pgtables_to_layer_withStyle_by_col(
             ) if STY_DESIGNATION else '{}_{}'.format(PGTABLE, col)
             
             if STYLE_NAME in STYLES:
-                del_style(STYLE_NAME, geoserver_con)
+                del_style(STYLE_NAME)
             
             # Create Object with association between colors and intervals
             d = {}
@@ -236,16 +230,13 @@ def pgtables_to_layer_withStyle_by_col(
             )
             
             # Create Style
-            create_style(STYLE_NAME, sldFile, conf=geoserver_con)
+            create_style(STYLE_NAME, sldFile)
             
             # Apply SLD
-            assign_style_to_layer(STYLE_NAME, PGTABLE, geoserver_con)
+            assign_style_to_layer(STYLE_NAME, PGTABLE)
 
 
-def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, geoserver_con={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def pgtables_groups_to_layers(groups_of_tables, db, workName, storeName):
     """
     Import all tables in pgsql database to geoserver
     
@@ -259,7 +250,7 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
     """
     
     import os; from gasp.sql.i  import lst_tbl
-    from gasp.web.geosrv.ws     import create_workspace
+    from gasp.web.geosrv.ws     import create_ws
     from gasp.web.geosrv.stores import create_pgstore
     from gasp.web.geosrv.lyrs   import pub_pglyr
     from gasp.web.geosrv.sty    import create_style
@@ -268,40 +259,38 @@ def pgtables_groups_to_layers(groups_of_tables, pgsql_con, workName, storeName, 
     from gasp.web.geosrv.sty    import assign_style_to_layer
     
     # Create a new workspace
-    workName = 'w_{}'.format(
-        pgsql_con['DATABASE']
-    ) if not workName else workName
+    workName = 'w_{}'.format(db) if not workName else workName
     
-    create_workspace(workName, conf=geoserver_con, overwrite=True)
+    create_ws(workName, overwrite=True)
     
     # Create a new store
-    storeName = pgsql_con['DATABASE'] if not storeName else storeName
-    create_pgstore(storeName, workName, pgsql_con, gs_con=geoserver_con)
+    storeName = db if not storeName else storeName
+    create_pgstore(storeName, workName, db)
     
     # List styles
-    STYLES = lst_styles(conf=geoserver_con)
+    STYLES = lst_styles()
     
     # For each group:
     for group in groups_of_tables:
         print("START PROCESSING {} GROUP".format(group))
         
         # - Identify tables
-        tables = lst_tbl(pgsql_con, basename=group, excludeViews=True)
+        tables = lst_tbl(db, basename=group, excludeViews=True)
         
         # - Create Style
         STYLE_NAME = os.path.splitext(os.path.basename(groups_of_tables[group]))[0]
         if STYLE_NAME in STYLES:
-            del_style(STYLE_NAME, geoserver_con)
+            del_style(STYLE_NAME)
         
-        create_style(STYLE_NAME, groups_of_tables[group], conf=geoserver_con)
+        create_style(STYLE_NAME, groups_of_tables[group])
         
         # - Create layers
         # - Assign style
         for table in tables:
             TITLE = 'lyr_{}'.format(table)
-            pub_pglyr(workName, storeName, table, title=TITLE, gs_con=geoserver_con)
+            pub_pglyr(workName, storeName, table, title=TITLE)
             
-            assign_style_to_layer(STYLE_NAME, table, conf=geoserver_con)
+            assign_style_to_layer(STYLE_NAME, table)
         
         print("{} GROUP IS IN GEOSERVER".format(group))
 

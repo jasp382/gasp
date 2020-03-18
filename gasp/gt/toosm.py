@@ -4,7 +4,7 @@ Methods to extract OSM data from the internet
 
 
 def download_by_boundary(input_boundary, folder_out, osm_name, epsg,
-                         GetUrl=True, conPSQL=None, geomCol=None,
+                         GetUrl=True, db_name=None, geomCol=None,
                          justOneFeature=None):
     """
     Download data from OSM using a bounding box
@@ -19,16 +19,16 @@ def download_by_boundary(input_boundary, folder_out, osm_name, epsg,
     
     EXTENTS = []
     
-    if conPSQL and geomCol:
+    if db_name and geomCol:
         """
         Assuming input_boundary is a PostgreSQL Table
         """
         
-        from gasp.pyt   import obj_to_lst
-        from gasp.sql.i import tbl_ext
+        from gasp.pyt      import obj_to_lst
+        from gasp.gql.prop import tbl_ext
         
         for t in obj_to_lst(input_boundary):
-            EXTENTS.append(tbl_ext(conPSQL, t, geomCol))
+            EXTENTS.append(tbl_ext(db_name, t, geomCol))
     
     else:
         if type(input_boundary) == dict:

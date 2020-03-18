@@ -3,9 +3,9 @@ Overlay operations using SQL
 """
 
 
-def feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
-                         inTblCols=None, withinCols=None, outTblIsFile=None,
-                         apiToUse='OGR_SPATIALITE', geom_col=None):
+def feat_within(db, inTbl, inGeom, withinTbl, withinGeom, outTbl,
+    inTblCols=None, withinCols=None, outTblIsFile=None,
+    apiToUse='OGR_SPATIALITE', geom_col=None):
     """
     Get Features within other Geometries in withinTbl
     e.g. Intersect points with Polygons
@@ -49,12 +49,12 @@ def feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
         if outTblIsFile:
             from gasp.gt.attr import sel_by_attr
             
-            sel_by_attr(conParam, Q, outTbl, api_gis='ogr')
+            sel_by_attr(db, Q, outTbl, api_gis='ogr')
         
         else:
             from gasp.sql.to import q_to_ntbl
             
-            q_to_ntbl(conParam, outTbl, Q, api='ogr2ogr')
+            q_to_ntbl(db, outTbl, Q, api='ogr2ogr')
     
     elif apiToUse == 'POSTGIS':
         if outTblIsFile:
@@ -67,13 +67,13 @@ def feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
             from gasp.gt.toshp.db import dbtbl_to_shp
 
             dbtbl_to_shp(
-                conParam, Q, geom_col, outTbl, api="pgsql2shp",
+                db, Q, geom_col, outTbl, api="pgsql2shp",
                 tableIsQuery=True)
         
         else:
             from gasp.sql.to import q_to_ntbl
             
-            q_to_ntbl(conParam, outTbl, Q, api='psql')
+            q_to_ntbl(db, outTbl, Q, api='psql')
     
     else:
         raise ValueError((
@@ -84,7 +84,7 @@ def feat_within(conParam, inTbl, inGeom, withinTbl, withinGeom, outTbl,
     return outTbl
 
 
-def feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl,
+def feat_not_within(db, inTbl, inGeom, withinTbl, withinGeom, outTbl,
                     inTblCols=None, outTblIsFile=None,
                     apiToUse='OGR_SPATIALITE', geom_col=None):
     """
@@ -114,12 +114,12 @@ def feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl,
         if outTblIsFile:
             from gasp.gt.attr import sel_by_attr
             
-            sel_by_attr(dbcon, Q, outTbl, api_gis='ogr')
+            sel_by_attr(db, Q, outTbl, api_gis='ogr')
         
         else:
             from gasp.sql.to import q_to_ntbl
             
-            q_to_ntbl(dbcon, outTbl, Q, api='ogr2ogr')
+            q_to_ntbl(db, outTbl, Q, api='ogr2ogr')
     
     elif apiToUse == "POSTGIS":
         if outTblIsFile:
@@ -132,14 +132,14 @@ def feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl,
             from gasp.gt.toshp.db import dbtbl_to_shp
             
             dbtbl_to_shp(
-                dbcon, Q, geom_col, outTbl, api='pgsql2shp',
+                db, Q, geom_col, outTbl, api='pgsql2shp',
                 tableIsQuery=True
             )
         
         else:
             from gasp.sql.to import q_to_ntbl
             
-            q_to_ntbl(dbcon, outTbl, Q, api='psql')
+            q_to_ntbl(db, outTbl, Q, api='psql')
     
     else:
         raise ValueError((
@@ -150,7 +150,7 @@ def feat_not_within(dbcon, inTbl, inGeom, withinTbl, withinGeom, outTbl,
     return outTbl
 
 
-def intersect_in_same_table(conParam, table, geomA, geomB, outtable,
+def intersect_in_same_table(db_name, table, geomA, geomB, outtable,
                             intersectField='intersects',
                             intersectGeom=None, colsSel=None):
     """
@@ -158,30 +158,28 @@ def intersect_in_same_table(conParam, table, geomA, geomB, outtable,
     """
     
     from gasp.pyt    import obj_to_lst
-    from gasp.sql.c  import sqlcon
     from gasp.sql.to import q_to_ntbl
     
     COLS = obj_to_lst(colsSel)
     
-    return q_to_ntbl(
-        conParam, outtable,
-        ("SELECT {cls}, CASE WHEN interse IS TRUE THEN 1 ELSE 0 END AS {intF} "
+    return q_to_ntbl(db_name, outtable, (
+        "SELECT {cls}, CASE WHEN interse IS TRUE THEN 1 ELSE 0 END AS {intF} "
          "{intgeomF}FROM ("
             "SELECT {cls}, ST_Intersects({gA}, {gB}) AS interse "
             "{intgeom}FROM {t}"
-         ") AS tst").format(
-             gA=geomA, gB=geomB, t=table, intF=intersectField,
-             cls="*" if not COLS else ", ".join(COLS),
-             intgeom= "" if not intersectGeom else \
-                ", ST_Intersection({}, {}) AS intersect_geom".format(
-                    geomA, geomB
-                ),
-            intgeomF = "" if not intersectGeom else ", intersect_geom"
-        ), api='psql'
-    )
+         ") AS tst"
+    ).format(
+        gA=geomA, gB=geomB, t=table, intF=intersectField,
+        cls="*" if not COLS else ", ".join(COLS),
+        intgeom= "" if not intersectGeom else \
+            ", ST_Intersection({}, {}) AS intersect_geom".format(
+                geomA, geomB
+            ),
+        intgeomF = "" if not intersectGeom else ", intersect_geom"
+    ), api='psql')
 
 
-def line_intersection_pnt(conDB, inTbl, outTbl):
+def line_intersection_pnt(db, inTbl, outTbl):
     """
     Get Points where two line features of the same feature class
     intersects.
@@ -215,7 +213,7 @@ def line_intersection_pnt(conDB, inTbl, outTbl):
         ") AS tbll"
     ).format(t=Q_a)
     
-    allpnt = q_to_ntbl(conDB, "all_pnt", Q_b)
+    allpnt = q_to_ntbl(db, "all_pnt", Q_b)
     
     Q_main = (
         "SELECT ogid, (ogid - 1) AS ofid, geom FROM ("
@@ -239,10 +237,10 @@ def line_intersection_pnt(conDB, inTbl, outTbl):
         ") AS foo WHERE is_start = 0 AND is_end = 0"
     ).format(bpnt=allpnt, t=inTbl)
     
-    return q_to_ntbl(conDB, outTbl, Q_main)
+    return q_to_ntbl(db, outTbl, Q_main)
 
 
-def del_topoerror_shps(conParam, shps, epsg, outfolder):
+def del_topoerror_shps(db, shps, epsg, outfolder):
     """
     Remove topological errors from Feature Class data using PostGIS
     """
@@ -256,27 +254,24 @@ def del_topoerror_shps(conParam, shps, epsg, outfolder):
     
     shps = obj_to_lst(shps)
     
-    TABLES = shp_to_psql(conParam, shps, srsEpsgCode=epsg, api="shp2pgsql")
+    TABLES = shp_to_psql(db, shps, srsEpsgCode=epsg, api="shp2pgsql")
     
     NTABLE = [q_to_ntbl(
-        conParam, "nt_{}".format(t),
+        db, "nt_{}".format(t),
         "SELECT {cols}, ST_MakeValid({tbl}.geom) AS geom FROM {tbl}".format(
             cols = ", ".join(["{}.{}".format(TABLES[t], x) for x in cols_name(
-                conParam, TABLES[t], sanitizeSpecialWords=None
+                db, TABLES[t], sanitizeSpecialWords=None
             ) if x != 'geom']),
             tbl=TABLES[t]
         ), api='psql'
     ) for t in range(len(TABLES))]
     
     for t in range(len(NTABLE)):
-        dbtbl_to_shp(
-            conParam, NTABLE[t], "geom",
-            os.path.join(outfolder, TABLES[t]), tableIsQuery=None,
-            api='pgsql2shp'
-        )
+        dbtbl_to_shp(db, NTABLE[t], "geom", os.path.join(
+            outfolder, TABLES[t]), tableIsQuery=None, api='pgsql2shp')
 
 
-def intersection(lnk, aShp, bShp, pk, aGeom, bGeom, output,
+def intersection(dbname, aShp, bShp, pk, aGeom, bGeom, output,
                  primitive, priority, new_pk='fid_pk', new_geom='geom'):
     """
     Intersect two layers
@@ -293,18 +288,15 @@ def intersection(lnk, aShp, bShp, pk, aGeom, bGeom, output,
     from gasp.sql.i import cols_name
 
     if priority == 'a':
-        cols_tbl = cols_name(lnk, aShp)
+        cols_tbl = cols_name(dbname, aShp)
         cols_tbl.remove(aGeom)
     elif priority == 'b':
-        cols_tbl = cols_name(lnk, bShp)
+        cols_tbl = cols_name(dbname, bShp)
         cols_tbl.remove(bGeom)
     elif type(priority) == type([0]):
         cols_tbl = priority
     cols_tbl.remove(pk)
-    conn = sqlcon(
-        lnk['HOST'], lnk['USER'], lnk['PASSWORD'],
-        lnk['PORT'], lnk['DATABASE']
-    )
+    conn = sqlcon(dbname, sqlAPI='psql')
     cursor = conn.cursor()
 
     if primitive == 'point':
@@ -367,7 +359,7 @@ def intersection(lnk, aShp, bShp, pk, aGeom, bGeom, output,
     return output, new_pk, new_geom
 
 
-def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
+def check_autofc_overlap(checkShp, epsg, dbname, outOverlaps):
     """
     Check if the features of one Feature Class overlaps each other
     """
@@ -378,11 +370,10 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     from gasp.sql.to      import shp_to_psql
     from gasp.gt.toshp.db import dbtbl_to_shp
     
-    create_db(conParam, conParam["DB"])
-    conParam["DATABASE"] = conParam["DB"]
+    create_db(dbname, api='psql')
     
     # Send data to postgresql
-    table = shp_to_psql(conParam, checkShp, srsEpsgCode=epsg, api="pandas")
+    table = shp_to_psql(dbname, checkShp, srsEpsgCode=epsg, api="pandas")
     
     # Produce result
     q = (
@@ -399,15 +390,15 @@ def check_autofc_overlap(checkShp, epsg, conParam, outOverlaps):
     ).format(t=table)
     
     resultTable = os.path.splitext(os.path.basename(outOverlaps))[0]
-    q_to_ntbl(conParam, resultTable, q, api='psql')
+    q_to_ntbl(dbname, resultTable, q, api='psql')
     
     dbtbl_to_shp(
-        conParam, resultTable, "geom", outOverlaps, api='psql', epsg=epsg)
+        dbname, resultTable, "geom", outOverlaps, api='psql', epsg=epsg)
     
     return outOverlaps
 
 
-def pg_erase(conParam, inTbl, eraseTbl, inGeom, eraseGeom, outTbl):
+def pg_erase(db, inTbl, eraseTbl, inGeom, eraseGeom, outTbl):
     """
     Erase
     """
@@ -416,7 +407,7 @@ def pg_erase(conParam, inTbl, eraseTbl, inGeom, eraseGeom, outTbl):
     from gasp.sql.to import q_to_ntbl
     
     cols = ["mtbl.{}".format(
-        x) for x in cols_name(conParam, inTbl, api='psql') if x != inGeom]
+        x) for x in cols_name(db, inTbl, api='psql') if x != inGeom]
     
     q = (
         "SELECT {}, ST_Difference(mtbl.{}, foo.erase_geom) AS {} "
@@ -431,7 +422,7 @@ def pg_erase(conParam, inTbl, eraseTbl, inGeom, eraseGeom, outTbl):
         inTbl, eraseGeom, inGeom
     )
     
-    return q_to_ntbl(conParam, outTbl, q, api='psql')
+    return q_to_ntbl(db, outTbl, q, api='psql')
 
 
 """

@@ -2,7 +2,7 @@
 Projections in SQL
 """
 
-def sql_proj(condb, tbl, otbl, oepsg, cols=None, geomCol=None,
+def sql_proj(dbname, tbl, otbl, oepsg, cols=None, geomCol=None,
     newGeom=None, whr=None, new_pk=None):
     """
     Reproject geometric layer to another spatial reference system (srs)
@@ -17,7 +17,7 @@ def sql_proj(condb, tbl, otbl, oepsg, cols=None, geomCol=None,
     if not cols:
         from gasp.sql.i import cols_name
 
-        cols = cols_name(condb, tbl)
+        cols = cols_name(dbname, tbl)
 
         cols.remove(geomCol)
     
@@ -36,12 +36,12 @@ def sql_proj(condb, tbl, otbl, oepsg, cols=None, geomCol=None,
         "" if not whr else " WHERE {}".format(whr)
     )
 
-    otbl = q_to_ntbl(condb, otbl, Q, api='psql')
+    otbl = q_to_ntbl(dbname, otbl, Q, api='psql')
 
     if new_pk:
         from gasp.sql.k  import create_pk
 
-        create_pk(condb, otbl, new_pk)
+        create_pk(dbname, otbl, new_pk)
 
     return otbl
 

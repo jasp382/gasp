@@ -2,7 +2,7 @@
 Deal with DBMS Databases
 """
 
-def create_db(lnk, newdb, overwrite=True, api='psql'):
+def create_db(newdb, overwrite=True, api='psql', use_template=True):
     """
     Create Relational Database
     
@@ -12,22 +12,23 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
     """
     
     if api == 'psql':
-        from gasp.sql.c import sqlcon
-        from gasp.sql.i import list_db
+        from gasp.sql.c     import sqlcon
+        from gasp.sql.i     import lst_db
+        from gasp.cons.psql import con_psql
+
+        conparam = con_psql()
     
-        dbs = list_db(lnk)
+        dbs = lst_db()
     
-        con = sqlcon(lnk)
+        con = sqlcon(None, sqlAPI='psql')
         cs = con.cursor()
     
         if newdb in dbs and overwrite:
             cs.execute("DROP DATABASE {};".format(newdb))
     
-        cs.execute(
-            "CREATE DATABASE {}{};".format(
-                newdb,
-                " TEMPLATE={}".format(lnk["TEMPLATE"]) \
-                    if "TEMPLATE" in lnk else ""
+        cs.execute("CREATE DATABASE {}{};".format(
+            newdb, " TEMPLATE={}".format(conparam["TEMPLATE"]) \
+                if "TEMPLATE" in conparam and use_template else ""
             )
         )
     
@@ -39,12 +40,11 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
         import sqlite3
         
         try:
-            DB = os.path.join(lnk, newdb)
-            if os.path.exists(DB) and overwrite:
+            if os.path.exists(newdb) and overwrite:
                 from gasp.pyt.oss import del_file
-                del_file(os.path.join(DB))
+                del_file(newdb)
             
-            conn = sqlite3.connect(DB)
+            conn = sqlite3.connect(newdb)
         except Error as e:
             print(e)
         finally:
@@ -60,7 +60,7 @@ def create_db(lnk, newdb, overwrite=True, api='psql'):
 Delete Databases
 """
 
-def drop_db(lnk, database):
+def drop_db(database):
     """
     Delete PostgreSQL database
     
@@ -68,19 +68,13 @@ def drop_db(lnk, database):
     """
     
     from gasp.sql.c import sqlcon
-    from gasp.sql.i import list_db
+    from gasp.sql.i import lst_db
     
-    if "DATABASE" in lnk:
-        raise ValueError(
-            "For this method, the dict used to connected to "
-            "PostgreSQL could not have a DATABASE key"
-        )
-    
-    databases = list_db(lnk)
+    databases = lst_db()
     
     if database not in databases: return 0
     
-    con = sqlcon(lnk)
+    con = sqlcon(None, sqlAPI='psql')
     cursor = con.cursor()
     
     try:
@@ -104,7 +98,7 @@ def drop_db(lnk, database):
 Merge Databases
 """
 
-def merge_dbs(conPSQL, destinationDb, dbs,
+def merge_dbs(destinationDb, dbs,
               tbls_to_merge=None, ignoreCols=None):
     """
     Put several database into one
@@ -126,16 +120,12 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     fdb = fprop(destinationDb, ['fn', 'ff'])
     if os.path.isfile(destinationDb):
         if fdb['fileformat'] == '.sql':
-            newdb = create_db(conPSQL, fdb['filename'], 
+            newdb = create_db(fdb['filename'], 
                 overwrite=True, api='psql')
             
-            conPSQL["DATABASE"] = newdb
-            
-            psql_cmd(conPSQL, destinationDb)
+            psql_cmd(newdb, destinationDb)
             
             destinationDb = newdb
-
-            del conPSQL["DATABASE"]
         
         else:
             raise ValueError((
@@ -145,8 +135,8 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     
     else:
         # Check if destination db exists
-        if not db_exists(conPSQL, destinationDb):
-            create_db(conPSQL, destinationDb, overwrite=None, api='psql')
+        if not db_exists(destinationDb):
+            create_db(destinationDb, overwrite=None, api='psql')
     
     # Check if dbs is a list or a dir
     if type(dbs) == list:
@@ -170,21 +160,20 @@ def merge_dbs(conPSQL, destinationDb, dbs,
     for i in range(len(dbs)):
         # Create DB
         DB_NAME = fprop(dbs[i], 'fn')
-        create_db(conPSQL, DB_NAME, overwrite=True, api='psql')
+        create_db(DB_NAME, overwrite=True, api='psql')
         
         # Restore DB
-        conPSQL["DATABASE"] = DB_NAME
-        psql_cmd(conPSQL, dbs[i])
+        psql_cmd(DB_NAME, dbs[i])
         
         # List Tables
         if not tbls_to_merge:
-            tbls__ = lst_tbl(conPSQL, excludeViews=True, api='psql')
+            tbls__ = lst_tbl(DB_NAME, excludeViews=True, api='psql')
             tbls   = [t for t in tbls__ if t not in ignoreCols]
         else:
             tbls   = tbls_to_merge
         
         # Rename Tables
-        newTbls = rename_tbl(conPSQL, {tbl : "{}_{}".format(
+        newTbls = rename_tbl(DB_NAME, {tbl : "{}_{}".format(
             tbl, str(i)) for tbl in tbls})
         
         for t in range(len(tbls)):
@@ -197,40 +186,35 @@ def merge_dbs(conPSQL, destinationDb, dbs,
         # Dump Tables
         SQL_DUMP = os.path.join(
             os.path.dirname(dbs[i]), 'tbl_{}.sql'.format(DB_NAME)
-        ); dump_tbls(conPSQL, newTbls, SQL_DUMP)
-        
-        conPSQL["DATABASE"] = destinationDb
+        ); dump_tbls(DB_NAME, newTbls, SQL_DUMP)
         
         # Restore Tables in the destination Database
-        restore_tbls(conPSQL, SQL_DUMP, newTbls)
+        restore_tbls(destinationDb, SQL_DUMP, newTbls)
         
         # Delete Temp Database
-        del conPSQL["DATABASE"]
-        drop_db(conPSQL, DB_NAME)
+        drop_db(DB_NAME)
         
         # Delete SQL File
         del_file(SQL_DUMP)
     
     # Union of all tables
-    conPSQL["DATABASE"] = destinationDb
-    
     max_len = max([len(TABLES[t]) for t in TABLES])
     
     for tbl in TABLES:
         # Rename original table
         NEW_TBL = "{}_{}".format(tbl, max_len)
-        rename_tbl(conPSQL, {tbl : NEW_TBL})
+        rename_tbl(destinationDb, {tbl : NEW_TBL})
         
         TABLES[tbl].append(NEW_TBL)
         
         # Union
-        tbls_to_tbl(conPSQL, TABLES[tbl], tbl + '_tmp')
+        tbls_to_tbl(destinationDb, TABLES[tbl], tbl + '_tmp')
         
         # Group By
-        distinct_to_table(conPSQL, tbl + '_tmp', tbl, cols=None)
+        distinct_to_table(destinationDb, tbl + '_tmp', tbl, cols=None)
         
         # Drop unwanted tables
-        del_tables(conPSQL, TABLES[tbl] + [tbl + '_tmp'])
+        del_tables(destinationDb, TABLES[tbl] + [tbl + '_tmp'])
     
     return destinationDb
 

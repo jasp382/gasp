@@ -2,7 +2,7 @@
 Geometric Conversion using SQL
 """
 
-def lnh_to_polg(con_db, intbl, outtbl):
+def lnh_to_polg(db, intbl, outtbl):
     """
     Line to Polygons
     """
@@ -18,5 +18,5 @@ def lnh_to_polg(con_db, intbl, outtbl):
         ") AS foo"
     ).format(intbl)
     
-    return q_to_ntbl(con_db, outtbl, Q)
+    return q_to_ntbl(db, outtbl, Q)
 

@@ -118,7 +118,7 @@ def tbl_to_tbl(inTbl, outTbl, inSheet=None, txtDelimiter=None,
     return outTbl
 
 
-def db_to_tbl(conDB, tables, outTbl, txtDelimiter=None, dbAPI='psql',
+def db_to_tbl(db, tables, outTbl, txtDelimiter=None, dbAPI='psql',
               outTblF=None, sheetsNames=None):
     """
     Database data to File table
@@ -136,7 +136,7 @@ def db_to_tbl(conDB, tables, outTbl, txtDelimiter=None, dbAPI='psql',
     if tables == 'ALL':
         from gasp.sql.i import lst_tbl
         
-        tables = lst_tbl(conDB, schema='public', excludeViews=True, api=dbAPI)
+        tables = lst_tbl(db, schema='public', excludeViews=True, api=dbAPI)
     else:
         tables = obj_to_lst(tables)
     
@@ -171,7 +171,7 @@ def db_to_tbl(conDB, tables, outTbl, txtDelimiter=None, dbAPI='psql',
             "tables value is not valid"
         )   
     
-    DFS = [q_to_obj(conDB, t if t.startswith(
+    DFS = [q_to_obj(db, t if t.startswith(
         "SELECT") else "SELECT * FROM {}".format(t), db_api=dbAPI
     ) for t in tables]
     

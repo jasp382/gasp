@@ -3,7 +3,7 @@ Use duplicates in tables
 """
 
 
-def show_duplicates_in_xls(conParam, table, pkCols, outFile,
+def show_duplicates_in_xls(db_name, table, pkCols, outFile,
                            tableIsQuery=None):
     """
     Find duplicates and write these objects in a table
@@ -47,7 +47,7 @@ def show_duplicates_in_xls(conParam, table, pkCols, outFile,
             ])
         )
     
-    data = q_to_obj(conParam, q, db_api='psql')
+    data = q_to_obj(db_name, q, db_api='psql')
     
     obj_to_tbl(data, outFile)
     

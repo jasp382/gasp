@@ -5,20 +5,18 @@ Dominating Geoserver with Python and requests
 """
 
 
-def backup(backup_file, conf={
-    'USER':'admin', 'PASSWORD': 'geoserver',
-    'HOST':'localhost', 'PORT': '8080'
-    }):
+def backup(backup_file):
     """
     """
     
     import requests
     import json
+    from gasp.cons.gsrv import con_gsrv
     
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    conf = con_gsrv()
     
     url = '{pro}://{host}:{port}/geoserver/rest/br/backup/'.format(
-        host=conf['HOST'], port=conf['PORT'], pro=protocol
+        host=conf['HOST'], port=conf['PORT'], pro=conf["PROTOCOL"]
     )
     
     backup_parameters = {

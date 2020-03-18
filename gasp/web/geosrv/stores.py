@@ -3,24 +3,23 @@ Tools for Geoserver datastores management
 """
 
 
-def shape_to_store(shape, store_name, workspace, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'}):
+def shp_to_store(shape, store_name, workspace):
     """
     Create a new datastore
     """
 
-    import os;        import requests
-    from gasp.pyt.oss import lst_ff
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    import os;          import requests
+    from gasp.pyt.oss   import lst_ff
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
 
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/datastores/'
         '{store}/file.shp'
         ).format(
             host=conf['HOST'], port=conf['PORT'], work=workspace,
-            store=store_name, pro=protocol
+            store=store_name, pro=conf['PROTOCOL']
         )
 
     if os.path.splitext(shape)[1] != '.zip':
@@ -45,24 +44,22 @@ def shape_to_store(shape, store_name, workspace, conf={
         return r
 
 
-def import_datafolder(path_folder, store_name, workspace, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }, protocol='http'):
+def import_datafolder(path_folder, store_name, workspace):
     """
     Import all shapefiles in a directory to a GeoServer Store
     """
 
     import requests
+    from gasp.cons.gsrv import con_gsrv
     
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    conf = con_gsrv()
 
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/datastores/'
         '{store}/external.shp?configure=all'
         ).format(
             host=conf['HOST'], port=conf['PORT'], work=workspace,
-            store=store_name, pro=protocol
+            store=store_name, pro=conf['PROTOCOL']
         )
 
     r = requests.put(
@@ -75,21 +72,18 @@ def import_datafolder(path_folder, store_name, workspace, conf={
     return r
 
 
-def lst_stores(workspace, conf={
-        'USER': 'admin', 'PASSWORD': 'geoserver',
-        'HOST': 'localhost', 'PORT': '8888'
-    }):
+def lst_stores(workspace):
     """
     List all stores in a Workspace
     """
     
-    import requests
-    import json
+    import requests;    import json
+    from gasp.cons.gsrv import con_gsrv
     
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    conf = con_gsrv()
     
     url = '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/datastores'.format(
-        host=conf['HOST'], port=conf['PORT'], work=workspace, pro=protocol
+        host=conf['HOST'], port=conf['PORT'], work=workspace, pro=conf['PROTOCOL']
     )
     
     r = requests.get(
@@ -104,25 +98,23 @@ def lst_stores(workspace, conf={
         return []
 
 
-def del_store(workspace, name, conf={
-        'USER': 'admin', 'PASSWORD': 'geoserver',
-        'HOST': 'localhost', 'PORT': '8888'
-    }):
+def del_store(workspace, name):
     """
     Delete an existing Geoserver datastore
     """
     
     import requests
     import json
+    from gasp.cons.gsrv import con_gsrv
     
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    conf = con_gsrv()
     
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/'
         'datastores/{ds}?recurse=true'
     ).format(
         host=conf['HOST'], port=conf['PORT'], work=workspace, ds=name,
-        pro=protocol
+        pro=conf['PROTOCOL']
     )
     
     r = requests.delete(url, auth=(conf['USER'], conf['PASSWORD']))
@@ -130,10 +122,7 @@ def del_store(workspace, name, conf={
     return r
 
 
-def add_rst_store(raster, store_name, workspace, conf={
-        'USER': 'admin', 'PASSWORD': 'geoserver',
-        'HOST': 'localhost', 'PORT': '8888'
-    }):
+def add_rst_store(raster, store_name, workspace):
     """
     Create a new store with a raster layer
     """
@@ -141,15 +130,16 @@ def add_rst_store(raster, store_name, workspace, conf={
     import os;        import requests
     from gasp.pyt.oss import del_file
     from gasp.pyt.Xml import write_xml_tree
+    from gasp.cons.gsrv import con_gsrv
     
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    conf = con_gsrv()
     
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/'
         'coveragestores?configure=all'
     ).format(
         host=conf['HOST'], port=conf['PORT'],
-        work=workspace, pro=protocol
+        work=workspace, pro=conf['PROTOCOL']
     )
     
     # Create obj with data to be written in the xml
@@ -193,20 +183,18 @@ PostGIS stores creation
 """
 
 
-def create_pgstore(store, workspace, pg_con, gs_con={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def create_pgstore(store, workspace, pg_con):
     """
     Create a store for PostGIS data
     """
     
-    import os;         import requests
-    from gasp.pyt.char import random_str
-    from gasp.pyt.Xml  import write_xml_tree
-    from gasp.pyt.oss  import mkdir, del_folder
+    import os;          import requests
+    from gasp.pyt.char  import random_str
+    from gasp.pyt.Xml   import write_xml_tree
+    from gasp.pyt.oss   import mkdir, del_folder
+    from gasp.cons.gsrv import con_gsrv
     
-    protocol = 'http' if 'PROTOCOL' not in gs_con else gs_con['PROTOCOL']
+    gs_con = con_gsrv()
     
     # Create folder to write xml
     wTmp = mkdir(
@@ -259,7 +247,8 @@ def create_pgstore(store, workspace, pg_con, gs_con={
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{wname}/'
         'datastores.xml'
     ).format(
-        host=gs_con['HOST'], port=gs_con['PORT'], wname=workspace, pro=protocol
+        host=gs_con['HOST'], port=gs_con['PORT'],
+        wname=workspace, pro=gs_con['PROTOCOL']
     )
     
     with open(xml_file, 'rb') as f:

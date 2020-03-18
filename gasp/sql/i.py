@@ -8,12 +8,12 @@ from gasp.sql.c import sqlcon
 Info about databases
 """
 
-def list_db(conParam):
+def lst_db():
     """
     List all PostgreSQL databases
     """
     
-    con = sqlcon(conParam)
+    con = sqlcon(None)
     
     cursor = con.cursor()
     
@@ -22,11 +22,12 @@ def list_db(conParam):
     return [d[0] for d in cursor.fetchall()]
 
 
-def db_exists(lnk, db):
+def db_exists(db):
     """
     Database exists
     """
-    con = sqlcon(lnk)
+
+    con = sqlcon(None)
         
     cursor = con.cursor()
     
@@ -43,7 +44,7 @@ def db_exists(lnk, db):
 Tables Info
 """
 
-def lst_views(conParam, schema='public', basename=None):
+def lst_views(db, schema='public', basename=None):
     """
     List Views in database
     """
@@ -59,7 +60,7 @@ def lst_views(conParam, schema='public', basename=None):
         ) for b in basename])
     )
     
-    views = q_to_obj(conParam, (
+    views = q_to_obj(db, (
         "SELECT table_name FROM information_schema.views "
         "WHERE table_schema='{}'{}"
     ).format(schema, "" if not basename else " AND ({})".format(
@@ -69,7 +70,7 @@ def lst_views(conParam, schema='public', basename=None):
     return views.table_name.tolist()
 
 
-def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
+def lst_tbl(db, schema='public', excludeViews=None, api='psql',
             basename=None):
     """
     list tables in a database
@@ -99,10 +100,10 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
         ).format(schema, "" if not basename else " AND ({})".format(
             basenameStr))
     
-        tbls = q_to_obj(conObj, Q, db_api='psql')
+        tbls = q_to_obj(db, Q, db_api='psql')
     
         if excludeViews:
-            views = lst_views(conObj, schema=schema)
+            views = lst_views(db, schema=schema)
         
             __tbls = [i for i in tbls.table_name.tolist() if i not in views]
     
@@ -116,7 +117,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
         
         import sqlite3
         
-        conn = sqlite3.connect(conObj)
+        conn = sqlite3.connect(db)
         cursor = conn.cursor()
         
         tables = cursor.execute(
@@ -136,7 +137,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
         
         from gasp.sql.c import alchemy_engine
         
-        c = alchemy_engine(conObj, api='mysql')
+        c = alchemy_engine(db, api='mysql')
         
         __tbls = c.table_names()
     
@@ -150,7 +151,7 @@ def lst_tbl(conObj, schema='public', excludeViews=None, api='psql',
 Counting in table
 """
 
-def row_num(conObj, table, where=None, api='psql'):
+def row_num(db, table, where=None, api='psql'):
     """
     Return the number of rows in Query
     
@@ -169,7 +170,7 @@ def row_num(conObj, table, where=None, api='psql'):
     else:
         Q = "SELECT COUNT(*) AS nrows FROM ({}) AS foo".format(table)
     
-    d = q_to_obj(conObj, Q, db_api=api)
+    d = q_to_obj(db, Q, db_api=api)
     
     return int(d.iloc[0].nrows)
 
@@ -178,13 +179,13 @@ def row_num(conObj, table, where=None, api='psql'):
 Info about fields in table
 """
 
-def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
+def cols_name(dbname, table, sanitizeSpecialWords=True, api='psql'):
     """
     Return the columns names of a table in one Database
     """
     
     if api == 'psql':
-        c = sqlcon(conparam)
+        c = sqlcon(dbname, sqlAPI='psql')
     
         cursor = c.cursor()
         cursor.execute("SELECT * FROM {} LIMIT 1;".format(table))
@@ -200,7 +201,7 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
     elif api == 'sqlite':
         import sqlite3
         
-        con = sqlite3.connect(conparam)
+        con = sqlite3.connect(dbname)
         
         cursor = con.execute("SELECT * FROM {} LIMIT 1".format(table))
         
@@ -210,7 +211,7 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
         from gasp.sql.fm import q_to_obj
         
         data = q_to_obj(
-            conparam, "SELECT * FROM {} LIMIT 1".format(table), db_api='mysql')
+            dbname, "SELECT * FROM {} LIMIT 1".format(table), db_api='mysql')
         
         colnames = data.columns.values
     
@@ -220,14 +221,14 @@ def cols_name(conparam, table, sanitizeSpecialWords=True, api='psql'):
     return colnames
 
 
-def cols_type(pgsqlDic, table, sanitizeColName=True, pyType=True):
+def cols_type(dbname, table, sanitizeColName=True, pyType=True):
     """
     Return columns names and types of a PostgreSQL table
     """
     
     from gasp.cons.psql import PG_SPECIAL_WORDS, map_psqltypes
     
-    c = sqlcon(pgsqlDic)
+    c = sqlcon(dbname)
     
     cursor = c.cursor()
     cursor.execute("SELECT * FROM {} LIMIT 50;".format(table))
@@ -250,48 +251,20 @@ def cols_type(pgsqlDic, table, sanitizeColName=True, pyType=True):
 Table Meta
 """
 
-def check_last_id(lnk, pk, table):
+def check_last_id(db, pk, table):
     """
     Check last ID of a given table
     
     return 0 if there is no data
     """
     
-    from gasp.sql.c  import sqlcon
     from gasp.sql.fm import q_to_obj
     
     q = "SELECT MAX({}) AS fid FROM {}".format(pk, table)
-    d = q_to_obj(lnk, q, db_api='psql').fid.tolist()
+    d = q_to_obj(db, q, db_api='psql').fid.tolist()
     
     if not d[0]:
         return 0
     else:
         return d[0]
-
-
-"""
-Geometric Properties
-"""
-
-def tbl_ext(conParam, table, geomCol):
-    """
-    Return extent of the geometries in one pgtable
-    """
-    
-    from gasp.sql.fm import q_to_obj
-    
-    q = (
-        "SELECT MIN(ST_X(pnt_geom)) AS eleft, MAX(ST_X(pnt_geom)) AS eright, "
-        "MIN(ST_Y(pnt_geom)) AS bottom, MAX(ST_Y(pnt_geom)) AS top "
-        "FROM ("
-            "SELECT (ST_DumpPoints({geomcol})).geom AS pnt_geom "
-            "FROM {tbl}"
-        ") AS foo"
-    ).format(tbl=table, geomcol=geomCol)
-    
-    ext = q_to_obj(conParam, q, db_api='psql').to_dict(orient='index')[0]
-    
-    return [
-        ext['eleft'], ext['bottom'], ext['eright'], ext['top']
-    ]
 

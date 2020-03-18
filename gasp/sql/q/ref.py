@@ -3,9 +3,9 @@ Select using references in other supports
 """
 
 
-def select_using_excel_refs(conParam, excel_file, sheet_name,
-                                pgtable, ref_fields,
-                                tableInRef, tableOutRef=None):
+def select_using_excel_refs(db_name, excel_file, sheet_name,
+                            pgtable, ref_fields,
+                            tableInRef, tableOutRef=None):
     """
     Split PGTABLE using references in excel table
     
@@ -20,12 +20,12 @@ def select_using_excel_refs(conParam, excel_file, sheet_name,
     from gasp.sql.i  import cols_type
     from gasp.sql.to import q_to_ntbl
     
-    def to_and(row, cols, cols_type):
+    def to_and(row, cols, ctype):
         def get_equal(_type):
             return '{}=\'{}\'' if _type == str else '{}={}'
         
         row['AND_E'] = ' AND '.join(
-            get_equal(cols_type[col]).format(col, row[col]) for col in cols
+            get_equal(ctype[col]).format(col, row[col]) for col in cols
         )
         
         row['AND_E'] = '(' + row['AND_E'] + ')'
@@ -36,13 +36,13 @@ def select_using_excel_refs(conParam, excel_file, sheet_name,
     table = tbl_to_obj(excel_file, sheet=sheet_name)
     
     # Get reference fields type
-    TYPE_COLS = cols_type(conParam, pgtable)
+    TYPE_COLS = cols_type(db_name, pgtable)
     
     table = table.apply(lambda x: to_and(x, ref_fields, TYPE_COLS))
     
     whr_equal = ' OR '.join(table['AND_E'])
     
-    q_to_ntbl(conParam, tableInRef, "SELECT * FROM {} WHERE {}".format(
+    q_to_ntbl(db_name, tableInRef, "SELECT * FROM {} WHERE {}".format(
         pgtable, whr_equal
     ), api='psql')
     
@@ -51,14 +51,11 @@ def select_using_excel_refs(conParam, excel_file, sheet_name,
             ft=pgtable, f=col, st=tableInRef
         ) for col in TYPE_COLS])
     
-        q_to_ntbl(
-            conParam, tableOutRef,
-            (
-                "SELECT {ft}.* FROM {ft} LEFT JOIN {st} ON "
-                "{rel} WHERE {st}.{c} IS NULL"
-            ).format(
-                ft=pgtable, st=tableInRef, rel=COLS_RELATION,
-                c=TYPE_COLS.keys()[0]
-            ), api='psql'
-        )
+        q_to_ntbl(db_name, tableOutRef, (
+            "SELECT {ft}.* FROM {ft} LEFT JOIN {st} ON "
+            "{rel} WHERE {st}.{c} IS NULL"
+        ).format(
+            ft=pgtable, st=tableInRef, rel=COLS_RELATION,
+            c=TYPE_COLS.keys()[0]
+        ), api='psql')
 
