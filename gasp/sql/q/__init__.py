@@ -2,7 +2,7 @@
 Run Queries
 """
 
-def exec_write_q(conDB, queries, api='psql'):
+def exec_write_q(db_name, queries, api='psql'):
     """
     Execute Queries and save result in the database
     """
@@ -17,7 +17,7 @@ def exec_write_q(conDB, queries, api='psql'):
     if api == 'psql':
         from gasp.sql.c import sqlcon
         
-        con = sqlcon(conDB)
+        con = sqlcon(db_name)
     
         cs = con.cursor()
     
@@ -31,7 +31,7 @@ def exec_write_q(conDB, queries, api='psql'):
     elif api == 'sqlite':
         import sqlite3
         
-        con = sqlite3.connect(conDB)
+        con = sqlite3.connect(db_name)
         cs  = con.cursor()
         
         for q in qs:

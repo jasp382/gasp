@@ -24,7 +24,6 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Dependencies #
     # ************************************************************************ #
-    from gasp.cons.psql              import con_psql
     from gasp.gt.fmrst               import rst_to_array
     from gasp.gt.prop.ff             import check_isRaster
     from gasp.gt.prop.rst            import get_cellsize
@@ -80,8 +79,6 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     else:
         mkdir(workspace, overwrite=None)
     
-    conPGSQL = con_psql() if roadsAPI == 'POSTGIS' else None
-    
     # Get Ref Raster and EPSG
     refRaster, epsg = get_ref_raster(refRaster, workspace, cellsize=2)
     CELLSIZE = get_cellsize(refRaster, gisApi='gdal')
@@ -93,9 +90,9 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # Convert OSM file to SQLITE DB or to POSTGIS DB #
     # ************************************************************************ #
     if roadsAPI == 'POSTGIS':
-        conPGSQL["DATABASE"] = create_db(conPGSQL, fprop(
+        osm_db = create_db(fprop(
             osmdata, 'fn', forceLower=True), overwrite=True)
-        osm_db = osm_to_pgsql(osmdata, conPGSQL)
+        osm_db = osm_to_pgsql(osmdata, osm_db)
     
     else:
         osm_db = osm_to_sqdb(osmdata, os.path.join(workspace, 'osm.sqlite'))
@@ -103,16 +100,13 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Add Lulc Classes to OSM_FEATURES by rule #
     # ************************************************************************ #
-    add_lulc_to_osmfeat(
-        conPGSQL if roadsAPI=='POSTGIS' else osm_db,
-        osmTableData, nomenclature, api=roadsAPI
-    )
+    add_lulc_to_osmfeat(osm_db, osmTableData, nomenclature, api=roadsAPI)
     time_d = datetime.datetime.now().replace(microsecond=0)
     # ************************************************************************ #
     # Transform SRS of OSM Data #
     # ************************************************************************ #
     osmTableData = osm_project(
-        conPGSQL if roadsAPI == 'POSTGIS' else osm_db, epsg, api=roadsAPI,
+        osm_db, epsg, api=roadsAPI,
         isGlobeLand=None if nomenclature != "GLOBE_LAND_30" else True
     )
     time_e = datetime.datetime.now().replace(microsecond=0)
@@ -133,9 +127,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         # ******************************************************************** #
         if ruleID == 1:
             res, tm = num_selection(
-                conPGSQL if not _osmdb else _osmdb,
-                osmTableData['polygons'], workspace, CELLSIZE, epsg, refRaster,
-                api=roadsAPI
+                _osmdb if _osmdb else osm_db, osmTableData['polygons'], workspace,
+                CELLSIZE, epsg, refRaster, api=roadsAPI
             )
         # ******************************************************************** #
         # 2 - Get Information About Roads Location #
@@ -146,7 +139,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
                 osmTableData['polygons'], workspace, CELLSIZE, epsg,
                 refRaster
             ) if _osmdb else pg_num_roads(
-                conPGSQL, nomenclature,
+                osm_db, nomenclature,
                 osmTableData['lines'], osmTableData['polygons'],
                 workspace, CELLSIZE, epsg, refRaster
             )
@@ -157,7 +150,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         elif ruleID == 3:
             if nomenclature != "GLOBE_LAND_30":
                 res, tm = num_selbyarea(
-                    conPGSQL if not _osmdb else _osmdb,
+                    osm_db if not _osmdb else _osmdb,
                     osmTableData['polygons'], workspace,
                     CELLSIZE, epsg, refRaster, UPPER=True, api=roadsAPI
                 )
@@ -170,7 +163,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         elif ruleID == 4:
             if nomenclature != "GLOBE_LAND_30":
                 res, tm = num_selbyarea(
-                    conPGSQL if not _osmdb else _osmdb,
+                    osm_db if not _osmdb else _osmdb,
                     osmTableData['polygons'], workspace,
                     CELLSIZE, epsg, refRaster, UPPER=False, api=roadsAPI
                 )
@@ -182,7 +175,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         # ******************************************************************** #
         elif ruleID == 5:
             res, tm = num_base_buffer(
-                conPGSQL if not _osmdb else _osmdb,
+                osm_db if not _osmdb else _osmdb,
                 osmTableData['lines'], workspace,
                 CELLSIZE, epsg, refRaster, api=roadsAPI
             )
@@ -192,7 +185,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         elif ruleID == 7:
             if nomenclature != "GLOBE_LAND_30":
                 res, tm = num_assign_builds(
-                    conPGSQL if not _osmdb else _osmdb,
+                    osm_db if not _osmdb else _osmdb,
                     osmTableData['points'], osmTableData['polygons'],
                     workspace, CELLSIZE, epsg, refRaster, apidb=roadsAPI
                 )
@@ -343,12 +336,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # Dump Database if PostGIS was used
     # Drop Database if PostGIS was used
     if roadsAPI == 'POSTGIS':
-        dump_db(conPGSQL, os.path.join(
-            workspace, conPGSQL["DATABASE"] + '.sql'
-        ), api='psql')
-        deldb = conPGSQL["DATABASE"]
-        del conPGSQL["DATABASE"]
-        drop_db(conPGSQL, deldb)
+        dump_db(osm_db, os.path.join(workspace, osm_db + '.sql'), api='psql')
+        drop_db(osm_db)
     
     return lulcRst, {
         0  : ('set_settings', time_b - time_a),

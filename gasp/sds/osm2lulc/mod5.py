@@ -5,7 +5,7 @@ Rule 5 - Basic buffer
 import os
 from gasp.sds.osm2lulc import DB_SCHEMA
 
-def basic_buffer(osmLink, lineTable, dataFolder, apidb='SQLITE'):
+def basic_buffer(osmdb, lineTable, dataFolder, apidb='SQLITE'):
     """
     Data from Lines table to Polygons using a basic buffering stratagie
     """
@@ -20,7 +20,7 @@ def basic_buffer(osmLink, lineTable, dataFolder, apidb='SQLITE'):
     from gasp.gt.toshp.cff import shp_to_grs
     
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = q_to_obj(osmLink, (
+    lulcCls = q_to_obj(osmdb, (
         "SELECT basic_buffer FROM {} WHERE basic_buffer IS NOT NULL "
         "GROUP BY basic_buffer"
     ).format(
@@ -36,7 +36,7 @@ def basic_buffer(osmLink, lineTable, dataFolder, apidb='SQLITE'):
         # Run BUFFER Tool
         time_x = datetime.datetime.now().replace(microsecond=0)
         bb_file = st_buffer(
-            osmLink, lineTable, "bf_basic_buffer", "geometry",
+            osmdb, lineTable, "bf_basic_buffer", "geometry",
             os.path.join(dataFolder, 'bb_rule5_{}.shp'.format(str(int(cls)))),
             whrClause="basic_buffer={}".format(str(int(cls))),
             outTblIsFile=True, dissolve="ALL", cols_select="basic_buffer"
@@ -115,7 +115,7 @@ def grs_vect_bbuffer(osmdata, lineTbl, api_db='SQLITE'):
     }
 
 
-def num_base_buffer(osmLink, lineTbl, folder, cells, srscode, rtemplate,
+def num_base_buffer(osmdb, lineTbl, folder, cells, srscode, rtemplate,
                     api='SQLITE'):
     """
     Data from Lines to Polygons
@@ -132,7 +132,7 @@ def num_base_buffer(osmLink, lineTbl, folder, cells, srscode, rtemplate,
     
     # Get LULC Classes to be selected
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = q_to_obj(osmLink, (
+    lulcCls = q_to_obj(osmdb, (
         "SELECT basic_buffer FROM {} WHERE basic_buffer IS NOT NULL "
         "GROUP BY basic_buffer"
     ).format(
@@ -141,14 +141,13 @@ def num_base_buffer(osmLink, lineTbl, folder, cells, srscode, rtemplate,
     time_b = datetime.datetime.now().replace(microsecond=0)
     
     timeGasto = {0 : ('check_cls', time_b - time_a)}
-    SQL_Q = "SELECT {} AS cls, geometry FROM {} WHERE {}"
     clsRst = {}
     
     def exportAndBufferB(CLS, cnt):
         # Run BUFFER Tool
         time_x = datetime.datetime.now().replace(microsecond=0)
         bb_file = st_buffer(
-            osmLink, lineTbl, "bf_basic_buffer", "geometry",
+            osmdb, lineTbl, "bf_basic_buffer", "geometry",
             os.path.join(folder, 'bb_rule5_{}.shp'.format(str(int(CLS)))),
             whrClause="basic_buffer={}".format(str(int(CLS))),
             outTblIsFile=True, dissolve=None, cols_select="basic_buffer"

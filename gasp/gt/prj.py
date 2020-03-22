@@ -68,7 +68,7 @@ def def_prj(shp, epsg=None, template=None, api='ogr'):
 
 
 def proj(inShp, outShp, outEPSG, inEPSG=None,
-        gisApi='ogr', sql=None, con_psql=None):
+        gisApi='ogr', sql=None, db_name=None):
     """
     Project Geodata using GIS
     
@@ -214,41 +214,32 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
         from gasp.gt.toshp.db import dbtbl_to_shp
         from gasp.gql.prj     import sql_proj
 
-        con_db = {
-            "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',
-            'PASSWORD' : 'admin', 'TEMPLATE' : 'postgis_template'
-        } if not con_psql else con_psql
-
         # Create Database
-        if "DATABASE" not in con_db:
-            con_db["DATABASE"] = create_db(
-                con_db, fprop(outShp, 'fn', forceLower=True),
-                api='psql'
+        if not db_name:
+            db_name = create_db(fprop(
+                outShp, 'fn', forceLower=True), api='psql'
             )
         
         else:
             from gasp.sql.i import db_exists
 
-            isDb = db_exists(con_db, con_db["DATABASE"])
+            isDb = db_exists(db_name)
 
             if not isDb:
-                con_db["DB"] = con_db["DATABASE"]
-                del con_db["DATABASE"]
-
-                con_db["DATABASE"] = create_db(con_db, con_db["DB"], api='psql')
+                create_db(db_name, api='psql')
 
         # Import Data
-        inTbl = shp_to_psql(con_db, inShp, api='shp2pgsql', encoding="LATIN1")
+        inTbl = shp_to_psql(db_name, inShp, api='shp2pgsql', encoding="LATIN1")
 
         # Transform
         oTbl = sql_proj(
-            con_db, inTbl, fprop(outShp, 'fn', forceLower=True),
+            db_name, inTbl, fprop(outShp, 'fn', forceLower=True),
             outEPSG, geomCol='geom', newGeom='geom'
         )
 
         # Export
         outShp = dbtbl_to_shp(
-            con_db, oTbl, 'geom',outShp, api='psql', epsg=outEPSG
+            db_name, oTbl, 'geom', outShp, api='psql', epsg=outEPSG
         )
     
     else:

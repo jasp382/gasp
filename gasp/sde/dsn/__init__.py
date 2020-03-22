@@ -2,7 +2,7 @@
 Tools to work with Social Network Data
 """
 
-def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasource,
+def dsn_data_collection_by_multibuffer(inBuffers, workspace, db, datasource,
                                        keywords=None):
     """
     Extract Digital Social Network Data for each sub-buffer in buffer.
@@ -57,8 +57,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
     keywords = ["None"] if not keywords else keywords
     
     # Create Database to Store Data
-    create_db(conParam, conParam["DB"], overwrite=True)
-    conParam["DATABASE"] = conParam["DB"]
+    create_db(db, overwrite=True, api='psql')
     
     for city in inBuffers:
         # Get Smaller Buffers
@@ -146,19 +145,19 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         inBuffers[city]["table"] = 'tbldata_{}'.format(city)
         
         df_to_db(
-            conParam, inBuffers[city]["data"],
+            db, inBuffers[city]["data"],
             inBuffers[city]["table"], api='psql',
             epsg=inBuffers[city]["epsg"], geomType='POINT', colGeom=cgeom
         )
         
         # Send Buffers data to PostgreSQL
         inBuffers[city]["pg_buffer"] = shp_to_psql(
-            conParam, multiBuffer, pgTable='buffers_{}'.format(city),
+            db, multiBuffer, pgTable='buffers_{}'.format(city),
             api="shp2pgsql", srsEpsgCode=inBuffers[city]["epsg"]
         )
         
         inBuffers[city]["filter_table"] = q_to_ntbl(
-            conParam, "filter_{}".format(inBuffers[city]["table"]), (
+            db, "filter_{}".format(inBuffers[city]["table"]), (
                 "SELECT srcdata.*, "
                 "array_agg(buffersg.cardeal ORDER BY buffersg.cardeal) "
                 "AS intersect_buffer FROM ("
@@ -179,7 +178,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         )
         
         inBuffers[city]["outside_table"] = q_to_ntbl(
-            conParam, "outside_{}".format(inBuffers[city]["table"]), (
+            db, "outside_{}".format(inBuffers[city]["table"]), (
                 "SELECT * FROM ("
                 "SELECT srcdata.*, "
                 "array_agg(buffersg.cardeal ORDER BY buffersg.cardeal) "
@@ -202,20 +201,18 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         )
         
         # Union these two tables
-        inBuffers[city]["table"] = q_to_ntbl(
-            conParam, "data_{}".format(city), (
-                "SELECT * FROM {intbl} UNION ALL "
-                "SELECT {cols}, keyword, geom, extracted_buffer, "
-                "CASE WHEN array_length(not_intersect_buffer, 1) = 9 "
-                "THEN '{array_symbol}' ELSE not_intersect_buffer END AS "
-                "intersect_buffer FROM {outbl}"
-            ).format(
-                intbl        = inBuffers[city]["filter_table"],
-                outbl        = inBuffers[city]["outside_table"],
-                cols         = ", ".join(dataColumns),
-                array_symbol = '{' + '}'
-            ), api='psql'
-        )
+        inBuffers[city]["table"] = q_to_ntbl(db, "data_{}".format(city), (
+            "SELECT * FROM {intbl} UNION ALL "
+            "SELECT {cols}, keyword, geom, extracted_buffer, "
+            "CASE WHEN array_length(not_intersect_buffer, 1) = 9 "
+            "THEN '{array_symbol}' ELSE not_intersect_buffer END AS "
+            "intersect_buffer FROM {outbl}"
+        ).format(
+            intbl        = inBuffers[city]["filter_table"],
+            outbl        = inBuffers[city]["outside_table"],
+            cols         = ", ".join(dataColumns),
+            array_symbol = '{' + '}'
+        ), api='psql')
         
         """
         Get Buffers table with info related:
@@ -227,7 +224,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         foram obtidos como buffer
         """
         inBuffers[city]["pg_buffer"] = q_to_ntbl(
-            conParam, "dt_{}".format(inBuffers[city]["pg_buffer"]), (
+            db, "dt_{}".format(inBuffers[city]["pg_buffer"]), (
                 "SELECT main.*, get_obtidos.pnt_obtidos, "
                 "obtidos_fora.pnt_obtidos_fora, intersecting.pnt_intersect, "
                 "int_not_obtained.pnt_intersect_non_obtain "
@@ -282,7 +279,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         de se intersectar com o buffer
         """
         inBuffers[city]["table"] = q_to_ntbl(
-            conParam, "info_{}".format(city), (
+            db, "info_{}".format(city), (
                 "SELECT {cols}, dt.keyword, dt.geom, "
                 "CAST(dt.extracted_buffer AS text) AS extracted_buffer, "
                 "CAST(dt.intersect_buffer AS text) AS intersect_buffer, "
@@ -310,13 +307,13 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
         
         # Export Results
         dbtbl_to_shp(
-            conParam, inBuffers[city]["table"], 'geom',
+            db, inBuffers[city]["table"], 'geom',
             os.path.join(workspace, "{}.shp".format(inBuffers[city]["table"])),
             api='psql', epsg=inBuffers[city]["epsg"]
         )
         
         dbtbl_to_shp(
-            conParam, inBuffers[city]["pg_buffer"], 'geom',
+            db, inBuffers[city]["pg_buffer"], 'geom',
             os.path.join(workspace, "{}.shp".format(inBuffers[city]["pg_buffer"])),
             api='psql', epsg=inBuffers[city]["epsg"]
         )
@@ -324,7 +321,7 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, conParam, datasourc
     return inBuffers
 
 
-def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABLE):
+def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, db, OUTPUT_TABLE):
     """
     Search for data in DSN and other platforms by cell
     """
@@ -374,12 +371,11 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
     RT = merge_df(RESULTS)
     
     # Create DB
-    create_db(conpgsql, conpgsql["DB"], overwrite=True)
-    conpgsql["DATABASE"] = conpgsql["DB"]
+    create_db(db, overwrite=True, api='psql')
     
     # Send Data to PostgreSQL
     df_to_db(
-        conpgsql, RESULTS_TABLE, "{}_data".format(DATA_SOURCE),
+        db, RT, "{}_data".format(DATA_SOURCE),
         EPSG, "POINT",
         colGeom='geometry' if 'geometry' in RT.columns.values else 'geom'
     )
@@ -389,13 +385,13 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, conpgsql, OUTPUT_TABL
         x != 'geom' and x != "grid_id"
     ] + ["geom"]
     
-    GRP_BY_TBL = q_to_ntbl(conpgsql, "{}_grpby".format(DATA_SOURCE), (
+    GRP_BY_TBL = q_to_ntbl(db, "{}_grpby".format(DATA_SOURCE), (
         "SELECT {cols}, CAST(array_agg(grid_id) AS text) AS grid_id "
         "FROM {dtsrc}_data GROUP BY {cols}"
     ).format(cols=", ".join(COLS), dtsrc=DATA_SOURCE), api='psql')
     
     dbtbl_to_shp(
-        conpgsql, GRP_BY_TBL, "geom", OUTPUT_TABLE,
+        db, GRP_BY_TBL, "geom", OUTPUT_TABLE,
         api="psql", epsg=EPSG
     )
     

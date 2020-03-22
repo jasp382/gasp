@@ -3,19 +3,18 @@ Tools for Geoserver workspaces management
 """
 
 
-def lst_ws(conf={
-    'USER':'admin', 'PASSWORD': 'geoserver',
-    'HOST':'localhost', 'PORT': '8080'}):
+def lst_ws():
     """
     Return a list with all avaiable workspaces in the GeoServer
     """
     
     import requests
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
 
     url = '{pro}://{host}:{port}/geoserver/rest/workspaces'.format(
-        host=conf['HOST'], port=conf['PORT'], pro=protocol
+        host=conf['HOST'], port=conf['PORT'], pro=conf['PROTOCOL']
     )
 
     r = requests.get(
@@ -30,23 +29,23 @@ def lst_ws(conf={
         return []
 
 
-def del_ws(name, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8080'}):
+def del_ws(name):
     """
     Delete an existing GeoServer Workspace 
     """
     
-    import requests
-    import json
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    import requests;    import json
+    from gasp.cons.gsrv import con_gsrv
 
-    url = ('{pro}://{host}:{port}/geoserver/rest/workspaces/{work}?'
-           'recurse=true').format(
-               host=conf['HOST'], port=conf['PORT'], work=name,
-               pro=protocol
-           )
+    conf = con_gsrv()
+
+    url = (
+        '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}?'
+        'recurse=true'
+    ).format(
+        host=conf['HOST'], port=conf['PORT'], work=name,
+        pro=conf['PROTOCOL']
+    )
 
     r = requests.delete(
         url,
@@ -56,27 +55,24 @@ def del_ws(name, conf={
     return r
 
 
-def create_ws(name, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8080'
-    }, overwrite=True):
+def create_ws(name, overwrite=True):
     """
     Create a new Geoserver Workspace
     """
     
-    import requests
-    import json
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    import requests;    import json
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
 
     url = '{pro}://{host}:{port}/geoserver/rest/workspaces'.format(
-        host=conf['HOST'], port=conf['PORT'], pro=protocol
+        host=conf['HOST'], port=conf['PORT'], pro=conf['PROTOCOL']
     )
     
     if overwrite:
-        GEO_WORK = lst_ws(conf=conf)
+        GEO_WORK = lst_ws()
         if name in GEO_WORK:
-            del_ws(name, conf=conf)
+            del_ws(name)
 
     r = requests.post(
         url,

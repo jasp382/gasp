@@ -3,7 +3,7 @@ Analyse time references in PGTABLES
 """
 
 
-def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
+def ID_rows_with_temporal_proximity_by_entities(db, table, entity_field,
                                  day_field, hour_field, hour_decimal_field,
                                  time_tolerance, outXlsPath):
     """
@@ -41,7 +41,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
     
     entity_field = obj_to_lst(entity_field)
     COLS = entity_field + [day_field, hour_field]
-    COLS_TYPE = cols_type(conParam, table)
+    COLS_TYPE = cols_type(db, table)
     
     # TIME TOLERANCE IN HOURS
     TIME_TOLERANCE = time_tolerance / 60.0
@@ -54,7 +54,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
             else:
                 whr.append("{}={}".format(c, row[c]))
         
-        hourRows = q_to_obj(conParam,
+        hourRows = q_to_obj(db,
             "SELECT {} FROM {} WHERE {}".format(
                 hour_decimal_field, table,
                 " AND ".join(whr)
@@ -79,13 +79,12 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
         return row
     
     # Count entity occourrences for one day and hour
-    countsByEntityTime = q_to_obj(conParam, (
+    countsByEntityTime = q_to_obj(db, (
         "SELECT {scols}, conta FROM "
         "(SELECT {scols}, COUNT({ent}) AS conta FROM {tbl} "
         "GROUP BY {scols}) AS foo WHERE conta > 1"
     ).format(
-        scols = ', '.join(COLS),
-        ent = entity_field[0],
+        scols = ', '.join(COLS), ent = entity_field[0],
         tbl = table
     ), db_api='psql')
     
@@ -100,7 +99,7 @@ def ID_rows_with_temporal_proximity_by_entities(conParam, table, entity_field,
     return outXlsPath
 
 
-def del_rows_by_temporal_proximity(conpsql, table, entity_fields,
+def del_rows_by_temporal_proximity(db, table, entity_fields,
                                    day_field, hour_field, hour_decimal,
                                    minute_field, second_field,
                                    time_tolerance, outresult, exclusionRows=None):
@@ -156,7 +155,7 @@ def del_rows_by_temporal_proximity(conpsql, table, entity_fields,
             mtable=table, tol=str(time_tolerance)
         )
         
-        q_to_ntbl(conpsql, exclusionRows, sql, api='psql')
+        q_to_ntbl(db, exclusionRows, sql, api='psql')
     
     # Get rows outside the given time tolerance
     sql = (
@@ -182,7 +181,7 @@ def del_rows_by_temporal_proximity(conpsql, table, entity_fields,
         mtable=table, tol=str(time_tolerance)
     )
     
-    q_to_ntbl(conpsql, outresult, sql, api='psql')
+    q_to_ntbl(db, outresult, sql, api='psql')
     
     return outresult
 

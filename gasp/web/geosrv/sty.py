@@ -3,20 +3,18 @@ Tools for Geoserver styles management
 """
 
 
-def lst_styles(conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def lst_styles():
     """
     List Styles in Geoserver
     """
     
     import requests
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
     
     url = '{pro}://{host}:{port}/geoserver/rest/styles'.format(
-        host=conf['HOST'], port=conf['PORT'], pro=protocol
+        host=conf['HOST'], port=conf['PORT'], pro=conf['PROTOCOL']
     )
     
     r = requests.get(
@@ -33,49 +31,47 @@ def lst_styles(conf={
         return []
 
 
-def del_style(name, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def del_style(name):
     """
     Delete a specific style
     """
     
     import requests; import json
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
     
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
-    
-    url = ('{pro}://{host}:{port}/geoserver/rest/styles/{stl}?'
-           'recurse=true').format(
-               host=conf['HOST'], port=conf['PORT'], stl=name, pro=protocol
-           )
+    url = (
+        '{pro}://{host}:{port}/geoserver/rest/styles/{stl}?'
+        'recurse=true'
+    ).format(
+        host=conf['HOST'], port=conf['PORT'],
+        stl=name, pro=conf['PROTOCOL']
+    )
     
     r = requests.delete(url, auth=(conf['USER'], conf['PASSWORD']))
     
     return r
 
 
-def create_style(name, sld, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }, overwrite=None):
+def create_style(name, sld, overwrite=None):
     """
     Import SLD into a new Geoserver Style
     """
 
-    import os
-    import requests
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    import requests;    import os
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
     
     if overwrite:
-        GEO_STYLES = lst_styles(conf=conf)
+        GEO_STYLES = lst_styles()
         
         if name in GEO_STYLES:
-            del_style(name, conf=conf)
+            del_style(name)
 
     url = '{pro}://{host}:{port}/geoserver/rest/styles'.format(
-        host=conf['HOST'], port=conf['PORT'], pro=protocol
+        host=conf['HOST'], port=conf['PORT'], pro=conf['PROTOCOL']
     )
 
     xml = '<style><name>{n}</name><filename>{filename}</filename></style>'.format(
@@ -90,11 +86,10 @@ def create_style(name, sld, conf={
     )
 
     url = '{pro}://{host}:{port}/geoserver/rest/styles/{n}'.format(
-        host=conf['HOST'], port=conf['PORT'], n=name, pro=protocol
+        host=conf['HOST'], port=conf['PORT'], n=name, pro=conf['PROTOCOL']
     )
 
     with open(sld, 'rb') as f:
-
         r = requests.put(
             url,
             data=f,
@@ -105,21 +100,19 @@ def create_style(name, sld, conf={
         return r
 
 
-def assign_style_to_layer(style, layer, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8080'
-    }):
+def assign_style_to_layer(style, layer):
     """
     Add a style to a geoserver layer
     """
 
-    import requests
-    import json
-    
-    protocol = 'http' if not 'PROTOCOL' in conf else conf['PROTOCOL']
+    import requests;    import json
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
 
     url = '{pro}://{host}:{port}/geoserver/rest/layers/{lyr}/styles'.format(
-        host=conf['HOST'], port=conf['PORT'], lyr=layer, pro=protocol
+        host=conf['HOST'], port=conf['PORT'],
+        lyr=layer, pro=conf['PROTOCOL']
     )
 
     r = requests.post(
@@ -132,35 +125,29 @@ def assign_style_to_layer(style, layer, conf={
     return r
 
 
-def add_style_to_layers_basename(style, basename, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def add_style_to_layers_basename(style, basename):
     """
     Add a style to all layers with the same basename
     """
     
     from gasp.web.geosrv.lyrs import lst_lyr
-    
-    protocol = 'http' if not 'PROTOCOL' in conf else conf['PROTOCOL']
 
     # List layers that starts with a certain basename
-    layers = lst_lyr(conf=conf)
+    layers = lst_lyr()
 
+    resp = []
     for lyr in layers:
         if basename in lyr:
             # Apply style to all layers in flayers
-            r = assign_style_to_layer(style, lyr, conf=conf)
+            r = assign_style_to_layer(style, lyr)
+            resp.append(r)
+    
+    return resp
 
 
-def add_style_to_layers(layers, style, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def add_style_to_layers(layers, style):
     """
     Add a style to all layers in a list
     """
-    
-    for layer in layers:
-        r = assign_style_to_layer(style, layer, conf=conf)
 
+    return [assign_style_to_layer(style, l) for l in layers]

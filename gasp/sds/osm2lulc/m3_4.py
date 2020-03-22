@@ -4,7 +4,7 @@ Rule 3 and 4 - Area upper than and less than
 
 from gasp.sds.osm2lulc import DB_SCHEMA
 
-def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
+def rst_area(db, polygonTable, UPPER=True, api='SQLITE'):
     """
     Select features with area upper than.
     
@@ -24,7 +24,7 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
     
     # Get Classes
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = q_to_obj(osmLink, (
+    lulcCls = q_to_obj(db, (
         "SELECT {r} FROM {tbl} WHERE {ga} {op} t_{r} GROUP BY {r}"
     ).format(
          r=RULE_COL, tbl=polygonTable, ga=GEOM_AREA, op=OPERATOR
@@ -39,7 +39,7 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
     for cls in lulcCls:
         time_x = datetime.datetime.now().replace(microsecond=0)
         grsVect = db_to_grs(
-            osmLink, polygonTable, "geometry",
+            db, polygonTable, "geometry",
             "{}_{}".format(RULE_COL, cls),
             inDB="psql" if api == 'POSTGIS' else 'sqlite',
             where=WHR.format(
@@ -62,7 +62,7 @@ def rst_area(osmLink, polygonTable, UPPER=True, api='SQLITE'):
     return clsRst, timeGasto
 
 
-def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
+def grs_vect_selbyarea(osmdb, polyTbl, UPPER=True, apidb='SQLITE'):
     """
     Select features with area upper than.
     
@@ -85,7 +85,7 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     
     # Check if we have interest data
     time_a = datetime.datetime.now().replace(microsecond=0)
-    N = cnt_row(osmcon, polyTbl, where=WHR,
+    N = cnt_row(osmdb, polyTbl, where=WHR,
         api='psql' if apidb == 'POSTGIS' else 'sqlite'
     )
     time_b = datetime.datetime.now().replace(microsecond=0)
@@ -93,7 +93,7 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     if not N: return None, {0 : ('count_rows', time_b - time_a)}
     
     # Data to GRASS GIS
-    grsVect = db_to_shp(osmcon, polyTbl, "geometry",
+    grsVect = db_to_shp(osmdb, polyTbl, "geometry",
         "area_{}".format(DIRECTION), where=WHR,
         inDB='psql' if apidb == 'POSTGIS' else 'sqlite',
         filterByReg=True, outShpIsGRASS=True
@@ -115,7 +115,7 @@ def grs_vect_selbyarea(osmcon, polyTbl, UPPER=True, apidb='SQLITE'):
     }
 
 
-def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
+def num_selbyarea(db, polyTbl, folder, cellsize, srscode, rstTemplate,
                   UPPER=True, api='SQLITE'):
     """
     Select features with area upper than.
@@ -140,7 +140,7 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
     
     # Get Classes
     time_a = datetime.datetime.now().replace(microsecond=0)
-    lulcCls = q_to_obj(osmLink, (
+    lulcCls = q_to_obj(db, (
         "SELECT {r} FROM {tbl} WHERE {ga} {op} t_{r} GROUP BY {r}"
     ).format(
         r=RULE_COL, tbl=polyTbl, ga=GEOM_AREA, op=OPERATOR
@@ -157,7 +157,7 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
         time_x = datetime.datetime.now().replace(microsecond=0)
         if api == "SQLITE":
             shpCls = sel_by_attr(
-                osmLink, SQL_Q.format(c=str(CLS), tbl=polyTbl, w=WHR.format(
+                db, SQL_Q.format(c=str(CLS), tbl=polyTbl, w=WHR.format(
                     op=OPERATOR, r=RULE_COL, ga=GEOM_AREA, cls_=CLS
                 )),
                 os.path.join(folder, "{}_{}.shp".format(RULE_COL,CLS)),
@@ -165,7 +165,7 @@ def num_selbyarea(osmLink, polyTbl, folder, cellsize, srscode, rstTemplate,
             )
         else:
             shpCls = sel_by_attr(
-                osmLink, SQL_Q.format(c=str(CLS), tbl=polyTbl, w=WHR.format(
+                db, SQL_Q.format(c=str(CLS), tbl=polyTbl, w=WHR.format(
                     op=OPERATOR, r=RULE_COL, ga=GEOM_AREA, cls_=CLS
                 )), "geometry", os.path.join(
                     folder, "{}_{}.shp".format(RULE_COL, str(CLS))

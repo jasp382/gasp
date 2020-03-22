@@ -2,7 +2,7 @@
 Manage DBMS Tables
 """
 
-def create_tbl(conParam, table, fields, orderFields=None, api='psql'):
+def create_tbl(db, table, fields, orderFields=None, api='psql'):
     """
     Create Table in Database
     
@@ -16,20 +16,15 @@ def create_tbl(conParam, table, fields, orderFields=None, api='psql'):
     
         ordenedFields = orderFields if orderFields else fields.keys()
     
-        con = sqlcon(conParam)
+        con = sqlcon(db)
     
         cursor = con.cursor()
     
-        cursor.execute(
-            "CREATE TABLE {} ({})".format(
-                table,
-                ', '.join([
-                    '{} {}'.format(
-                        ordenedFields[x], fields[ordenedFields[x]]
-                    ) for x in range(len(ordenedFields))
-                ])
-            )
-        )
+        cursor.execute("CREATE TABLE {} ({})".format(
+            table, ', '.join(['{} {}'.format(
+                ordenedFields[x], fields[ordenedFields[x]]
+            ) for x in range(len(ordenedFields))])
+        ))
     
         con.commit()
     
@@ -39,17 +34,13 @@ def create_tbl(conParam, table, fields, orderFields=None, api='psql'):
     elif api == 'sqlite':
         import sqlite3
         
-        conn = sqlite3.connect(conParam)
+        conn = sqlite3.connect(db)
         cursor = conn.cursor()
         
-        cursor.execute(
-            "CREATE TABLE {} ({})".format(
-                table,
-                ', '.join([
-                    "{} {}".format(k, fields[k]) for k in fields
-                ])
-            )
-        )
+        cursor.execute("CREATE TABLE {} ({})".format(
+            table, ', '.join(["{} {}".format(
+                k, fields[k]) for k in fields])
+        ))
         
         conn.commit()
         cursor.close()
@@ -77,7 +68,7 @@ def new_view(sqliteDb, newView, q):
     return newView
 
 
-def rename_tbl(conParam, tblNames):
+def rename_tbl(db, tblNames):
     """
     Rename PGSQL Table
     
@@ -86,7 +77,7 @@ def rename_tbl(conParam, tblNames):
     
     from gasp.sql.c import sqlcon
     
-    con = sqlcon(conParam)
+    con = sqlcon(db)
     
     cursor = con.cursor()
     
@@ -109,7 +100,7 @@ def rename_tbl(conParam, tblNames):
 Delete Tables
 """
 
-def del_tables(lnk, pg_table_s, isViews=None, isBasename=None):
+def del_tables(db, pg_table_s, isViews=None, isBasename=None):
     """
     Delete all tables in pg_table_s
     """
@@ -123,13 +114,13 @@ def del_tables(lnk, pg_table_s, isViews=None, isBasename=None):
         if not isViews:
             from gasp.sql.i import lst_tbl
         
-            pg_table_s = lst_tbl(lnk, api='psql', basename=pg_table_s)
+            pg_table_s = lst_tbl(db, api='psql', basename=pg_table_s)
         else:
             from gasp.sql.i import lst_views
             
-            pg_table_s = lst_views(lnk, basename=pg_table_s)
+            pg_table_s = lst_views(db, basename=pg_table_s)
         
-    con = sqlcon(lnk)
+    con = sqlcon(db)
     
     l = []
     for i in range(0, len(pg_table_s), 100):
@@ -145,14 +136,14 @@ def del_tables(lnk, pg_table_s, isViews=None, isBasename=None):
     con.close()
 
 
-def drop_table_data(dic_con, table, where=None):
+def drop_tbldata(db, table, where=None):
     """
     Delete all data on a PGSQL Table
     """
     
     from gasp.sql.c import sqlcon
     
-    con = sqlcon(dic_con)
+    con = sqlcon(db)
     
     cursor = con.cursor()    
     
@@ -165,14 +156,14 @@ def drop_table_data(dic_con, table, where=None):
     con.close()
 
 
-def drop_where_cols_are_same(conParam, table, colA, colB):
+def drop_where_cols_are_same(db, table, colA, colB):
     """
     Delete rows Where colA has the same value than colB
     """
     
     from gasp.sql.c import sqlcon
     
-    con = sqlcon(conParam)
+    con = sqlcon(db)
     
     cursor = con.cursor()
     
@@ -187,7 +178,7 @@ Write new tables or edit tables in Database
 """
 
 
-def update_table(con_pgsql, pg_table, dic_new_values, dic_ref_values=None, 
+def update_table(db, pg_table, dic_new_values, dic_ref_values=None, 
                  logic_operator='OR'):
     """
     Update Values on a PostgreSQL table
@@ -210,7 +201,7 @@ def update_table(con_pgsql, pg_table, dic_new_values, dic_ref_values=None,
             'The valid options are \'OR\' and \'AND\'')
         )
 
-    con = sqlcon(con_pgsql)
+    con = sqlcon(db)
 
     cursor = con.cursor()
     
@@ -306,7 +297,7 @@ def set_values_use_pndref(sqliteDB, table, colToUpdate,
     conn.close()
 
 
-def replace_null_with_other_col_value(con_pgsql, pgtable, nullFld, replaceFld):
+def replace_null_with_other_col_value(db, pgtable, nullFld, replaceFld):
     """
     Do the following
     
@@ -331,7 +322,7 @@ def replace_null_with_other_col_value(con_pgsql, pgtable, nullFld, replaceFld):
     
     from gasp.sql.c import sqlcon
     
-    con = sqlcon(con_pgsql)
+    con = sqlcon(db)
     
     cursor = con.cursor()
     
@@ -346,7 +337,7 @@ def replace_null_with_other_col_value(con_pgsql, pgtable, nullFld, replaceFld):
     con.close()
 
 
-def distinct_to_table(lnk, pgtable, outable, cols=None):
+def distinct_to_table(db, pgtable, outable, cols=None):
     """
     Distinct values of one column to a new table
     """
@@ -359,18 +350,17 @@ def distinct_to_table(lnk, pgtable, outable, cols=None):
     if not cols:
         from gasp.sql.i import cols_name
         
-        cols = cols_name(lnk, pgtable, api='psql')
+        cols = cols_name(db, pgtable, api='psql')
     
-    con = sqlcon(lnk)
+    con = sqlcon(db)
     
     cs = con.cursor()
     
-    cs.execute(
-        "CREATE TABLE {nt} AS SELECT {cls} FROM {t} GROUP BY {cls}".format(
-            nt=outable, cls=', '.join(cols),
-            t=pgtable
-        )
-    )
+    cs.execute((
+        "CREATE TABLE {nt} AS "
+        "SELECT {cls} FROM {t} GROUP BY {cls}"
+    ).format(nt=outable, cls=', '.join(cols), t=pgtable
+    ))
     
     con.commit()
     cs.close()
@@ -383,7 +373,7 @@ def distinct_to_table(lnk, pgtable, outable, cols=None):
 Merge Tables
 """
 
-def tbls_to_tbl(conParam, lst_tables, outTable):
+def tbls_to_tbl(db, lst_tables, outTable):
     """
     Append all tables in lst_tables into the outTable
     """
@@ -393,6 +383,6 @@ def tbls_to_tbl(conParam, lst_tables, outTable):
     sql = " UNION ALL ".join([
         "SELECT * FROM {}".format(t) for t in lst_tables])
     
-    outTable = q_to_ntbl(conParam, outTable, sql, api='psql')
+    outTable = q_to_ntbl(db, outTable, sql, api='psql')
     
     return outTable

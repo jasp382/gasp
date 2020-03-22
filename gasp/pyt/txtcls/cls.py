@@ -347,7 +347,7 @@ def predict_fm_mdl(mdlFile, vFile, data, txtCol, method='NaiveBayes'):
 Query based methods
 """
 
-def get_rows_related_with_event(conObj, tblSchema, words, resultTbl,
+def get_rows_related_with_event(db, tblSchema, words, resultTbl,
                                 startTime=None, endTime=None):
     """
     Take a table of a database and see if the text in one column
@@ -419,4 +419,4 @@ def get_rows_related_with_event(conObj, tblSchema, words, resultTbl,
             
         )
     
-    return db_to_tbl(conObj, Q, resultTbl)
+    return db_to_tbl(db, Q, resultTbl)

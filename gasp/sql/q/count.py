@@ -7,7 +7,7 @@ from gasp.sql.fm import q_to_obj
 from gasp.to     import obj_to_tbl
 
 
-def count_by_periods_with_certain_duration(conParam, PERIOD_INTERVAL, pgtable,
+def count_by_periods_with_certain_duration(db, PERIOD_INTERVAL, pgtable,
                                            TIME_FIELD, outTable,
                                            filterWhere=None):
     """
@@ -39,7 +39,7 @@ def count_by_periods_with_certain_duration(conParam, PERIOD_INTERVAL, pgtable,
             )
         )
         
-        count = q_to_obj(conParam, QUERY, db_api='psql')
+        count = q_to_obj(db, QUERY, db_api='psql')
         
         count.rename(index={0 : "{}-{}".format(
             _int_[0][:5], _int_[1][:5]
@@ -56,7 +56,7 @@ def count_by_periods_with_certain_duration(conParam, PERIOD_INTERVAL, pgtable,
     return outTable
 
 
-def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
+def count_entity_periods_with_certain_duration(db, PERIOD_INTERVAL,
                                                PGTABLE, TIME_FIELD, ENTITY_FIELD,
                                                OUT_TABLE, filterWhere=None):
     """
@@ -91,7 +91,7 @@ def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
             whr = "" if not filterWhere else " AND ({}) ".format(filterWhere)
         )
         
-        count = q_to_obj(CON_PSQL, Q, db_api='psql')
+        count = q_to_obj(db, Q, db_api='psql')
         
         counting.append(count)
     
@@ -102,7 +102,7 @@ def count_entity_periods_with_certain_duration(CON_PSQL, PERIOD_INTERVAL,
     return OUT_TABLE
 
 
-def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
+def count_by_groupcols_and_periods(db, pgtable, COLUMNS_TO_GROUP,
                                    HOUR_FIELD, MINUTES_FIELD, COUNT_FIELD_NAME,
                                    OUTPUT_FILE,
                                    PERIOD_INTERVAL=None, PERIODS=None):
@@ -112,7 +112,7 @@ def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
     
     from gasp.pyt.tm import day_to_intervals
     
-    if not PERIODS and not PERIODS_INTERVAL:
+    if not PERIODS and not PERIOD_INTERVAL:
         raise ValueError((
             "Please give value to PERIODS or PERIODS_INTERAL. "
             "If PERIODS and PERIODS_INTERVAL, PERIODS will have priority."
@@ -163,7 +163,7 @@ def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
                     "({hourF}={hourUpper} AND {minF} < {minUpper}) "
                     "GROUP BY {cols}"
                 ).format(
-                    table_pgtable, cols=', '.join(COLUMNS_TO_GROUP),
+                    table=pgtable, cols=', '.join(COLUMNS_TO_GROUP),
                     col=COLUMNS_TO_GROUP[0], countname=COUNT_FIELD_NAME,
                     hourF=HOUR_FIELD, hourLower=str(start[0]), hourUpper=str(end[0]),
                     minF=MINUTES_FIELD, minLower=str(end[1]), minUpper=str(end[1]),
@@ -174,7 +174,7 @@ def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
                     ])
                 )
         
-        countTbl = q_to_obj(conParam, QUERY, db_api='psql')
+        countTbl = q_to_obj(db, QUERY, db_api='psql')
         
         countTbl[HOUR_FIELD] = INTERVAL_STR
         
@@ -187,7 +187,7 @@ def count_by_groupcols_and_periods(conParam, pgtable, COLUMNS_TO_GROUP,
     obj_to_tbl(table, OUTPUT_FILE)
 
 
-def sel_where_groupByIs(conParam, table, groupByCols, grpByOp, grpByVal, outTable,
+def sel_where_groupByIs(db, table, groupByCols, grpByOp, grpByVal, outTable,
                         filterWhere=None):
     """
     Select rows in table where the GROUP BY values of the groupByCols agrees with
@@ -224,11 +224,11 @@ def sel_where_groupByIs(conParam, table, groupByCols, grpByOp, grpByVal, outTabl
         fwhr="" if not filterWhere else " AND ({})".format(filterWhere)
     )
     
-    outTable = q_to_ntbl(conParam, outTable, q, api='psql')
+    outTable = q_to_ntbl(db, outTable, q, api='psql')
     
     return outTable
 
-def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
+def count_rows_by_entity_and_shpJoin(dbn, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
                                      SHP_TABLE, SHP_ENTITY, RESULT_SHP,
                                      WHERE=None):
     """
@@ -255,7 +255,8 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     from gasp.pyt.df.to    import series_to_list
     from gasp.gt.toshp     import df_to_shp
     from gasp.pyt.df.joins import combine_dfs
-    from gasp.sql.to       import q_to_ntbl, del_tables
+    from gasp.sql.to       import q_to_ntbl
+    from gasp.sql.tbl      import del_tables
     
     
     # Get GROUP BYed data
@@ -266,10 +267,10 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
         whr="" if not WHERE else "WHERE {} ".format(WHERE)
     )
     
-    selData = q_to_ntbl(conPSQL, "seldata", q, api='psql')
+    selData = q_to_ntbl(dbn, "seldata", q, api='psql')
     
     # Get columns of the output table
-    pivotCols = q_to_obj(conPSQL,
+    pivotCols = q_to_obj(dbn,
         "SELECT {piv} FROM {tb} GROUP BY {piv}".format(
             tb=selData, piv=PG_PIVOT_COL
         ), db_api='psql'
@@ -277,7 +278,7 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     pivotCols = series_to_list(pivotCols[PG_PIVOT_COL])
     
     # Get data for each new column - new column data in one dataframe
-    pre_pivot = [q_to_obj(conPSQL,
+    pre_pivot = [q_to_obj(dbn,
         "SELECT {entity}, n{entity} FROM {t} WHERE {c}='{pivcol}'".format(
             entity=PG_ENTITY, t=selData, c=PG_PIVOT_COL, pivcol=col
         ), db_api='psql'
@@ -301,7 +302,7 @@ def count_rows_by_entity_and_shpJoin(conPSQL, PG_TABLE, PG_ENTITY, PG_PIVOT_COL,
     
     df_to_shp(shpDf, RESULT_SHP)
     
-    del_tables(conPSQL, selData)
+    del_tables(dbn, selData)
     
     return RESULT_SHP
 

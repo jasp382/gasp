@@ -172,7 +172,7 @@ def txt_nodata(day, out):
 """
 Conversion Methods
 """
-def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
+def db_to_srm(db, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
               macs=None, deflong=None, deflat=None):
     """
     Database to SRM
@@ -203,7 +203,7 @@ def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
             " OR ".join(["jtbl.mac='{}'".format(m) for m in macs])
         )
     )
-    df = q_to_obj(conDB, q, db_api='mysql')
+    df = q_to_obj(db, q, db_api='mysql')
     
     if not df.shape[0]:
         return txt_nodata(DAY, OUT_SRM)
@@ -289,7 +289,7 @@ def db_to_srm(conDB, TABLE, TIME, TEMP, DAY, COLS_ORDER, COL_MAP, OUT_SRM,
     return OUT_SRM
 
 
-def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
+def db_to_nc_v2(db, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
                 pos_quality_flag, deflong=None, deflat=None, macs=None):
     """
     DB to NC according Copernicus specifications for data collected IN SITU
@@ -341,7 +341,7 @@ def db_to_nc_v2(conDB, tbl, daystr, _dimCols, _varCols, tempCol, timeCol, outNc,
             " OR ".join(["jtbl.mac='{}'".format(m) for m in macs])
         )
     )
-    geoDf = q_to_obj(conDB, Q, db_api='mysql')
+    geoDf = q_to_obj(db, Q, db_api='mysql')
     
     if not geoDf.shape[0]:
         return txt_nodata(daystr, outNc)

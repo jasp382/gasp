@@ -2,7 +2,7 @@
 Database data to Python Object/Array
 """
 
-def q_to_obj(condb, query, db_api='psql', geomCol=None, epsg=None, of='df',
+def q_to_obj(dbname, query, db_api='psql', geomCol=None, epsg=None, of='df',
     cols=None):
     """
     Query database and convert data to Pandas Dataframe/GeoDataFrame
@@ -22,7 +22,7 @@ def q_to_obj(condb, query, db_api='psql', geomCol=None, epsg=None, of='df',
         from gasp.pyt   import obj_to_lst
         from gasp.sql.i import cols_name
 
-        cols = cols_name(condb, query) if not cols else \
+        cols = cols_name(dbname, query) if not cols else \
             obj_to_lst(cols)
 
         query = "SELECT {} FROM {}".format(
@@ -35,7 +35,7 @@ def q_to_obj(condb, query, db_api='psql', geomCol=None, epsg=None, of='df',
         import pandas
         from gasp.sql.c import alchemy_engine
     
-        pgengine = alchemy_engine(condb, api=db_api)
+        pgengine = alchemy_engine(dbname, api=db_api)
     
         df = pandas.read_sql(query, pgengine, columns=None)
     
@@ -43,7 +43,7 @@ def q_to_obj(condb, query, db_api='psql', geomCol=None, epsg=None, of='df',
         from geopandas  import GeoDataFrame
         from gasp.sql.c import sqlcon
         
-        con = sqlcon(condb)
+        con = sqlcon(dbname, sqlAPI='psql')
         
         df = GeoDataFrame.from_postgis(
             query, con, geom_col=geomCol,
@@ -60,7 +60,7 @@ def q_to_obj(condb, query, db_api='psql', geomCol=None, epsg=None, of='df',
 Dump Databases and their tables
 """
 
-def dump_db(conDB, outSQL, api='psql'):
+def dump_db(db, outSQL, api='psql'):
     """
     DB to SQL Script
     """
@@ -68,18 +68,26 @@ def dump_db(conDB, outSQL, api='psql'):
     from gasp import exec_cmd
     
     if api == 'psql':
+        from gasp.cons.psql import con_psql
+
+        condb = con_psql()
+
         cmd = "pg_dump -U {} -h {} -p {} -w {} > {}".format(
-            conDB["USER"], conDB["HOST"], conDB["PORT"],
-            conDB["DATABASE"], outSQL
+            condb["USER"], condb["HOST"], condb["PORT"],
+            db, outSQL
         )
     
     elif api == 'mysql':
+        from gasp.cons.mysql import con_mysql
+
+        condb = con_mysql()
+
         cmd = (
             "mysqldump -u {} --port {} -p{} --host {} "
             "{} > {}"
         ).format(
-            conDB["USER"], conDB["PORT"], conDB["PASSWORD"],
-            conDB["HOST"], conDB["DATABASE"], outSQL
+            condb["USER"], condb["PORT"], condb["PASSWORD"],
+            condb["HOST"], db, outSQL
         )
     
     else:
@@ -90,20 +98,21 @@ def dump_db(conDB, outSQL, api='psql'):
     return outSQL
 
 
-def dump_tbls(conParam, tables, outsql, startWith=None):
+def dump_tbls(db, tables, outsql, startWith=None):
     """
     Dump one table into a SQL File
     """
     
-    from gasp import exec_cmd
-    from gasp.pyt import obj_to_lst
+    from gasp           import exec_cmd
+    from gasp.pyt       import obj_to_lst
+    from gasp.cons.psql import con_psql
     
     tbls = obj_to_lst(tables)
     
     if startWith:
         from gasp.sql.i import lst_tbl
         
-        db_tbls = lst_tbl(conParam, api='psql')
+        db_tbls = lst_tbl(db, api='psql')
         
         dtbls = []
         for t in db_tbls:
@@ -113,12 +122,14 @@ def dump_tbls(conParam, tables, outsql, startWith=None):
         
         tbls = dtbls
     
+    condb = con_psql()
+    
     outcmd = exec_cmd((
         "pg_dump -Fc -U {user} -h {host} -p {port} "
         "-w {tbl} {db} > {out}"
     ).format(
-        user=conParam["USER"], host=conParam["HOST"],
-        port=conParam["PORT"], db=conParam["DATABASE"], out=outsql,
+        user=condb["USER"], host=condb["HOST"],
+        port=condb["PORT"], db=db["DATABASE"], out=outsql,
         tbl=" ".join(["-t {}".format(t) for t in tbls])
     ))
     

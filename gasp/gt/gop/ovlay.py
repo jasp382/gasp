@@ -97,7 +97,7 @@ def clip_shp_by_listshp(inShp, clipLst, outLst):
 Intersection in the same Feature Class/Table
 """
 
-def line_intersect_to_pnt(conDB, inShp, outShp):
+def line_intersect_to_pnt(inShp, outShp, db=None):
     """
     Get Points where two line features of the same feature class
     intersects.
@@ -107,34 +107,30 @@ def line_intersect_to_pnt(conDB, inShp, outShp):
     from gasp.gt.toshp.db import dbtbl_to_shp
     from gasp.sql.db      import create_db
     from gasp.sql.to      import shp_to_psql
-    from gasp.sql.ovly    import line_intersection_pnt
+    from gasp.gql.ovly    import line_intersection_pnt
     
     # Create DB if necessary
-    if "DATABASE" not in conDB:
-        conDB["DATABASE"] = create_db(conDB, fprop(
-            inShp, 'fn', forceLower=True
-        ))
+    if not db:
+        db = create_db(fprop(inShp, 'fn', forceLower=True), api='psql')
     
     else:
         from gasp.sql.i import db_exists
         
-        isDb = db_exists(conDB, conDB["DATABASE"])
+        isDb = db_exists(db)
         
         if not isDb:
-            conDB["DB"] = conDB["DATABASE"]
-            del conDB["DATABASE"]
-            conDB["DATABASE"] = create_db(conDB, conDB["DB"])
+            create_db(db, api='psql')
     
     # Send data to DB
-    inTbl = shp_to_psql(conDB, inShp, api="shp2pgsql")
+    inTbl = shp_to_psql(db, inShp, api="shp2pgsql")
     
     # Get result
-    outTbl = line_intersection_pnt(conDB, inTbl, fprop(
+    outTbl = line_intersection_pnt(db, inTbl, fprop(
         outShp, 'fn', forceLower=True))
     
     # Export data from DB
     outShp = dbtbl_to_shp(
-        conDB, outTbl, "geom", outShp, inDB='psql',
+        db, outTbl, "geom", outShp, inDB='psql',
         tableIsQuery=None, api="pgsql2shp")
     
     return outShp
@@ -479,7 +475,8 @@ def erase(inShp, erase_feat, out, splitMultiPart=None, notTbl=None,
     
     return out
 
-def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CODE,
+
+def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
                      GRASS_REGION_TEMPLATE=None):
     """
     Script to check differences between pairs of Feature Classes
@@ -510,8 +507,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     from gasp.sql.db       import create_db
     from gasp.sql.tbl      import tbls_to_tbl
     from gasp.sql.to       import q_to_ntbl
-    from gasp.sql.mng.geom import fix_geom, check_geomtype_in_table
-    from gasp.sql.mng.geom import select_main_geom_type
+    from gasp.gql.cln      import fix_geom
     
     # Check if folder exists, if not create it
     if not os.path.exists(OUT_FOLDER):
@@ -568,10 +564,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
             grsV = shp_to_grs(s, fprop(s, 'fn'), asCMD=True)
                 
             # Change name of column with comparing value
-            rn_cols(
-                grsV, SHAPES_TO_COMPARE[s],
-                "lulc_{}".format(i), api="grass"
-            )
+            rn_cols(grsV, SHAPES_TO_COMPARE[s], api="grass")
                 
             # Export
             shp = grs_to_shp(
@@ -585,37 +578,12 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     __SHAPES_TO_COMPARE = SHAPES_TO_COMPARE
     
     # Create database
-    conPARAM["DATABASE"] = create_db(conPARAM, DB)
+    create_db(DB, api='psql')
     
     """ Union SHAPEs """
     
     UNION_SHAPE = {}
     FIX_GEOM = {}
-    
-    def fix_geometry(shp):
-        # Send data to PostgreSQL
-        nt = shp_to_psql(conPARAM, shp, srsEpsgCode=SRS_CODE, api='shp2pgsql')
-    
-        # Fix data
-        corr_tbl = fix_geom(
-            conPARAM, nt, "geom", "corr_{}".format(nt),
-            colsSelect=['gid', __SHAPES_TO_COMPARE[shp]]
-        )
-    
-        # Check if we have multiple geometries
-        geomN = check_geomtype_in_table(conPARAM, corr_tbl)
-    
-        if geomN > 1:
-            corr_tbl = select_main_geom_type(
-                conPARAM, corr_tbl, "corr2_{}".format(nt))
-    
-        # Export data again
-        newShp = dbtbl_to_shp(
-            conPARAM, corr_tbl, "geom",
-            os.path.join(OUT_FOLDER, corr_tbl + '.shp'), api='pgsql2shp'
-        )
-        
-        return newShp
     
     SHPS = __SHAPES_TO_COMPARE.keys()
     for i in range(len(SHPS)):
@@ -647,11 +615,11 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     for uShp in UNION_SHAPE:
         # Send data to PostgreSQL
         union_tbl = shp_to_psql(
-            conPARAM, UNION_SHAPE[uShp], srsEpsgCode=SRS_CODE, api='shp2pgsql'
+            DB, UNION_SHAPE[uShp], srsEpsgCode=SRS_CODE, api='shp2pgsql'
         )
         
         # Produce table with % of area equal in both maps
-        areaMapTbl = q_to_ntbl(conPARAM, "{}_syn".format(union_tbl), (
+        areaMapTbl = q_to_ntbl(DB, "{}_syn".format(union_tbl), (
             "SELECT CAST('{lulc_1}' AS text) AS lulc_1, "
             "CAST('{lulc_2}' AS text) AS lulc_2, "
             "round("
@@ -679,7 +647,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
         ), api='psql')
         
         # Produce confusion matrix for the pair in comparison
-        lulcCls = q_to_obj(conPARAM, (
+        lulcCls = q_to_obj(DB, (
             "SELECT fcol FROM ("
                 "SELECT CAST({map1_cls} AS text) AS fcol FROM {tbl} "
                 "GROUP BY {map1_cls} "
@@ -692,7 +660,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
             map2_cls = __SHAPES_TO_COMPARE[uShp[1]]
         ), db_api='psql').fcol.tolist()
         
-        matrixTbl = q_to_ntbl(conPARAM, "{}_matrix".format(union_tbl), (
+        matrixTbl = q_to_ntbl(DB, "{}_matrix".format(union_tbl), (
             "SELECT * FROM crosstab('"
                 "SELECT CASE "
                     "WHEN foo.{map1_cls} IS NOT NULL "
@@ -736,11 +704,11 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     
     # UNION ALL TOTAL TABLES
     total_table = tbls_to_tbl(
-        conPARAM, [SYNTH_TBL[k]["TOTAL"] for k in SYNTH_TBL], 'total_table'
+        DB, [SYNTH_TBL[k]["TOTAL"] for k in SYNTH_TBL], 'total_table'
     )
     
     # Create table with % of agreement between each pair of maps
-    mapsNames = q_to_obj(conPARAM, (
+    mapsNames = q_to_obj(DB, (
         "SELECT lulc FROM ("
             "SELECT lulc_1 AS lulc FROM {tbl} GROUP BY lulc_1 "
             "UNION ALL "
@@ -785,22 +753,18 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     TOTAL_AREA_TABLE  = None
     for f in FLDS_TO_PIVOT:
         if not TOTAL_AGREE_TABLE:
-            TOTAL_AGREE_TABLE = q_to_ntbl(
-                conPARAM, "agreement_table", Q.format(
-                    tbl = total_table, valCol=f,
-                    crossCols = ", ".join([
-                        "{} numeric".format(map_) for map_ in mapsNames])
-                ), api='psql'
-            )
+            TOTAL_AGREE_TABLE = q_to_ntbl(DB, "agreement_table", Q.format(
+                tbl = total_table, valCol=f,
+                crossCols = ", ".join([
+                    "{} numeric".format(map_) for map_ in mapsNames])
+            ), api='psql')
         
         else:
-            TOTAL_AREA_TABLE = q_to_ntbl(
-                conPARAM, "area_table", Q.format(
-                    tbl = total_table, valCol=f,
-                    crossCols = ", ".join([
-                        "{} numeric".format(map_) for map_ in mapsNames])
-                ), api='psql'
-            )
+            TOTAL_AREA_TABLE = q_to_ntbl(DB, "area_table", Q.format(
+                tbl = total_table, valCol=f,
+                crossCols = ", ".join([
+                    "{} numeric".format(map_) for map_ in mapsNames])
+            ), api='psql')
     
     # Union Mapping
     UNION_MAPPING = pandas.DataFrame([[
@@ -808,7 +772,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
         columns=['shp_a', 'shp_b', 'union_shp']
     )
     
-    UNION_MAPPING = df_to_db(conPARAM, UNION_MAPPING, 'union_map', api='psql')
+    UNION_MAPPING = df_to_db(DB, UNION_MAPPING, 'union_map', api='psql')
     
     # Export Results
     TABLES = [UNION_MAPPING, TOTAL_AGREE_TABLE, TOTAL_AREA_TABLE] + [
@@ -824,7 +788,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, conPARAM, DB, SRS_CO
     from gasp.to import db_to_tbl
     
     db_to_tbl(
-        conPARAM, ["SELECT * FROM {}".format(x) for x in TABLES],
+        DB, ["SELECT * FROM {}".format(x) for x in TABLES],
         REPORT, sheetsNames=SHEETS, dbAPI='psql'
     )
     

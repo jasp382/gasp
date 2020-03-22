@@ -9,7 +9,7 @@ from gasp.sql.to import q_to_ntbl
 """
 Operations
 """
-def add_field(lnk, pgtable, columns):
+def add_field(db, pgtable, columns):
     """
     Add new field to a table
     """
@@ -20,30 +20,28 @@ def add_field(lnk, pgtable, columns):
             'columns should be a dict (name as keys; field type as values)'
         )
     
-    con = sqlcon(lnk)
+    con = sqlcon(db)
     
     cursor = con.cursor()
     
-    cursor.execute(
-        "ALTER TABLE {} ADD {};".format(
-            pgtable,
-            ", ".join(["{} {}".format(x, columns[x]) for x in columns])
-        )
-    )
+    cursor.execute("ALTER TABLE {} ADD {};".format(
+        pgtable,
+        ", ".join(["{} {}".format(x, columns[x]) for x in columns])
+    ))
     
     con.commit()
     cursor.close()
     con.close()
 
 
-def drop_col(lnk, pg_table, columns):
+def drop_col(db, pg_table, columns):
     """
     Delete column from pg_table
     """
     
     from gasp.pyt import obj_to_lst
     
-    con = sqlcon(lnk)
+    con = sqlcon(db)
     
     cursor = con.cursor()
     
@@ -58,17 +56,18 @@ def drop_col(lnk, pg_table, columns):
     con.close()
 
 
-def change_field_type(lnk, table, fields, outable,
-                        cols=None):
+def change_field_type(db, table, fields, outable, cols=None):
     """
     Imagine a table with numeric data saved as text. This method convert
     that numeric data to a numeric field.
     
     fields = {'field_name' : 'field_type'}
     """
+
+    from gasp.sql.i import cols_name
     
     if not cols:
-        cols = cols_name(lnk, table)
+        cols = cols_name(db, table)
     
     else:
         from gasp.pyt import obj_to_lst
@@ -77,7 +76,7 @@ def change_field_type(lnk, table, fields, outable,
     
     select_fields = [f for f in cols if f not in fields]
     
-    con = sqlcon(lnk)
+    con = sqlcon(db)
     
     # Create new table with the new field with converted values
     cursor = con.cursor()
@@ -98,11 +97,13 @@ def change_field_type(lnk, table, fields, outable,
     con.close()
 
 
-def split_column_value_into_columns(lnkPgsql, table, column, splitChar,
+def split_colval_into_cols(db_name, table, column, splitChar,
                                     new_cols, new_table):
     """
     Split column value into several columns
     """
+
+    from gasp.sql.i import cols_name
     
     if type(new_cols) != list:
         raise ValueError(
@@ -117,7 +118,7 @@ def split_column_value_into_columns(lnkPgsql, table, column, splitChar,
         )
     
     # Get columns types from table
-    tblCols = cols_name(lnkPgsql, table)
+    tblCols = cols_name(db_name, table)
     
     # SQL construction
     SQL = "SELECT {}, {} FROM {}".format(
@@ -130,22 +131,22 @@ def split_column_value_into_columns(lnkPgsql, table, column, splitChar,
         table
     )
     
-    q_to_ntbl(lnkPgsql, new_table, SQL, api='psql')
+    q_to_ntbl(db_name, new_table, SQL, api='psql')
     
     return new_table
 
 
-def text_columns_to_column(conParam, inTable, columns, strSep, newCol, outTable=None):
+def txt_cols_to_col(db, inTable, columns, strSep, newCol, outTable=None):
     """
     Several text columns to a single column
     """
     
-    from gasp.pyt import obj_to_lst
+    from gasp.pyt   import obj_to_lst
+    from gasp.sql.i import cols_type
     
     mergeCols = obj_to_lst(columns)
     
-    tblCols = cols_type(
-        conParam, inTable, sanitizeColName=None, pyType=False)
+    tblCols = cols_type(db, inTable, sanitizeColName=None, pyType=False)
     
     for col in mergeCols:
         if tblCols[col] != 'text' and tblCols[col] != 'varchar':
@@ -172,10 +173,8 @@ def text_columns_to_column(conParam, inTable, columns, strSep, newCol, outTable=
                 ", ".join(colsToSelect), coalesce + " AS {}".format(newCol)
             )
         
-        q_to_ntbl(
-            conParam, outTable, "SELECT {} FROM {}".format(sel, inTable),
-            api='psql'
-        )
+        q_to_ntbl(db, outTable, "SELECT {} FROM {}".format(
+            sel, inTable), api='psql')
         
         return outTable
     
@@ -183,17 +182,15 @@ def text_columns_to_column(conParam, inTable, columns, strSep, newCol, outTable=
         # Add column to inTable
         from gasp.sql.tbl import update_table
         
-        add_field(conParam, inTable, {newCol : 'text'})
+        add_field(db, inTable, {newCol : 'text'})
         
-        update_table(
-            conParam, inTable, {newCol : coalesce}
-        )
+        update_table(db, inTable, {newCol : coalesce})
         
         return inTable
 
 
-def columns_to_timestamp(conParam, inTbl, dayCol, hourCol, minCol, secCol, newTimeCol,
-                         outTbl, selColumns=None, whr=None):
+def col_to_timestamp(db, inTbl, dayCol, hourCol, minCol, secCol, newTimeCol,
+                     outTbl, selColumns=None, whr=None):
     
     """
     Columns to timestamp column
@@ -217,12 +214,12 @@ def columns_to_timestamp(conParam, inTbl, dayCol, hourCol, minCol, secCol, newTi
         W   = "" if not whr else " WHERE {}".format(whr)
     )
     
-    q_to_ntbl(conParam, outTbl, sql, api='psql')
+    q_to_ntbl(db, outTbl, sql, api='psql')
     
     return outTbl
 
 
-def trim_char_in_col(conParam, pgtable, cols, trim_str, outTable,
+def trim_char_in_col(db, pgtable, cols, trim_str, outTable,
                      onlyTrailing=None, onlyLeading=None):
     """
     Python implementation of the TRIM PSQL Function
@@ -231,12 +228,13 @@ def trim_char_in_col(conParam, pgtable, cols, trim_str, outTable,
     characters from the leading or trailing or both side from a string.
     """
     
-    from gasp.pyt import obj_to_lst
+    from gasp.pyt   import obj_to_lst
+    from gasp.sql.i import cols_type
     
     cols = obj_to_lst(cols)
     
-    colsTypes = cols_type(conParam, pgtable,
-                                 sanitizeColName=None, pyType=False)
+    colsTypes = cols_type(db, pgtable,
+        sanitizeColName=None, pyType=False)
     
     for col in cols:
         if colsTypes[col] != 'text' and colsTypes[col] != 'varchar':
@@ -258,27 +256,28 @@ def trim_char_in_col(conParam, pgtable, cols, trim_str, outTable,
         cols_to_select = "{}".format(", ".join(trimCols))
     else:
         cols_to_select = "{}, {}".format(
-            ", ".join(colsToSelect), ", ".join(colsReplace)
+            ", ".join(colsToSelect), ", ".join(trimCols)
         )
     
-    q_to_ntbl(conParam, outTable,
+    q_to_ntbl(db, outTable,
         "SELECT {} FROM {}".format(colsToSelect, pgtable), api='psql'
     )
 
 
-def replace_char_in_col(conParam, pgtable, cols, match_str, replace_str, outTable):
+def replace_char_in_col(db, pgtable, cols, match_str, replace_str, outTable):
     """
     Replace char in all columns in cols for the value of replace_str
     
     Python implementation of the REPLACE PSQL Function
     """
     
-    from gasp.pyt import obj_to_lst
+    from gasp.pyt   import obj_to_lst
+    from gasp.sql.i import cols_type
     
     cols = obj_to_lst(cols)
     
-    colsTypes = cols_type(conParam, pgtable,
-                                 sanitizeColName=None, pyType=False)
+    colsTypes = cols_type(db, pgtable,
+        sanitizeColName=None, pyType=False)
     
     for col in cols:
         if colsTypes[col] != 'text' and colsTypes[col] != 'varchar':
@@ -298,18 +297,15 @@ def replace_char_in_col(conParam, pgtable, cols, match_str, replace_str, outTabl
         cols_to_select = "{}, {}".format(
             ", ".join(colsToSelect), ", ".join(colsReplace))
     
-    q_to_ntbl(conParam, outTable,
-        "SELECT {cols} FROM {tbl}".format(
-            cols  = cols_to_select,
-            tbl   = pgtable
-        ), api='psql'
-    )
+    q_to_ntbl(db, outTable, "SELECT {cols} FROM {tbl}".format(
+        cols  = cols_to_select, tbl   = pgtable
+    ), api='psql')
     
     return outTable
 
 
-def substring_to_newfield(conParam, table, field, newCol,
-                          idxFrom, idxTo):
+def substr_to_newcol(db, table, field, newCol,
+    idxFrom, idxTo):
     """
     Get substring of string by range
     """
@@ -317,10 +313,10 @@ def substring_to_newfield(conParam, table, field, newCol,
     from gasp.sql.q import exec_write_q
     
     # Add new field to table
-    add_field(conParam, table, {newCol : "text"})
+    add_field(db, table, {newCol : "text"})
     
     # Update table
-    exec_write_q(conParam, (
+    exec_write_q(db, (
         "UPDATE {tbl} SET {nf} = substring({f} from {frm} for {to}) "
         "WHERE {nf} IS NULL"
     ).format(
@@ -331,7 +327,7 @@ def substring_to_newfield(conParam, table, field, newCol,
     return table
 
 
-def add_geomtype_to_col(conParam, table, newCol, geomCol):
+def add_geomtype_to_col(db, table, newCol, geomCol):
     """
     Add Geom Type to Column
     """
@@ -339,9 +335,9 @@ def add_geomtype_to_col(conParam, table, newCol, geomCol):
     from gasp.sql.q import exec_write_q
     
     # Add new field to table
-    add_field(conParam, table, {newCol : "text"})
+    add_field(db, table, {newCol : "text"})
     
-    exec_write_q(conParam, "UPDATE {} SET {} = ST_GeometryType({})".format(
+    exec_write_q(db, "UPDATE {} SET {} = ST_GeometryType({})".format(
         table, newCol, geomCol
     ), api='psql')
     

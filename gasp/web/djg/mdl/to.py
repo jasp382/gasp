@@ -197,7 +197,7 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
     import os, sys
     from gasp                 import __import
     from gasp.pyt.oss         import lst_ff
-    from gasp.web.djg.mdl.rel import order_models_by_relation
+    from gasp.web.djg.mdl.rel import order_mdl_by_rel
     
     # Open Django Project
     if proj_path:
@@ -215,7 +215,7 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
         )
     ]
     
-    orderned_table = order_models_by_relation(txt_tables)
+    orderned_table = order_mdl_by_rel(txt_tables)
     
     for table in orderned_table:
         if table in txt_tables:
@@ -230,10 +230,7 @@ def txts_to_db(folder, delimiter='\t', _encoding_='utf-8', proj_path=None):
             print('Skipping {} - there is no file for this table'.format(table))
 
 
-def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, psql_con={
-    'HOST': 'localhost', 'USER': 'postgres',
-    'PORT' : '5432', 'PASSWORD': 'admin',
-    'TEMPLATE': 'postgis_template'}, mapTbl=None, userDjgAPI=None):
+def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=None):
     """
     Import PGSQL database in a SQL Script into the database
     controlled by one Django Project
@@ -264,16 +261,15 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, psql_con={
 
     # Create Database
     tmp_db_name = db_name + '_xxxtmp'
-    create_db(psql_con, tmp_db_name)
+    create_db(tmp_db_name)
     
     # Restore tables in SQL files
-    psql_con["DATABASE"] = tmp_db_name
     for sql in sql_scripts:
-        restore_tbls(psql_con, sql)
+        restore_tbls(tmp_db_name, sql)
     
     # List tables in the database
     tables = [x for x in lst_tbl(
-        psql_con, excludeViews=True, api='psql'
+        tmp_db_name, excludeViews=True, api='psql'
     )] if not mapTbl else mapTbl
     
     # Open Django Project
@@ -307,7 +303,7 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, psql_con={
     if userDjgAPI:
         for table in orderned_table:
             # Map pgsql table data
-            tableData = q_to_obj(psql_con, data_tbl[table], of='dict')
+            tableData = q_to_obj(tmp_db_name, data_tbl[table], of='dict')
         
             # Table data to Django Model
             if table == 'auth_user':
@@ -360,9 +356,7 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, psql_con={
             if tbl not in data_tbl:
                 continue
             
-            data = q_to_obj(psql_con, "SELECT * FROM {}".format(data_tbl[tbl]))
-
-            psql_con['DATABASE'] = db_name
-            df_to_db(psql_con, data, data_tbl[tbl], append=True)
-            psql_con["DATABASE"] = tmp_db_name
+            data = q_to_obj(tmp_db_name, "SELECT * FROM {}".format(data_tbl[tbl]))
+            
+            df_to_db(db_name, data, data_tbl[tbl], append=True)
 

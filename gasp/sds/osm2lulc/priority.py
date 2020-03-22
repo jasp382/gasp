@@ -3,7 +3,7 @@ Priority rule implementation
 """
 
 
-def priority_rule(osmshps, priorities, gis_software, param=None):
+def priority_rule(osmshps, priorities, gis_software, db=None):
     """
     Priority rule in Arcgis
     """
@@ -42,7 +42,7 @@ def priority_rule(osmshps, priorities, gis_software, param=None):
                     
                     if gis_software == 'psql':
                         osmshps[priorities[i]] = pg_erase(
-                            param, osmshps[priorities[i]],
+                            db, osmshps[priorities[i]],
                             osmshps[priorities[e]], 'geom', 'geom',
                             tmpOut
                         )

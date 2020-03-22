@@ -3,20 +3,18 @@ Tools for Geoserver layers management
 """
 
 
-def lst_lyr(conf={
-    'USER':'admin', 'PASSWORD': 'geoserver',
-    'HOST':'localhost', 'PORT': '8080'
-    }):
+def lst_lyr():
     """
     List all layers in the geoserver
     """
 
     import requests
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL'] 
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
 
     url = '{pro}://{host}:{port}/geoserver/rest/layers'.format(
-        host=conf['HOST'], port=conf['PORT'], pro=protocol
+        host=conf['HOST'], port=conf['PORT'], pro=conf['PROTOCOL']
     )
 
     r = requests.get(
@@ -29,10 +27,7 @@ def lst_lyr(conf={
     return [l['name'] for l in layers['layers']['layer']]
 
 
-def pub_pglyr(workspace, store, pg_table, title=None, gs_con={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8888'
-    }):
+def pub_pglyr(workspace, store, pg_table, title=None):
     """
     Publish PostGIS table in geoserver
     """
@@ -41,8 +36,9 @@ def pub_pglyr(workspace, store, pg_table, title=None, gs_con={
     from gasp.pyt.char import random_str
     from gasp.pyt.Xml  import write_xml_tree
     from gasp.pyt.oss  import mkdir, del_folder
-    
-    protocol = 'http' if 'PROTOCOL' not in gs_con else gs_con['PROTOCOL']
+    from gasp.cons.gsrv import con_gsrv
+
+    gs_con = con_gsrv()
     
     # Create folder to write xml
     wTmp = mkdir(
@@ -72,7 +68,7 @@ def pub_pglyr(workspace, store, pg_table, title=None, gs_con={
         'datastores/{store_name}/featuretypes'
     ).format(
         host=gs_con['HOST'], port=gs_con['PORT'], wname=workspace,
-        store_name=store, pro=protocol
+        store_name=store, pro=gs_con['PROTOCOL']
     )
     
     with open(xml_file, 'rb') as __xml:
@@ -88,10 +84,7 @@ def pub_pglyr(workspace, store, pg_table, title=None, gs_con={
     return r
 
 
-def pub_rst_lyr(layername, datastore, workspace, epsg_code, conf={
-        'USER': 'admin', 'PASSWORD': 'geoserver',
-        'HOST': 'localhost', 'PORT': '8888'
-    }):
+def pub_rst_lyr(layername, datastore, workspace, epsg_code):
     """
     Publish a Raster layer
     """
@@ -101,15 +94,16 @@ def pub_rst_lyr(layername, datastore, workspace, epsg_code, conf={
     from gasp.pyt.Xml     import write_xml_tree
     from gasp.pyt.oss     import mkdir, del_folder
     from gasp.gt.prop.prj import epsg_to_wkt
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    from gasp.cons.gsrv   import con_gsrv
+
+    conf = con_gsrv()
     
     url = (
         '{pro}://{host}:{port}/geoserver/rest/workspaces/{work}/'
         'coveragestores/{storename}/coverages'
     ).format(
         host=conf['HOST'], port=conf['PORT'],
-        work=workspace, storename=datastore, pro=protocol
+        work=workspace, storename=datastore, pro=conf['PROTOCOL']
     )
     
     # Create obj with data to be written in the xml
@@ -145,20 +139,18 @@ def pub_rst_lyr(layername, datastore, workspace, epsg_code, conf={
     return r
 
 
-def del_lyr(lyr, conf={
-        'USER':'admin', 'PASSWORD': 'geoserver',
-        'HOST':'localhost', 'PORT': '8080'
-    }):
+def del_lyr(lyr):
     """
     Delete some layer
     """
     
     import requests
-    
-    protocol = 'http' if 'PROTOCOL' not in conf else conf['PROTOCOL']
+    from gasp.cons.gsrv import con_gsrv
+
+    conf = con_gsrv()
     
     url = '{}://{}:{}/geoserver/rest/layers/{}'.format(
-        protocol, conf["HOST"], conf["PORT"], lyr
+        conf['PROTOCOL'], conf["HOST"], conf["PORT"], lyr
     )
     
     r = requests.delete(url, auth=(conf["USER"], conf["PASSWORD"]))

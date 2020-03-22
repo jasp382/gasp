@@ -5,11 +5,6 @@ Restore Database, run some queries and Dump result
 """
 
 if __name__ == '__main__':
-    conParam = {
-        "HOST" : "localhost", "USER" : "postgres", "PORT" : "5432",
-        "PASSWORD" : "admin"
-    }
-
     sql_fld = '/home/jasp/mrgis/dbs'
     outfld = '/home/jasp/mrgis/zipdb'
 
@@ -33,16 +28,14 @@ if __name__ == '__main__':
 
     for sql in sqls:
         # Restore database
-        conParam["DATABASE"] = create_db(conParam, fprop(sql, 'fn'))
-        psql_cmd(conParam, sql)
+        new_db = create_db(fprop(sql, 'fn'))
+        psql_cmd(new_db, sql)
 
         # Execute queries
-        exec_write_q(conParam, QS)
+        exec_write_q(new_db, QS)
 
         # Dump Database
-        dump_db(conParam, os.path.join(outfld, os.path.basename(sql)), api='psql')
-        db = conParam["DATABASE"]
+        dump_db(new_db, os.path.join(outfld, os.path.basename(sql)), api='psql')
     
         # Drop Database
-        del conParam["DATABASE"]
-        drop_db(conParam, db)
+        drop_db(new_db)

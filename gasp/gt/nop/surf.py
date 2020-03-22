@@ -101,7 +101,7 @@ def gdal_slope(dem, srs, slope, unit='DEGREES'):
     # ################ #
     cellsize = get_cellsize(dem, gisApi='gdal')
     # Get Nodata Value
-    NoData = get_nodata(dem, gisApi='gdal')
+    NoData = get_nodata(dem)
     
     # #################### #
     # Produce Slope Raster #
@@ -320,16 +320,16 @@ def thrd_viewshed(dem, pnt_obs, obs_id, out_folder):
     return out_folder
 
 
-def thrd_viewshed_v2(con_db, dem, pnt_obs, obs_id):
+def thrd_viewshed_v2(dbname, dem, pnt_obs, obs_id):
     """
     Compute Viewshed for all points in pnt_obs using
     a multiprocessing approach
     """
 
     import os
-    import pandas as pd
-    import numpy as np
-    from osgeo import gdal
+    import pandas          as pd
+    import numpy           as np
+    from osgeo             import gdal
     import multiprocessing as mp
     from gasp.gt.fmshp     import shp_to_obj
     from gasp.pyt.oss      import cpu_cores, mkdir
@@ -350,17 +350,14 @@ def thrd_viewshed_v2(con_db, dem, pnt_obs, obs_id):
     n_cpu = cpu_cores()
     dfs   = df_split(obs_df, n_cpu)
 
-    def run_viewshed_by_cpu(tid, condb, obs, dem, srs,
+    def run_viewshed_by_cpu(tid, db, obs, dem, srs,
         vis_basename='vis', maxdst=None, obselevation=None):
         # Create Database
-        new_db = "{}_{}".format(condb["DATABASE"], str(tid))
-        del condb["DATABASE"]
-        
-        condb["DATABASE"] = create_db(condb, new_db, api='psql')
+        new_db = create_db("{}_{}".format(db, str(tid)), api='psql')
         
         # Points to Database
         pnt_tbl = df_to_db(
-            condb, obs, 'pnt_tbl', api='psql', 
+            new_db, obs, 'pnt_tbl', api='psql', 
             epsg=srs, geomType='Point', colGeom='geometry')
 
         # Create GRASS GIS Session
@@ -377,7 +374,7 @@ def thrd_viewshed_v2(con_db, dem, pnt_obs, obs_id):
 
         from gasp.gt.torst    import rst_to_grs, grs_to_rst
         from gasp.gt.nop.surf import grs_viewshed
-        from gasp.gt.deldt import del_rst
+        from gasp.gt.deldt    import del_rst
 
         # Send DEM to GRASS GIS
         grs_dem = rst_to_grs(dem, 'grs_dem', as_cmd=True)
@@ -423,7 +420,7 @@ def thrd_viewshed_v2(con_db, dem, pnt_obs, obs_id):
             # Pandas DF to database
             # Create Visibility table
             df_to_db(
-                condb, visdf, vis_basename,
+                new_db, visdf, vis_basename,
                 api='psql', colGeom=None,
                 append=None if not idx else True
             )
@@ -446,7 +443,7 @@ def thrd_viewshed_v2(con_db, dem, pnt_obs, obs_id):
 
     thrds = [mp.Process(
         target=run_viewshed_by_cpu, name='th-{}'.format(str(i+1)),
-        args=(i+1, con_db, dfs[i], dem, epsg,
+        args=(i+1, dbname, dfs[i], dem, epsg,
             'vistoburn', 10000, 200)
     ) for i in range(len(dfs))]
 

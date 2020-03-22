@@ -253,7 +253,7 @@ def feat_to_pnt(inShp, outPnt, epsg=None):
     return outPnt
 
 
-def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
+def lnh_to_polygons(inShp, outShp, api='saga', db=None):
     """
     Line to Polygons
     
@@ -321,12 +321,11 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
                                       useCMD=True if api == 'grass' else None)
         
         # Export data
-        outshp = grs_to_shp(areas_shp, outShp, 'area',
+        outShp = grs_to_shp(areas_shp, outShp, 'area',
                             asCMD=True if api == 'grass' else None)
     
     elif api == 'psql':
         """ Do it using PostGIS """
-        
         from gasp.pyt.oss     import fprop
         from gasp.sql.db      import create_db
         from gasp.sql.to      import shp_to_psql
@@ -334,36 +333,27 @@ def lnh_to_polygons(inShp, outShp, api='saga', con_db=None):
         from gasp.gql.cnv     import lnh_to_polg
         from gasp.gt.prop.prj import get_epsg_shp
         
-        conDB = {
-            "HOST" : 'localhost', 'PORT' : '5432', 'USER' : 'postgres',
-            'PASSWORD' : 'admin', 'TEMPLATE' : 'postgis_template'
-        } if not con_db else con_db
-        
         # Create DB
-        if "DATABASE" not in conDB:
-            conDB["DATABASE"] = create_db(conDB, fprop(
-                inShp, 'fn', forceLower=True))
+        if not db:
+            db = create_db(fprop(inShp, 'fn', forceLower=True), api='psql')
         
         else:
             from gasp.sql.i import db_exists
-            isDB = db_exists(conDB, conDB["DATABASE"])
+            isDB = db_exists(db)
             
             if not isDB:
-                conDB["DB"] = conDB["DATABASE"]
-                del conDB["DATABASE"]
-                
-                conDB["DATABASE"] = create_db(conDB, conDB["DB"])
+                create_db(db, api='psql')
         
         # Send data to DB
-        in_tbl = shp_to_psql(conDB, inShp, api="shp2pgsql")
+        in_tbl = shp_to_psql(db, inShp, api="shp2pgsql")
         
         # Get Result
-        result = lnh_to_polg(conDB, in_tbl, fprop(
+        result = lnh_to_polg(db, in_tbl, fprop(
             outShp, 'fn', forceLower=True))
         
         # Export Result
         outshp = dbtbl_to_shp(
-            conDB, result, "geom", outShp, api='psql',
+            db, result, "geom", outShp, api='psql',
             epsg=get_epsg_shp(inShp))
     
     else:
