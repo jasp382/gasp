@@ -41,7 +41,7 @@ def join_attr_by_distance(mainTable, joinTable, workGrass, epsg_code,
     
     # Import some GRASS GIS tools
     from gasp.gt.prox      import grs_near as near
-    from gasp.gt.tbl       import geomattr_to_db
+    from gasp.gt.tbl.attr  import geomattr_to_db
     from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
     
     # Import data into GRASS GIS

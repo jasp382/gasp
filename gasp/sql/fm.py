@@ -129,7 +129,7 @@ def dump_tbls(db, tables, outsql, startWith=None):
         "-w {tbl} {db} > {out}"
     ).format(
         user=condb["USER"], host=condb["HOST"],
-        port=condb["PORT"], db=db["DATABASE"], out=outsql,
+        port=condb["PORT"], db=db, out=outsql,
         tbl=" ".join(["-t {}".format(t) for t in tbls])
     ))
     

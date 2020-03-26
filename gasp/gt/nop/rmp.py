@@ -43,59 +43,38 @@ def match_cellsize_and_clip(rstBands, refRaster, outFolder,
     """
     Import packages related with GRASS GIS
     """
-    from gasp.gt.torst    import rst_to_grs, grs_to_rst
+    from gasp.gt.torst     import rst_to_grs, grs_to_rst
     from gasp.gt.wenv.grs  import rst_to_region
     from gasp.gt.toshp.cff import shp_to_grs
-    from gasp.gt.torst    import shp_to_rst, grs_to_mask
+    from gasp.gt.torst     import shp_to_rst, grs_to_mask
     
     # Send Ref Raster to GRASS GIS and set region
     extRst = rst_to_grs(refRaster, 'ext_rst')
     rst_to_region(extRst)
     
     # Import all bands in rstBands
-    newBands = []
-    for i in rstBands:
-        newBands.append(rst_to_grs(i, fprop(i, 'fn')))
-    
-    # Export bands
-    bndFile = []
-    outf = GRS_WORKSPACE if clipShp else outFolder
-    for i in newBands:
-        bndFile.append(grs_to_rst(i, os.path.join(outf, i + '.tif')))
+    grs_bands = [rst_to_grs(i, fprop(i, 'fn')) for i in rstBands]
     
     if clipShp:
-        """
-        Clip shape to raster
-        """
-        
+        # Add clipShp to GRASS
+        grs_clip = shp_to_grs(clipShp, fprop(clipShp, 'fn'), asCMD=True)
+
+        # SHP to Raster
         rstClip = shp_to_rst(
-            clipShp, None, None, 0, os.path.join(
-                GRS_WORKSPACE, 'clip_ref_raster.tif'
-            ), snapRst=refRaster, api='gdal'
+            grs_clip, 1, None, 0, 'rst_' + grs_clip,
+            api='grass'
         )
-        
-        """
-        Clip Bands
-        """
-        
-        grsb = run_grass(
-            GRS_WORKSPACE, grassBIN='grass78',
-            location='clip_bnds', srs=epsg
-        )
-        
-        import grass.script as grass
-        import grass.script.setup as gsetup
-        
-        gsetup.init(grsb, GRS_WORKSPACE, 'clip_bnds', 'PERMANENT')
-        
-        extRst = rst_to_grs(rstClip, 'clip_ref_raster', lmtExt=None, as_cmd=True)
-        rst_to_region(extRst)
-        
-        for i in bndFile:
-            a = rst_to_grs(i, fprop(i, 'fn'), lmtExt=True, as_cmd=True)
-            grs_to_rst(a, os.path.join(outFolder, a + '.tif'))
+
+        # Set region using
+        rst_to_region(rstClip)
+
+        # Set mask
+        grs_to_mask(rstClip)
     
-    return outFolder
+    # Export bands
+    return [grs_to_rst(
+        i, os.path.join(outFolder, i + '.tif')
+    ) for i in grs_bands]
 
 
 def resample_by_majority(refrst, valrst, out_rst):

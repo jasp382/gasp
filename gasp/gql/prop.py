@@ -73,3 +73,67 @@ def select_main_geom_type(db, table, outbl, geomCol='geom'):
     )
     
     return q_to_ntbl(db, outbl, Q, api='psql')
+
+
+def check_endpoint_ispoint(db, lnhTable, pntTable, outTable,
+                           nodeStart, nodeEnd, pointId, pntGeom="geom"):
+    """
+    Check if a Start/End point in a table with line geometries is a point 
+    in other table.
+    """
+    
+    from gasp.sql.to import q_to_ntbl
+    from gasp.sql.i  import cols_name
+    
+    tCols = [x for x in cols_name(
+        db, lnhTable) if x != nodeStart and x != nodeEnd
+    ]
+    
+    return q_to_ntbl(db, outTable, (
+        "SELECT * FROM ("
+            "SELECT {fooCols}, foo.{stPnt}, foo.{endPnt}, "
+            "CASE "
+                "WHEN start_tbl.start_x IS NOT NULL THEN 1 ELSE 0 "
+            "END AS start_isstop, "
+            "CASE "
+                "WHEN end_tbl.end_x IS NOT NULL THEN 1 ELSE 0 "
+            "END AS end_isstop, start_tbl.start_id, end_tbl.end_id "
+            "FROM ("
+                "SELECT *, "
+                "CAST(((round(CAST(ST_X({stPnt}) AS numeric), 4)) * 10000) "
+                    "AS integer) AS start_x, "
+                "CAST(((round(CAST(ST_Y({stPnt}) AS numeric), 4)) * 10000) "
+                    "AS integer) AS start_y, "
+                "CAST(((round(CAST(ST_X({endPnt}) AS numeric), 4)) * 10000) "
+                    "AS integer) AS end_x, "
+                "CAST(((round(CAST(ST_Y({endPnt}) AS numeric), 4)) * 10000) "
+                    "AS integer) AS end_y "
+                "FROM {lnhT}"
+            ") AS foo "
+            "LEFT JOIN ("
+                "SELECT CAST(((round(CAST(ST_X({pntG}) AS numeric), 4)) "
+                    "* 10000) AS integer) AS start_x, "
+                "CAST(((round(CAST(ST_Y({pntG}) AS numeric), 4)) "
+                    "* 10000) AS integer) AS start_y, "
+                "{pntid} AS start_id FROM {pntT}"
+            ") AS start_tbl "
+            "ON foo.start_x = start_tbl.start_x AND "
+            "foo.start_y = start_tbl.start_y "
+            "LEFT JOIN ("
+                "SELECT CAST(((round(CAST(ST_X({pntG}) AS numeric), 4)) "
+                    "* 10000) AS integer) AS end_x, "
+                "CAST(((round(CAST(ST_Y({pntG}) AS numeric), 4)) "
+                    "* 10000) as integer) AS end_y, "
+                "{pntid} AS end_id FROM {pntT}"
+            ") AS end_tbl "
+            "ON foo.end_x = end_tbl.end_x AND foo.end_y = end_tbl.end_y"
+        ") AS foo2 "
+        "GROUP BY {cols}, {stPnt}, {endPnt}, start_isstop, end_isstop, "
+        "start_id, end_id"
+    ).format(
+        fooCols = ", ".join(["foo.{}".format(c) for c in tCols]),
+        stPnt = nodeStart, endPnt = nodeEnd, lnhT = lnhTable,
+        pntT = pntTable, pntG = pntGeom,
+        cols = ", ".join(tCols), pntid=pointId
+    ), api='psql')
+

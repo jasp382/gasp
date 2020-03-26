@@ -466,8 +466,8 @@ def adjust_ext_to_snap(outExt, snapRst):
         'bottom_right' if out_rst_pseudo['bottom_right'] else None
     
     # Get out Raster Shape
-    n_col = int((shpAExt[1] - shpAExt[0]) / 10)
-    n_row = int((shpAExt[3] - shpAExt[2]) / 10)
+    n_col = int((shpAExt[1] - shpAExt[0]) / csize)
+    n_row = int((shpAExt[3] - shpAExt[2]) / csize)
     
     # Get Output Raster real origin/top left
     yName, xName = pseudoOriginName.split('_')
@@ -607,7 +607,7 @@ def get_rst_report_data(rst, UNITS=None):
     
     import os
     from gasp.pyt.char import random_str
-    from gasp.gt.oss   import del_file
+    from gasp.pyt.oss  import del_file
     
     REPORT_PATH = raster_report(rst, os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

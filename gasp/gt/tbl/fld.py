@@ -29,7 +29,7 @@ def add_fields(tbl, fields, lyrN=1, api='ogr'):
     if api == 'ogr':
         from osgeo import ogr
         from gasp.gt.prop.ff import drv_name
-        from gasp.gt.lyr.fld import fields_to_lyr
+        from gasp.g.lyr.fld  import fields_to_lyr
 
         if os.path.exists(tbl) and os.path.isfile(tbl):
             # Open table in edition mode
@@ -98,6 +98,39 @@ def fields_to_tbls(inFolder, fields, tbl_format='.shp'):
     
     for table in tables:
         add_fields(table, fields, api='ogr')
+
+
+def del_cols(lyr, cols, api='grass', lyrn=1):
+    """
+    Remove Columns from Tables
+    """
+
+    from gasp.pyt import obj_to_lst
+
+    cols = obj_to_lst(cols)
+
+    if api == 'grass':
+        from gasp import exec_cmd
+
+        rcmd = exec_cmd((
+            "v.db.dropcolumn map={} layer={} columns={} "
+            "--quiet"
+        ).format(
+            lyr, str(lyrn), ','.join(cols)
+        ))
+    
+    elif api == 'pygrass':
+        from grass.pygrass.modules import Module
+
+        m = Module(
+            "v.db.dropcolumn", map=lyr, layer=lyrn,
+            columns=cols, quiet=True, run_=True
+        )
+    
+    else:
+        raise ValueError("API {} is not available".format(api))
+
+    return lyr
 
 
 def rn_cols(inShp, columns, api="ogr2ogr"):

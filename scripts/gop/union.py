@@ -18,7 +18,7 @@ def multi_run(ti, df, ofolder):
         lyr_b = shp_to_grs(df.shp_b, fprop(df.shp_b, 'fn'), asCMD=True)
         
         # Run Union
-        shpUnion = union(lyr_a, lyr_b, lyr_a[:10] + '_' + lyr_b[:10], api_gis="grass_cmd")
+        shpUnion = union(lyr_a, lyr_b, lyr_a[:10] + '_' + lyr_b[:10], api_gis="grass")
         
         # Export data
         result = grs_to_shp(shpUnion, os.path.join(ofolder, shpUnion + '.shp'), "area")

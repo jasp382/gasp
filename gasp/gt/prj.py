@@ -93,7 +93,7 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
             )
         
         from osgeo             import ogr
-        from gasp.gt.lyr.fld   import copy_flds
+        from gasp.g.lyr.fld    import copy_flds
         from gasp.gt.prop.feat import get_gtype
         from gasp.gt.prop.ff   import drv_name
         from gasp.gt.prop.prj  import get_sref_from_epsg, get_trans_param

@@ -231,7 +231,7 @@ def fld_exists(fld):
     Check if one folder exists!
     """
 
-    flds = llst_fld(os.path.dirname(fld), name=True)
+    flds = lst_fld(os.path.dirname(fld), name=True)
 
     if os.path.basename(fld) in flds:
         return 1
@@ -276,7 +276,7 @@ def del_files_by_name(folder, names):
     """
     
     
-    lst_files = lst_ff(folder, filename=basenames)
+    lst_files = lst_ff(folder, filename=names)
     
     for f in lst_files:
         del_file(f)
@@ -373,14 +373,20 @@ def onFolder_rename2(folder, newBegin, stripStr, fileFormats=None):
 Copy Things
 """
 
-def copy_file(src, dest):
+def copy_file(src, dest, move=None):
     """
     Copy a file
     """
     
-    from shutil import copyfile
+    if not move:
+        from shutil import copyfile
     
-    copyfile(src, dest)
+        copyfile(src, dest)
+    
+    else:
+        from shutil import move as mv
+
+        mv(src, dest)
     
     return dest
 

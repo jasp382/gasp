@@ -9,9 +9,10 @@ def polyline_to_points(inShp, outShp, attr=None, epsg=None):
     TODO: See if works with Polygons
     """
     
-    import os; from osgeo import ogr
+    import os
+    from osgeo import ogr
     from gasp.gt.prop.ff import drv_name
-    from gasp.gt.lyr.fld import copy_flds
+    from gasp.g.lyr.fld  import copy_flds
     
     # Open Input
     polyData = ogr.GetDriverByName(drv_name(inShp)).Open(inShp)
@@ -112,7 +113,7 @@ def polylines_from_points(points, polylines, POLYLINE_COLUMN,
     from gasp.gt.prop.ff  import drv_name
     from gasp.gt.prj      import def_prj
     from gasp.gt.prop.fld import ogr_list_fields_defn
-    from gasp.gt.lyr.fld  import fields_to_lyr
+    from gasp.g.lyr.fld   import fields_to_lyr
     
     # TODO: check if geometry is correct
     
@@ -196,7 +197,7 @@ def feat_to_pnt(inShp, outPnt, epsg=None):
     
     import os; from osgeo  import ogr
     from gasp.gt.prop.ff   import drv_name
-    from gasp.gt.lyr.fld   import copy_flds
+    from gasp.g.lyr.fld    import copy_flds
     from gasp.gt.prop.feat import lst_fld
     
     # TODO: check if geometry is correct

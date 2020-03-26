@@ -226,9 +226,10 @@ def tbl_to_db(tblFile, db, sqlTbl, delimiter=None, encoding_='utf-8',
             data.rename(columns=colsMap, inplace=True)
     
         # Send data to database
+        out_tbl = fn if not outSQLTbl else outSQLTbl[i] \
+            if i+1 <= len(tbls) else fn
         _rtbl = df_to_db(
-            db, data,
-            outSQLTbl[i] if i+1 <= len(tbls) else fn,
+            db, data, out_tbl,
             append=isAppend, api=api_db
         )
         
@@ -363,32 +364,6 @@ def apndtbl_in_otherdb(db_a, db_b, tblA, tblB, mapCols,
     return tblB
 
 
-def rst_to_psql(rst, srs, dbname, sql_script=None):
-    """
-    Run raster2pgsql to import a raster dataset into PostGIS Database
-    """
-    
-    import os
-    from gasp     import exec_cmd
-    from gasp.sql import psql_cmd
-    
-    rst_name = os.path.splitext(os.path.basename(rst))[0]
-    
-    if not sql_script:
-        sql_script = os.path.join(os.path.dirname(rst), rst_name + '.sql')
-    
-    cmd = exec_cmd((
-        'raster2pgsql -s {epsg} -I -C -M {rfile} -F -t 100x100 '
-        'public.{name} > {sqls}'
-    ).format(
-        epsg=str(srs), rfile=rst, name=rst_name, sqls=sql_script
-    ))
-    
-    psql_cmd(dbname, sql_script)
-    
-    return rst_name
-
-
 def txts_to_db(folder, db, delimiter, __encoding='utf-8', apidb='psql',
                rewrite=None):
     """
@@ -421,39 +396,4 @@ def txts_to_db(folder, db, delimiter, __encoding='utf-8', apidb='psql',
             __file, db, fprop(__file, 'fn'),
             delimiter=delimiter, encoding_=__encoding, api_db=apidb
         )
-
-
-"""
-OSM Related
-"""
-
-def osm_to_pgsql(osmXml, osmdb):
-    """
-    Use GDAL to import osmfile into PostGIS database
-    """
-    
-    from gasp           import exec_cmd
-    from gasp.cons.psql import con_psql
-    from gasp.sql.i     import db_exists
-
-    is_db = db_exists(osmdb)
-
-    if not is_db:
-        from gasp.sql.db import create_db
-
-        create_db(osmdb, api='psql')
-
-    con = con_psql()
-    
-    cmd = (
-        "ogr2ogr -f PostgreSQL \"PG:dbname='{}' host='{}' port='{}' "
-        "user='{}' password='{}'\" {} -lco COLUM_TYPES=other_tags=hstore"
-    ).format(
-        osmdb, con["HOST"], con["PORT"],
-        con["USER"], con["PASSWORD"], osmXml
-    )
-    
-    cmdout = exec_cmd(cmd)
-    
-    return osmdb
 

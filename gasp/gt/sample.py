@@ -5,118 +5,29 @@ Tools for sampling
 """
 Fishnets
 """
-def create_fishnet(boundary, fishnet, width=None, height=None, rowN=None, colN=None):
+def create_fishnet(boundary, shpfishnet, x, y, xy_row_col=None, srs=None):
     """
     Create a Fishnet
-    
-    TODO doesn't work for Geographic SRS
     """
     
-    import os; from osgeo import ogr
-    from math             import ceil
-    from gasp.pyt.oss     import fprop
-    from gasp.gt.prop.ff  import drv_name
+    import os
     from gasp.gt.prop.ext import get_ext
     from gasp.gt.prop.prj import get_srs
-    
-    # Get boundary extent
-    xmin, xmax, ymin, ymax = get_ext(boundary)
-    
-    if width and height:
-        # Clean width and height
-        if type(width) != float:
-            try:
-                # Convert to float
-                width = float(width)
-            except:
-                raise ValueError(
-                    'Width value is not valid. Please give a numeric value'
-                )
-    
-        if type(height) != float:
-            try:
-                # Convert to float
-                height = float(height)
-            except:
-                raise ValueError(
-                    'Height value is not valid. Please give a numeric value'
-                )
-    
-        # get rows number
-        rows = ceil((ymax-ymin) / height)
-        # get columns number
-        cols = ceil((xmax-xmin) / width)
-    
-    else:
-        if rowN and colN:
-            rows = int(rowN); cols = int(colN)
-            width = ceil((xmax-xmin) / rows)
-            height = ceil((ymax-ymin) / cols)
-        
-        else:
-            raise ValueError(
-                "You must specify the width and height of fishnet cells or "
-                "instead the number of rows and cols of fishnet"
-            )
-    
-    # Create output file
+    from gasp.g.smp       import fishnet
+
+    # Check Path
     if not os.path.exists(os.path.dirname(fishnet)):
         raise ValueError('The path for the output doesn\'t exist')
     
-    out_fishnet = ogr.GetDriverByName(drv_name(
-        fishnet)).CreateDataSource(fishnet)
-    fishnet_lyr = out_fishnet.CreateLayer(
-        str(fprop(fishnet, 'fn')), srs=get_srs(boundary),
-        geom_type=ogr.wkbPolygon
+    # Get boundary extent
+    xmin, xmax, ymin, ymax = get_ext(boundary)
+    # Get SRS
+    epsg = get_srs(boundary) if not srs else int(srs)
+    
+    return fishnet(
+        (xmin, ymax), (xmax, ymin),
+        shpfishnet, x, y, xy_row_col=xy_row_col, epsg=epsg
     )
-    
-    feat_defn = fishnet_lyr.GetLayerDefn()
-    
-    # create grid cells
-    # - start grid cell envelope -#
-    ringXleftOrigin = xmin
-    ringXrightOrigin = xmin + width
-    ringYtopOrigin = ymax
-    ringYbottomOrigin = ymax - height
-    
-    count_cols = 0
-    while count_cols < cols:
-        count_cols += 1
-        
-        # reset envelope for rows
-        ringYtop = ringYtopOrigin
-        ringYbottom = ringYbottomOrigin
-        count_rows = 0
-        
-        while count_rows < rows:
-            count_rows += 1
-            
-            ring = ogr.Geometry(ogr.wkbLinearRing)
-            ring.AddPoint(ringXleftOrigin, ringYtop)
-            ring.AddPoint(ringXrightOrigin, ringYtop)
-            ring.AddPoint(ringXrightOrigin, ringYbottom)
-            ring.AddPoint(ringXleftOrigin, ringYbottom)
-            ring.AddPoint(ringXleftOrigin, ringYtop)
-            poly = ogr.Geometry(ogr.wkbPolygon)
-            poly.AddGeometry(ring)
-            
-            # add new geom to layer
-            out_feature = ogr.Feature(feat_defn)
-            out_feature.SetGeometry(poly)
-            fishnet_lyr.CreateFeature(out_feature)
-            out_feature = None
-            
-            # new envelope for next poly
-            ringYtop = ringYtop - height
-            ringYbottom = ringYbottom - height
-        
-        # new envelope for next poly
-        ringXleftOrigin = ringXleftOrigin + width
-        ringXrightOrigin = ringXrightOrigin + width
-    
-    out_fishnet.Destroy()
-    
-    return fishnet
 
 
 def points_as_grid(boundary, fishnet_pnt, width=None, height=None,

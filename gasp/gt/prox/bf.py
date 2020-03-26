@@ -250,7 +250,7 @@ def dic_buffer_array_to_shp(arrayBf, outShp, epsg, fields=None):
     
     # Create fields
     if fields:
-        from gasp.gt.lyr.fld import fields_to_lyr
+        from gasp.g.lyr.fld import fields_to_lyr
         
         fields_to_lyr(lyr, fields)
     

@@ -13,11 +13,11 @@ def clip(inFeat, clipFeat, outFeat, api_gis="grass"):
     
     api_gis Options:
     * grass
-    * grass_cmd
+    * pygrass
     * ogr2ogr
     """
     
-    if api_gis == "grass":
+    if api_gis == "pygrass":
         from grass.pygrass.modules import Module
         
         vclip = Module(
@@ -27,7 +27,7 @@ def clip(inFeat, clipFeat, outFeat, api_gis="grass"):
         
         vclip()
     
-    elif api_gis == "grass_cmd":
+    elif api_gis == "grass":
         from gasp import exec_cmd
         
         rcmd = exec_cmd(
@@ -87,7 +87,7 @@ def clip_shp_by_listshp(inShp, clipLst, outLst):
     """
     
     o = [clip(
-        inShp, clipLst[i], outLst[i], api_gis="grass_cmd"
+        inShp, clipLst[i], outLst[i], api_gis="grass"
     ) for i in range(len(clipLst))]
     
     return outLst
@@ -141,15 +141,15 @@ Union Operations
 """
 
 
-def union(lyrA, lyrB, outShp, api_gis="grass_cmd"):
+def union(lyrA, lyrB, outShp, api_gis="grass"):
     """
     Calculates the geometric union of the overlayed polygon layers, i.e.
     the intersection plus the symmetrical difference of layers A and B.
     
     API's Available:
     * saga;
-    * grass_cmd;
-    * grass_cmd;
+    * grass;
+    * pygrass;
     """
     
     if api_gis == "saga":
@@ -159,7 +159,7 @@ def union(lyrA, lyrB, outShp, api_gis="grass_cmd"):
             "saga_cmd shapes_polygons 17 -A {} -B {} -RESULT {} -SPLIT 1"
         ).format(lyrA, lyrB, outShp))
     
-    elif api_gis == "grass":
+    elif api_gis == "pygrass":
         from grass.pygrass.modules import Module
         
         un = Module(
@@ -170,7 +170,7 @@ def union(lyrA, lyrB, outShp, api_gis="grass_cmd"):
         
         un()
     
-    elif api_gis == "grass_cmd":
+    elif api_gis == "grass":
         from gasp import exec_cmd
         
         outcmd = exec_cmd((
@@ -252,7 +252,7 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
     # Create Fishnet
     gridShp = create_fishnet(
         ref_boundary, os.path.join(workspace, 'ref_grid.shp'),
-        rowN=4, colN=4
+        4, 4, xy_row_col=True, srs=epsg
     )
     
     # Split Fishnet in several files
@@ -278,14 +278,14 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
         
         # Clip Layers A and B for each CELL in fishnet
         LYRS_A = [clip(
-            LYR_A, cellsShp[x], LYR_A + "_" + str(x), api_gis="grass_cmd"
+            LYR_A, cellsShp[x], LYR_A + "_" + str(x), api_gis="grass"
         ) for x in range(len(cellsShp))]; LYRS_B = [clip(
-            LYR_B, cellsShp[x], LYR_B + "_" + str(x), api_gis="grass_cmd"
+            LYR_B, cellsShp[x], LYR_B + "_" + str(x), api_gis="grass"
         ) for x in range(len(cellsShp))]
         
         # Union SHPS
         UNION_SHP = [union(
-            LYRS_A[i], LYRS_B[i], "un_{}".format(i), api_gis="grass_cmd"
+            LYRS_A[i], LYRS_B[i], "un_{}".format(i), api_gis="grass"
         ) for i in range(len(cellsShp))]
         
         # Export Data
@@ -311,11 +311,11 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
             c = shp_to_grs(cell, fprop(cell, 'fn'), asCMD=True)
             
             # Clip
-            a_clip = clip(a, c, "{}_clip".format(a), api_gis="grass_cmd")
-            b_clip = clip(b, c, "{}_clip".format(b), api_gis="grass_cmd")
+            a_clip = clip(a, c, "{}_clip".format(a), api_gis="grass")
+            b_clip = clip(b, c, "{}_clip".format(b), api_gis="grass")
             
             # Union
-            u_shp = union(a_clip, b_clip, "un_{}".format(c), api_gis="grass_cmd")
+            u_shp = union(a_clip, b_clip, "un_{}".format(c), api_gis="grass")
             
             # Export
             o = grs_to_shp(u_shp, output, "area")
@@ -354,7 +354,8 @@ def intersection(inShp, intersectShp, outShp, api='geopandas'):
     'API's Available:
     * geopandas
     * saga;
-    * pygrass
+    * pygrass;
+    * grass;
     """
     
     if api == 'geopandas':
@@ -387,6 +388,16 @@ def intersection(inShp, intersectShp, outShp, api='geopandas'):
         )
         
         clip()
+    
+    elif api == 'grass':
+        from gasp import exec_cmd
+
+        rcmd = exec_cmd((
+            "v.overlay ainput={} atype=area, binput={} btype=area "
+            "operator=and output={} --overwrite --quiet"
+        ).format(
+            inShp, intersectShp, outShp
+        ))
         
     else:
         raise ValueError("{} is not available!".format(api))

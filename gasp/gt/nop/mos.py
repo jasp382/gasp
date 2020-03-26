@@ -76,7 +76,21 @@ def rsts_to_mosaic(inRasterS, o, api="grass", fformat='.tif'):
     return o
 
 
-def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
+def rseries(lst, out, meth):
+    
+    from grass.pygrass.modules import Module
+    
+    serie = Module(
+        'r.series', input=lst, output=out, method=meth,
+        overwrite=True, quiet=True, run_=False
+    )
+    
+    serie()
+    
+    return out
+
+
+def bnds_to_mosaic(bands, outdata, ref_raster, loc=None):
     """
     Satellite image To mosaic
     
@@ -93,17 +107,22 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     
     import os
     from gasp.pyt.oss     import fprop
+    from gasp.gt.prop.prj import get_rst_epsg
     from gasp.gt.wenv.grs import run_grass
+
+    # Get EPSG from refRaster
+    epsg = get_rst_epsg(ref_raster, returnIsProj=None)
     
+    LOC = loc if loc else 'gr_loc'
     grass_base = run_grass(
-        outdata, grassBIN='grass77',
-        location=loc if loc else 'gr_loc', srs=epsg
+        outdata, grassBIN='grass78',
+        location=LOC, srs=epsg
     )
     
     import grass.script as grass
     import grass.script.setup as gsetup
     
-    gsetup.init(grass_base, outdata, loc if loc else 'gr_loc', 'PERMANENT')
+    gsetup.init(grass_base, outdata, LOC, 'PERMANENT')
     
     # ************************************************************************ #
     # GRASS MODULES #
@@ -118,7 +137,7 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
     # ************************************************************************ #
     # SEND DATA TO GRASS GIS #
     # ************************************************************************ #
-    grsBnds = {}
+    grs_bnds = {}
     
     for bnd in bands:
         l= []
@@ -126,16 +145,16 @@ def sat_bnds_to_mosaic(bands, outdata, epsg, ref_raster, loc=None):
             bb = rst_to_grs(b, fprop(b, 'fn'))
             l.append(bb)
         
-        grsBnds[bnd] = 1
+        grs_bnds[bnd] = l
     # ************************************************************************ #
     # PATCH bands and export #
     # ************************************************************************ #
-    for bnd in grsBnds:
-        mosaic_band = rsts_to_mosaic(grsBnds[bnd], bnd)
+    for bnd in grs_bnds:
+        mosaic_band = rseries(grs_bnds[bnd], bnd, 'maximum')
         
-        grsBnds[bnd] = grs_to_rst(mosaic_band, os.path.join(
+        grs_bnds[bnd] = grs_to_rst(mosaic_band, os.path.join(
             outdata, mosaic_band + '.tif'
         ), as_cmd=True)
     
-    return grsBnds
+    return grs_bnds
 

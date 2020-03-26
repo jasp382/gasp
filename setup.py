@@ -19,12 +19,12 @@ setup(
         'gasp.cons',
         # ******************************************************************** #
         'gasp.g', 'gasp.g.gop', 'gasp.g.prop', 'gasp.g.nop',
+        'gasp.g.lyr',
         # ******************************************************************** #
-        'gasp.gql',
+        'gasp.gql', 'gasp.gql.to',
         # ******************************************************************** #
         'gasp.gt',
         'gasp.gt.attr', 'gasp.gt.gop', 'gasp.gt.gop.osm',
-        'gasp.gt.lyr', 'gasp.gt.mng',
         'gasp.gt.nop', 'gasp.gt.nop.sat',
         'gasp.gt.prop', 'gasp.gt.prop.feat', 'gasp.gt.prox',
         'gasp.gt.toshp', 'gasp.gt.stats', 'gasp.gt.wenv',
@@ -36,8 +36,7 @@ setup(
         'gasp.sds.floc', 'gasp.sds.osm2lulc', 'gasp.sds.osm2lulc.utils',
         'gasp.sds.terrain',
         # ******************************************************************** #
-        'gasp.sql', 'gasp.sql.q',
-        'gasp.sql.charts', 'gasp.sql.mng', 'gasp.sql.to',
+        'gasp.sql', 'gasp.sql.q', 'gasp.sql.charts',
         # ******************************************************************** #
         'gasp.to',
         # ******************************************************************** #

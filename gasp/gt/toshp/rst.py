@@ -78,6 +78,8 @@ def rst_to_pnt(in_rst, out_pnt):
     Raster to Point Feature Class
     """
 
+    from gasp.gt.toshp import df_to_shp
+
     api = 'pandas'
 
     if api == 'pandas':

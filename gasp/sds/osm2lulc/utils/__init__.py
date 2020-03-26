@@ -5,17 +5,6 @@ Generic method to select all osm features to be used in a certain rule
 from gasp.sds.osm2lulc import DB_SCHEMA, PROCEDURE_DB
 
 
-def osm_to_sqdb(osmXml, osmSQLITE):
-    """
-    Convert OSM file to SQLITE DB
-    """
-    
-    from gasp.gt.toshp.cff import shp_to_shp
-    
-    return shp_to_shp(
-        osmXml, osmSQLITE, gisApi='ogr', supportForSpatialLite=True)
-
-
 def record_time_consumed(timeData, outXls):
     """
     Record the time consumed by a OSM2LULC procedure version
@@ -137,7 +126,7 @@ def osm_project(osmDb, srs_epsg, api='SQLITE', isGlobeLand=None):
         else:
             proj(osmDb, '{}_{}'.format(table, str(srs_epsg)), Q, api='psql')
             
-            add_idx_to_geom(osmDb, '{}_{}'.format(table, str(srs_epsg)), "geometry")
+            idx_for_geom(osmDb, '{}_{}'.format(table, str(srs_epsg)), "geometry")
         
         osmtables[table] = '{}_{}'.format(table, str(srs_epsg))
     

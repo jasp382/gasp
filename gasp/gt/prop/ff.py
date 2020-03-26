@@ -75,7 +75,9 @@ def drv_name(_file):
         '.nc'     : 'netCDF',
         '.png'    : 'PNG',
         '.vrt'    : 'VRT',
-        '.asc'    : 'AAIGrid'
+        '.asc'    : 'AAIGrid',
+        # Vector or Raster
+        '.gpkg'   : 'GPKG'
     }
     return str(drv[os.path.splitext(_file)[1]])
 

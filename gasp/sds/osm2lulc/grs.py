@@ -26,12 +26,12 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     from gasp.gt.wenv.grs            import run_grass
     if roadsAPI == 'POSTGIS':
         from gasp.sql.db             import create_db
-        from gasp.sql.to             import osm_to_pgsql
+        from gasp.gql.to.osm         import osm_to_psql 
         from gasp.sds.osm2lulc.mod2  import roads_sqdb
         from gasp.sql.fm             import dump_db
         from gasp.sql.db             import drop_db
     else:
-        from gasp.sds.osm2lulc.utils import osm_to_sqdb
+        from gasp.gt.toshp.osm       import osm_to_sqdb
         from gasp.sds.osm2lulc.mod2  import grs_rst_roads
     from gasp.sds.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat, osmlulc_rsttbl
     from gasp.sds.osm2lulc.utils     import get_ref_raster
@@ -86,7 +86,7 @@ def raster_based(osmdata, nomenclature, refRaster, lulcRst,
     if roadsAPI == 'POSTGIS':
         osm_db = create_db(fprop(
             osmdata, 'fn', forceLower=True), overwrite=True)
-        osm_db = osm_to_pgsql(osmdata, osm_db)
+        osm_db = osm_to_psql(osmdata, osm_db)
     else:
         osm_db = osm_to_sqdb(osmdata, os.path.join(workspace, 'osm.sqlite'))
     time_c = datetime.datetime.now().replace(microsecond=0)
@@ -369,27 +369,27 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
     # ************************************************************************ #
     # GASP dependencies #
     # ************************************************************************ #
-    from gasp.pyt.oss                import fprop, mkdir
-    from gasp.gt.wenv.grs            import run_grass
+    from gasp.pyt.oss               import fprop, mkdir
+    from gasp.gt.wenv.grs           import run_grass
     if RoadsAPI == 'POSTGIS':
-        from gasp.sql.db             import create_db
-        from gasp.sql.to             import osm_to_pgsql
-        from gasp.sql.db             import drop_db
-        from gasp.sql.fm             import dump_db
+        from gasp.sql.db            import create_db
+        from gasp.gql.to.osm        import osm_to_psql
+        from gasp.sql.db            import drop_db
+        from gasp.sql.fm            import dump_db
     else:
-        from gasp.sds.osm2lulc.utils import osm_to_sqdb
-    from gasp.sds.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat, get_ref_raster
-    from gasp.gt.toshp.mtos          import shps_to_shp
-    from gasp.sds.osm2lulc.mod1      import grs_vector
+        from gasp.gt.toshp.osm      import osm_to_sqdb
+    from gasp.sds.osm2lulc.utils    import osm_project, add_lulc_to_osmfeat, get_ref_raster
+    from gasp.gt.toshp.mtos         import shps_to_shp
+    from gasp.sds.osm2lulc.mod1     import grs_vector
     if RoadsAPI == 'SQLITE' or RoadsAPI == 'POSTGIS':
-        from gasp.sds.osm2lulc.mod2  import roads_sqdb
+        from gasp.sds.osm2lulc.mod2 import roads_sqdb
     else:
-        from gasp.sds.osm2lulc.mod2  import grs_vec_roads
-    from gasp.sds.osm2lulc.m3_4      import grs_vect_selbyarea
-    from gasp.sds.osm2lulc.mod5      import grs_vect_bbuffer
-    from gasp.sds.osm2lulc.mod6      import vector_assign_pntags_to_build
-    from gasp.gt.toshp.mtos          import same_attr_to_shp
-    from gasp.gt.prj                 import def_prj
+        from gasp.sds.osm2lulc.mod2 import grs_vec_roads
+    from gasp.sds.osm2lulc.m3_4     import grs_vect_selbyarea
+    from gasp.sds.osm2lulc.mod5     import grs_vect_bbuffer
+    from gasp.sds.osm2lulc.mod6     import vector_assign_pntags_to_build
+    from gasp.gt.toshp.mtos         import same_attr_to_shp
+    from gasp.gt.prj                import def_prj
     # ************************************************************************ #
     # Global Settings #
     # ************************************************************************ #
@@ -442,7 +442,7 @@ def vector_based(osmdata, nomenclature, refRaster, lulcShp,
         # Convert OSM file to POSTGRESQL DB #
         osm_db = create_db(fprop(
             osmdata, 'fn', forceLower=True), overwrite=True)
-        osm_db = osm_to_pgsql(osmdata, osm_db)
+        osm_db = osm_to_psql(osmdata, osm_db)
     time_c = datetime.datetime.now().replace(microsecond=0)
     # ************************************************************************ #
     # Add Lulc Classes to OSM_FEATURES by rule #

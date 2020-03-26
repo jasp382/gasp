@@ -377,8 +377,8 @@ def connect_points_to_near_line(inPnt, nearLines, outLines,
     shpNear.Destroy()
 
     if nearLinesWpnt:
-        from gasp.gt.lyr.fld import copy_flds
-        from shapely.ops     import split as lnhSplit
+        from gasp.g.lyr.fld import copy_flds
+        from shapely.ops    import split as lnhSplit
         
         shpNear = ogr.GetDriverByName(
                 drv_name(nearLines)).Open(nearLines)
