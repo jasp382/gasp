@@ -106,7 +106,7 @@ def line_intersect_to_pnt(inShp, outShp, db=None):
     from gasp.pyt.oss     import fprop
     from gasp.gt.toshp.db import dbtbl_to_shp
     from gasp.sql.db      import create_db
-    from gasp.sql.to      import shp_to_psql
+    from gasp.gql.to      import shp_to_psql
     from gasp.gql.ovly    import line_intersection_pnt
     
     # Create DB if necessary
@@ -501,7 +501,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
     from gasp.gt.toshp.cff import shp_to_shp
     from gasp.gt.toshp.db  import dbtbl_to_shp
     from gasp.gt.toshp.rst import rst_to_polyg
-    from gasp.sql.to       import shp_to_psql
+    from gasp.gql.to       import shp_to_psql
     from gasp.gt.prop.ff   import check_isRaster
     from gasp.pyt.oss      import fprop
     from gasp.sql.db       import create_db

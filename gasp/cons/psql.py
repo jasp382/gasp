@@ -81,14 +81,19 @@ def pgtypes_from_pnddf(df):
         str(dataTypes[col])) for col in dataTypes}
 
 
-def con_psql():
+def con_psql(db_set='default'):
     """
     Return Dict to Connect to PostgreSQL
     """
 
     import json, os
 
-    return json.load(open(os.path.join(
+    con_param = json.load(open(os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         'con-postgresql.json'
     ), 'r'))
+
+    db_set = 'default' if db_set == None or \
+        db_set not in con_param else db_set
+
+    return con_param[db_set]

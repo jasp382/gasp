@@ -8,6 +8,7 @@ def tar_compress_folder(tar_fld, tar_file):
     Compress a given folder
     """
     
+    import os
     from gasp import exec_cmd
     
     cmd = 'cd {p} && tar -czvf {tar_f} {fld}'.format(

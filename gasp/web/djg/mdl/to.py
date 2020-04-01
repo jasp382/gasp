@@ -243,7 +243,7 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
     from gasp                 import __import
     from gasp.pyt             import obj_to_lst
     from gasp.sql.to          import restore_tbls 
-    from gasp.sql.db          import create_db
+    from gasp.sql.db          import create_db, drop_db
     from gasp.sql.i           import lst_tbl
     from gasp.sql.fm          import q_to_obj
     from gasp.web.djg.mdl.rel import order_mdl_by_rel
@@ -282,7 +282,7 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
     
     data_tbl = {}
     for t in tables:
-        if t == 'auth_user':
+        if t == 'auth_user' or t == 'auth_group' or t == 'auth_user_groups':
             data_tbl[t] = t
         
         elif t.startswith('auth') or t.startswith('django'):
@@ -297,8 +297,19 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
     from django.contrib.gis.db import models
     mdl_cls = ["{}.models.{}".format(m.split('_')[0], app_mdls[m]) for m in app_mdls]
     orderned_table = order_mdl_by_rel(mdl_cls)
+
+    # Add default tables of Django
+    def_djg_tbl = []
+    if 'auth_group' in data_tbl:
+        def_djg_tbl.append('auth_group')
+    
     if 'auth_user' in data_tbl:
-        orderned_table = ['auth_user'] + orderned_table
+        def_djg_tbl.append('auth_user')
+    
+    if 'auth_user_groups' in data_tbl:
+        def_djg_tbl.append('auth_user_groups')
+    
+    orderned_table = def_djg_tbl + orderned_table
     
     if userDjgAPI:
         for table in orderned_table:
@@ -308,6 +319,8 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
             # Table data to Django Model
             if table == 'auth_user':
                 mdl_cls = __import('django.contrib.auth.models.User')
+            elif table == 'auth_group':
+                mdl_cls = __import('django.contrib.auth.models.Group')
             else:
                 mdl_cls = __import(table)
         
@@ -359,4 +372,6 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
             data = q_to_obj(tmp_db_name, "SELECT * FROM {}".format(data_tbl[tbl]))
             
             df_to_db(db_name, data, data_tbl[tbl], append=True)
+    
+    drop_db(tmp_db_name)
 

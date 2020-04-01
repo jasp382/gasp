@@ -3,7 +3,7 @@ Tools for DBMS and SQL
 """
 
 
-def psql_cmd(db_name, sqlfile):
+def psql_cmd(db_name, sqlfile, dbcon=None):
     """
     Run a sql file do whatever is on that script
     """
@@ -12,7 +12,7 @@ def psql_cmd(db_name, sqlfile):
     from gasp import exec_cmd
     from gasp.cons.psql import con_psql
 
-    cdb = con_psql()
+    cdb = con_psql(db_set=dbcon)
 
     if os.path.isdir(sqlfile):
         from gasp.pyt.oss import lst_ff

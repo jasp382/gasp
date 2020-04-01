@@ -9,7 +9,7 @@ def shp_to_store(shape, store_name, workspace):
     """
 
     import os;          import requests
-    from gasp.pyt.oss   import lst_ff
+    from gasp.pyt.oss   import lst_ff, fprop
     from gasp.cons.gsrv import con_gsrv
 
     conf = con_gsrv()
@@ -21,16 +21,18 @@ def shp_to_store(shape, store_name, workspace):
             host=conf['HOST'], port=conf['PORT'], work=workspace,
             store=store_name, pro=conf['PROTOCOL']
         )
+    
+    shpp = fprop(shape, ['fn', 'ff'])
+    fn, ff = shpp['filename'], shpp['fileformat']
 
-    if os.path.splitext(shape)[1] != '.zip':
+    if ff != '.zip':
         from gasp.pyt.ff.zzip import zip_files
 
-        shapefiles = lst_ff(
-            os.path.dirname(shape),
-            filename=os.path.splitext(os.path.basename(shape))[0]
-        )
+        shp_fld = os.path.dirname(shape)
 
-        shape = os.path.splitext(shape)[0] + '.zip'
+        shapefiles = lst_ff(shp_fld, filename=fn)
+
+        shape = os.path.join(shp_fld, fn + '.zip')
         zip_files(shapefiles, shape)
 
     with open(shape, 'rb') as f:

@@ -355,7 +355,7 @@ def matrix_od_mean_dist_by_group(MATRIX_OD, ORIGIN_COL, GROUP_ORIGIN_ID,
     
     import os
     from gasp.pyt.oss import fprop
-    from gasp.sql.to  import shp_to_psql
+    from gasp.gql.to  import shp_to_psql
     from gasp.sql.db  import create_db
     from gasp.sql.to  import q_to_ntbl
     from gasp.to      import db_to_tbl

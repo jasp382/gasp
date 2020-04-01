@@ -65,7 +65,7 @@ def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp',
     elif api == 'psql':
         import os
         from gasp.sql.tbl import tbls_to_tbl, del_tables
-        from gasp.sql.to  import shp_to_psql
+        from gasp.gql.to  import shp_to_psql
 
         if not dbname:
             from gasp.sql.db import create_db

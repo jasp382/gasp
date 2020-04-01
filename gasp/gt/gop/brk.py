@@ -127,7 +127,7 @@ def v_break_at_points(workspace, loc, lineShp, pntShp, db, srs, out_correct,
     """
     
     import os
-    from gasp.sql.to       import shp_to_psql
+    from gasp.gql.to       import shp_to_psql
     from gasp.gt.toshp.db  import dbtbl_to_shp
     from gasp.gt.wenv.grs  import run_grass
     from gasp.pyt.oss      import fprop
@@ -219,7 +219,7 @@ def break_lines_on_points(lineShp, pntShp, outShp, lnhidonpnt,
     elif api == 'psql':
         from gasp.pyt.oss     import fprop
         from gasp.sql.db      import create_db
-        from gasp.sql.to      import shp_to_psql
+        from gasp.gql.to      import shp_to_psql
         from gasp.gt.toshp.db import dbtbl_to_shp
         from gasp.gql.brk     import split_lines_on_pnt
         

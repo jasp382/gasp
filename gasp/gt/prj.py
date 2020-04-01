@@ -210,7 +210,7 @@ def proj(inShp, outShp, outEPSG, inEPSG=None,
     elif gisApi == 'psql':
         from gasp.sql.db      import create_db
         from gasp.pyt.oss     import fprop
-        from gasp.sql.to      import shp_to_psql
+        from gasp.gql.to      import shp_to_psql
         from gasp.gt.toshp.db import dbtbl_to_shp
         from gasp.gql.prj     import sql_proj
 
