@@ -9,7 +9,7 @@ def remove_deadend(inShp, outShp, db=None):
     
     from gasp.pyt.oss     import fprop
     from gasp.sql.db      import create_db
-    from gasp.sql.to      import shp_to_psql
+    from gasp.gql.to      import shp_to_psql
     from gasp.gql.cln     import rm_deadend
     from gasp.gt.toshp.db import dbtbl_to_shp
     

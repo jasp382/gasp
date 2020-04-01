@@ -328,7 +328,7 @@ def lnh_to_polygons(inShp, outShp, api='saga', db=None):
         """ Do it using PostGIS """
         from gasp.pyt.oss     import fprop
         from gasp.sql.db      import create_db
-        from gasp.sql.to      import shp_to_psql
+        from gasp.gql.to      import shp_to_psql
         from gasp.gt.toshp.db import dbtbl_to_shp
         from gasp.gql.cnv     import lnh_to_polg
         from gasp.gt.prop.prj import get_epsg_shp

@@ -42,7 +42,8 @@ def dsn_data_collection_by_multibuffer(inBuffers, workspace, db, datasource,
     from gasp.pyt         import obj_to_lst
     from gasp.sql.db      import create_db
     from gasp.sql.to      import q_to_ntbl
-    from gasp.sql.to      import df_to_db, shp_to_psql
+    from gasp.sql.to      import df_to_db
+    from gasp.gql.to      import shp_to_psql
     from gasp.gt.toshp    import df_to_shp
     from gasp.gt.toshp.db import dbtbl_to_shp
     from gasp.gt.prox.bf  import get_sub_buffers, dic_buffer_array_to_shp

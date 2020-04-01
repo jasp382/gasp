@@ -249,7 +249,7 @@ def del_topoerror_shps(db, shps, epsg, outfolder):
     from gasp.pyt         import obj_to_lst
     from gasp.sql.i       import cols_name
     from gasp.sql.to      import q_to_ntbl
-    from gasp.sql.to      import shp_to_psql
+    from gasp.gql.to      import shp_to_psql
     from gasp.gt.toshp.db import dbtbl_to_shp
     
     shps = obj_to_lst(shps)
@@ -367,7 +367,7 @@ def check_autofc_overlap(checkShp, epsg, dbname, outOverlaps):
     import os
     from gasp.sql.db      import create_db
     from gasp.sql.to      import q_to_ntbl
-    from gasp.sql.to      import shp_to_psql
+    from gasp.gql.to      import shp_to_psql
     from gasp.gt.toshp.db import dbtbl_to_shp
     
     create_db(dbname, api='psql')
