@@ -1,4 +1,36 @@
-""" OSM to DB """
+"""
+OSM to DB
+"""
+
+def osm_to_psql(osmXml, osmdb):
+    """
+    Use GDAL to import osmfile into PostGIS database
+    """
+    
+    from gasp           import exec_cmd
+    from gasp.cons.psql import con_psql
+    from gasp.sql.i     import db_exists
+
+    is_db = db_exists(osmdb)
+
+    if not is_db:
+        from gasp.sql.db import create_db
+
+        create_db(osmdb, api='psql')
+
+    con = con_psql()
+    
+    cmd = (
+        "ogr2ogr -f PostgreSQL \"PG:dbname='{}' host='{}' port='{}' "
+        "user='{}' password='{}'\" {} -lco COLUM_TYPES=other_tags=hstore"
+    ).format(
+        osmdb, con["HOST"], con["PORT"],
+        con["USER"], con["PASSWORD"], osmXml
+    )
+    
+    cmdout = exec_cmd(cmd)
+    
+    return osmdb
 
 
 def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
@@ -50,14 +82,13 @@ def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
     from gasp.pyt.oss import fprop
     from gasp.sql.i   import cols_name
     from gasp.sql.to  import q_to_ntbl
-    from gasp.sql.to  import osm_to_pgsql
     from gasp.sql.db  import create_db
     
     # Create DB
     db = create_db(fprop(osmData, 'fn') if not db_name else db_name, api='psql')
     
     # Send OSM data to Database
-    osm_to_pgsql(osmData, db)
+    osm_to_psql(osmData, db)
     
     # Get KEYS COLUMNS
     cols = cols_name(db, inSchema["TBL"], sanitizeSpecialWords=None)
@@ -116,4 +147,3 @@ def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
         from gasp.sql.fm import dump_tbls
         
         return dump_tbls(db, [osmgeotbl, osmcatbl, osmreltbl], outSQL)
-

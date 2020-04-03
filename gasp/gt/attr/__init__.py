@@ -118,7 +118,7 @@ def sel_by_loc(shp, boundary_filter, filtered_output):
     import os; from osgeo  import ogr
     from gasp.gt.prop.ff   import drv_name
     from gasp.gt.prop.feat import get_gtype
-    from gasp.gt.lyr.fld   import copy_flds
+    from gasp.g.lyr.fld    import copy_flds
     from gasp.gt.toshp     import copy_feat
     from gasp.pyt.oss      import fprop
     

@@ -147,6 +147,7 @@ def get_rst_epsg(rst, returnIsProj=None):
     import os
     from osgeo import gdal
     from osgeo import osr
+    from gasp.g.prop.img import rst_epsg
     
     if not os.path.exists(rst):
         raise ValueError((
@@ -155,27 +156,15 @@ def get_rst_epsg(rst, returnIsProj=None):
         ).format(rst))
     
     d    = gdal.Open(rst)
-    proj = osr.SpatialReference(wkt=d.GetProjection())
-    
-    if not proj:
-        raise ValueError(
-            '{} file has not Spatial Reference assigned!'.format(rst)
-        )
-    
-    epsg = int(str(proj.GetAttrValue(str('AUTHORITY'), 1)))
     
     if not returnIsProj:
+        epsg = rst_epsg(d, isproj=None)
+
         return epsg
     else:
-        if proj.IsProjected:
-            mod_proj = proj.GetAttrValue(str('projcs'))
-            
-            if not mod_proj:
-                return epsg, None
-            else:
-                return epsg, True
-        else:
-            return epsg, None
+        epsg, isproj = rst_epsg(d, isproj=True)
+
+        return epsg, isproj
 
 
 """

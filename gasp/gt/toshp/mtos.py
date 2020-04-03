@@ -6,6 +6,12 @@ def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp',
     dbname=None):
     """
     Get all features in several Shapefiles and save them in one file
+
+    api options:
+    * ogr2ogr;
+    * psql;
+    * pandas;
+    * psql;
     """
 
     import os
@@ -95,6 +101,13 @@ def shps_to_shp(shps, outShp, api="ogr2ogr", fformat='.shp',
 
         del_tables(dbname, pg_tbls)
     
+    elif api == 'grass':
+        from gasp import exec_cmd
+
+        rcmd = exec_cmd((
+            "v.patch input={} output={} --overwrite --quiet"
+        ).format(",".join(shps), outShp))
+       
     else:
         raise ValueError(
             "{} API is not available"

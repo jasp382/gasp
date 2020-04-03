@@ -35,7 +35,7 @@ def snap_points_to_near_line(lineShp, pointShp, epsg, workGrass,
     
         # Import some GRASS GIS tools
         from gasp.gt.prox      import grs_near as near
-        from gasp.gt.tbl       import geomattr_to_db
+        from gasp.gt.tbl.attr  import geomattr_to_db
         from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
     
         # Import data into GRASS GIS

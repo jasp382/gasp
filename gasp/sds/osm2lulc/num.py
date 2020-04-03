@@ -24,29 +24,29 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # ************************************************************************ #
     # Dependencies #
     # ************************************************************************ #
-    from gasp.gt.fmrst               import rst_to_array
-    from gasp.gt.prop.ff             import check_isRaster
-    from gasp.gt.prop.rst            import get_cellsize
-    from gasp.gt.prop.prj            import get_rst_epsg
-    from gasp.pyt.oss                import mkdir, copy_file
-    from gasp.pyt.oss                import fprop
+    from gasp.gt.fmrst              import rst_to_array
+    from gasp.gt.prop.ff            import check_isRaster
+    from gasp.gt.prop.rst           import get_cellsize
+    from gasp.gt.prop.prj           import get_rst_epsg
+    from gasp.pyt.oss               import mkdir, copy_file
+    from gasp.pyt.oss               import fprop
     if roadsAPI == 'POSTGIS':
-        from gasp.sql.db             import create_db
-        from gasp.sql.to             import osm_to_pgsql
-        from gasp.sds.osm2lulc.mod2  import pg_num_roads
-        from gasp.sql.fm             import dump_db
-        from gasp.sql.db             import drop_db
+        from gasp.sql.db            import create_db
+        from gasp.gql.to.osm        import osm_to_psql
+        from gasp.sds.osm2lulc.mod2 import pg_num_roads
+        from gasp.sql.fm            import dump_db
+        from gasp.sql.db            import drop_db
     else:
-        from gasp.sds.osm2lulc.utils import osm_to_sqdb
-        from gasp.sds.osm2lulc.mod2  import num_roads
-    from gasp.sds.osm2lulc.utils     import osm_project, add_lulc_to_osmfeat
-    from gasp.sds.osm2lulc.utils     import osmlulc_rsttbl
-    from gasp.sds.osm2lulc.utils     import get_ref_raster
-    from gasp.sds.osm2lulc.mod1      import num_selection
-    from gasp.sds.osm2lulc.m3_4      import num_selbyarea
-    from gasp.sds.osm2lulc.mod5      import num_base_buffer
-    from gasp.sds.osm2lulc.mod6      import num_assign_builds
-    from gasp.gt.torst               import obj_to_rst
+        from gasp.gt.toshp.osm      import osm_to_sqdb
+        from gasp.sds.osm2lulc.mod2 import num_roads
+    from gasp.sds.osm2lulc.utils    import osm_project, add_lulc_to_osmfeat
+    from gasp.sds.osm2lulc.utils    import osmlulc_rsttbl
+    from gasp.sds.osm2lulc.utils    import get_ref_raster
+    from gasp.sds.osm2lulc.mod1     import num_selection
+    from gasp.sds.osm2lulc.m3_4     import num_selbyarea
+    from gasp.sds.osm2lulc.mod5     import num_base_buffer
+    from gasp.sds.osm2lulc.mod6     import num_assign_builds
+    from gasp.gt.torst              import obj_to_rst
     # ************************************************************************ #
     # Global Settings #
     # ************************************************************************ #
@@ -92,7 +92,7 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     if roadsAPI == 'POSTGIS':
         osm_db = create_db(fprop(
             osmdata, 'fn', forceLower=True), overwrite=True)
-        osm_db = osm_to_pgsql(osmdata, osm_db)
+        osm_db = osm_to_psql(osmdata, osm_db)
     
     else:
         osm_db = osm_to_sqdb(osmdata, os.path.join(workspace, 'osm.sqlite'))

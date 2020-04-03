@@ -30,7 +30,7 @@ def eachfeat_to_newshp(inShp, outFolder, epsg=None, idCol=None):
     import os; from osgeo  import ogr
     from gasp.gt.prop.ff   import drv_name
     from gasp.gt.prop.feat import get_gtype, lst_fld
-    from gasp.gt.lyr.fld   import copy_flds
+    from gasp.g.lyr.fld    import copy_flds
     from gasp.pyt.oss      import fprop
     
     inDt = ogr.GetDriverByName(
@@ -97,6 +97,38 @@ def eachfeat_to_newshp(inShp, outFolder, epsg=None, idCol=None):
         RESULT_SHP.append(newShp)
     
     return RESULT_SHP
+
+
+"""
+Copy Features
+"""
+
+def copy_insame_vector(inShp, colToBePopulated, srcColumn, destinyLayer,
+                       geomType="point,line,boundary,centroid",
+                       asCMD=None):
+    """
+    Copy Field values from one layer to another in the same GRASS Vector
+    """
+    
+    if not asCMD:
+        from grass.pygrass.modules import Module
+        
+        vtodb = Module(
+            "v.to.db", map=inShp, layer=destinyLayer, type=geomType,
+            option="query", columns=colToBePopulated,
+            query_column=srcColumn, run_=False, quiet=True
+        )
+    
+        vtodb()
+    
+    else:
+        from gasp import exec_cmd
+        
+        rcmd = exec_cmd((
+            "v.to.db map={} layer={} type={} option=query columns={} "
+            "query_column={} --quiet"
+        ).format(inShp, destinyLayer, geomType, colToBePopulated,
+                 srcColumn))
 
 
 def copy_feat(inShp, outShp, gisApi='ogrlyr', outDefn=None, only_geom=None):

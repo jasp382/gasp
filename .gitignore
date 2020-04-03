@@ -8,3 +8,5 @@ gasp.egg-info
 .ipynb*
 # Scripts
 scripts/usee/obs_to_txt_nc.json
+# Configuration json
+gasp/cons/*.json

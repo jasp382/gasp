@@ -44,7 +44,7 @@ def st_near(db, inTbl, inGeom, nearTbl, nearGeom, output,
             ") AS {nearCol} FROM {in_tbl} AS s "
             "LEFT JOIN {near_tbl} AS h "
             "ON ST_DWithin(s.{ingeomCol}, h.{negeomCol}, {dist_v}) "
-            "ORDER BY s.{colPk}, ST_Distance(s.{ingeomCol}, h.{negeomCol})"
+            "ORDER BY s.{col_pk}, ST_Distance(s.{ingeomCol}, h.{negeomCol})"
         ).format(
             col_pk=intbl_pk, 
             inTblCols="s.*" if not cols_in_tbl else ", ".join([
@@ -57,6 +57,8 @@ def st_near(db, inTbl, inGeom, nearTbl, nearGeom, output,
             nearCol=near_col, in_tbl=inTbl, near_tbl=nearTbl,
             dist_v="100000" if not until_dist else until_dist
         ), api='psql')
+
+        return output
     
     elif api == 'splite' or api == 'spatialite':
         Q = (

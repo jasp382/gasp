@@ -8,11 +8,13 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
     OSM2LULC procedure
     """
     
-    import os; from gasp.to      import obj_to_tbl
-    from gasp.gt.attr            import sel_by_attr
-    from gasp.sql.fm             import q_to_obj
-    from gasp.pyt.oss            import fprop
-    from gasp.sds.osm2lulc.utils import osm_to_sqdb
+    import os
+    from gasp.to           import obj_to_tbl
+    from gasp.gt.attr      import sel_by_attr
+    from gasp.sql.fm       import q_to_obj
+    from gasp.pyt.df.split import df_split
+    from gasp.pyt.oss      import fprop
+    from gasp.gt.toshp.osm import osm_to_gpkg
     
     OSM_TAG_MAP = {
         "DB"        : os.path.join(
@@ -27,9 +29,9 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
     
     WORKSPACE = os.path.dirname(OUT_TBL)
     
-    sqdb = osm_to_sqdb(
-        OSM_FILE, os.path.join(WORKSPACE, fprop(OSM_FILE, 'fn') + '.sqlite')
-    )
+    sqdb = osm_to_gpkg(OSM_FILE, os.path.join(
+        WORKSPACE, fprop(OSM_FILE, 'fn') + '.gpkg'
+    ))
     
     # Get Features we are considering
     ourOSMFeatures = q_to_obj(OSM_TAG_MAP["DB"], (
@@ -83,11 +85,7 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
     
     newTags["value"] = newTags.value.str.replace("'", "''")
     
-    newTags["whr"] = newTags.key.str.encode('utf-8').astype(str) + "='" + \
-        newTags.value.str.encode('utf-8').astype(str) + "'"
-    
-    # Export OUT_TBL with tags not being used
-    obj_to_tbl(newTags, OUT_TBL, sheetsName="new_tags", sanitizeUtf8=True)
+    newTags["whr"] = newTags.key + "='" + newTags.value + "'"
     
     # Export tags not being used to new shapefile
     def to_regular_str(row):
@@ -107,21 +105,35 @@ def get_not_used_tags(OSM_FILE, OUT_TBL):
         elif t == 'multipolygons':
             filterDf = newTags[newTags.geom == 'Polygon']
         
+        if filterDf.shape[0] > 500:
+            dfs = df_split(filterDf, 500, nrows=True)
+        else:
+            dfs = [filterDf]
+        
         Q = "SELECT * FROM {} WHERE {}".format(
             t, filterDf.whr.str.cat(sep=" OR "))
         
-        try:
-            shp = sel_by_attr(
-                sqdb, Q, os.path.join(WORKPSACE, t + '.shp'), api_gis='ogr'
+        i = 1
+        for df in dfs:
+            fn = t + '.shp' if len(dfs) == 1 else '{}_{}.shp'.format(
+                t, str(i)
             )
-        except:
-            __filterDf = filterDf.apply(lambda x: to_regular_str(x), axis=1)
+            try:
+                shp = sel_by_attr(sqdb, Q.format(
+                    t, df.whr.str.cat(sep=" OR ")
+                ), os.path.join(WORKSPACE, fn), api_gis='ogr')
+            except:
+                __df = df.apply(lambda x: to_regular_str(x), axis=1)
             
-            _Q = "SELECT * FROM {} WHERE {}".format(
-                t, __filterDf.whr_san.str.cat(sep=" OR ")
-            )
+                shp = sel_by_attr(sqdb, Q.format(
+                    t, __df.whr.str.cat(sep=" OR ")
+                ), os.path.join(WORKSPACE, fn))
             
-            shp = sel_by_attr(sqdb, _Q, os.path.join(WORKSPACE, t + '.shp'))
+            i += 1
+    
+    # Export OUT_TBL with tags not being used
+    newTags.drop(['key_y', 'value_y', 'geom_y', 'isnew', 'whr'], axis=1, inplace=True)
+    obj_to_tbl(newTags, OUT_TBL, sheetsName="new_tags", sanitizeUtf8=True)
     
     return OUT_TBL
 

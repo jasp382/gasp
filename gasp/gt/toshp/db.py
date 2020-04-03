@@ -26,6 +26,9 @@ def dbtbl_to_shp(db, tbl, geom_col, outShp, where=None, inDB='psql',
     
     if outShpIsGRASS:
         from gasp import exec_cmd
+        from gasp.cons.psql import con_psql
+
+        db_con = con_psql()
         
         whr = "" if not where else " where=\"{}\"".format(where)
         
@@ -33,8 +36,8 @@ def dbtbl_to_shp(db, tbl, geom_col, outShp, where=None, inDB='psql',
             "v.in.ogr input=\"PG:host={} dbname={} user={} password={} "
             "port={}\" output={} layer={} geometry={}{}{}{} -o --overwrite --quiet"
         ).format(
-            db["HOST"], db["DATABASE"], db["USER"], db["PASSWORD"],
-            db["PORT"], outShp, tbl, geom_col, whr,
+            db_con["HOST"], db, db_con["USER"], db_con["PASSWORD"],
+            db_con["PORT"], outShp, tbl, geom_col, whr,
             " -t" if notTable else "", " -r" if filterByReg else ""
         ) if inDB == 'psql' else (
             "v.in.ogr -o input={} layer={} output={}{}{}{}"
@@ -47,13 +50,16 @@ def dbtbl_to_shp(db, tbl, geom_col, outShp, where=None, inDB='psql',
     else:
         if api == 'pgsql2shp':
             from gasp import exec_cmd
+            from gasp.cons.psql import con_psql
+
+            db_con = con_psql()
             
             outcmd = exec_cmd((
                 'pgsql2shp -f {out} -h {hst} -u {usr} -p {pt} -P {pas}{geom} '
                 '{bd} {t}'
             ).format(
-                hst=db['HOST'], usr=db["USER"], pt=db["PORT"],
-                pas=db['PASSWORD'], bd=db['DATABASE'], out=outShp,
+                hst=db_con['HOST'], usr=db_con["USER"], pt=db_con["PORT"],
+                pas=db_con['PASSWORD'], bd=db, out=outShp,
                 t=tbl if not tableIsQuery else '"{}"'.format(tbl),
                 geom="" if not geom_col else " -g {}".format(geom_col)
             ))

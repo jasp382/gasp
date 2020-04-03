@@ -42,22 +42,3 @@ def combine(inRst, outRst, api="pygrass", template=None):
     
     return outRst
 
-
-"""
-Merge and Combine raster dataset
-"""
-
-
-def rseries(lst, out, meth):
-    
-    from grass.pygrass.modules import Module
-    
-    serie = Module(
-        'r.series', input=lst, output=out, method=meth,
-        overwrite=True, quiet=True, run_=False
-    )
-    
-    serie()
-    
-    return out
-

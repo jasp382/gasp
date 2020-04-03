@@ -2,6 +2,27 @@
 From OpenStreetMap to Feature Class
 """
 
+def osm_to_sqdb(osmXml, osmSQLITE):
+    """
+    Convert OSM file to SQLITE DB
+    """
+    
+    from gasp.gt.toshp.cff import shp_to_shp
+    
+    return shp_to_shp(
+        osmXml, osmSQLITE, gisApi='ogr', supportForSpatialLite=True)
+
+
+def osm_to_gpkg(osm, gpkg):
+    """
+    Convert OSM file to GeoPackage
+    """
+
+    from gasp.gt.toshp.cff import shp_to_shp
+
+    return shp_to_shp(osm, gpkg)
+
+
 def osm_to_featcls(xmlOsm, output, fileFormat='.shp', useXmlName=None,
                    outepsg=4326):
     """
@@ -9,12 +30,12 @@ def osm_to_featcls(xmlOsm, output, fileFormat='.shp', useXmlName=None,
     """
 
     import os
-    from gasp.gt.attr      import sel_by_attr
-    from gasp.pyt.oss      import fprop, del_file
-    from gasp.gt.toshp.cff import shp_to_shp
+    from gasp.gt.attr import sel_by_attr
+    from gasp.pyt.oss import fprop, del_file
     
     # Convert xml to sqliteDB
-    sqDB = shp_to_shp(xmlOsm, os.path.join(output, 'fresh_osm.sqlite'))
+    gpkg = osm_to_gpkg(xmlOsm, os.path.join(
+        output, fprop(xmlOsm, 'fn') + '.gpkg'))
 
     # sqliteDB to Feature Class
     TABLES = {'points' : 'pnt', 'lines' : 'lnh',
@@ -22,7 +43,7 @@ def osm_to_featcls(xmlOsm, output, fileFormat='.shp', useXmlName=None,
     
     for T in TABLES:
         sel_by_attr(
-            sqDB, "SELECT * FROM {}".format(T),
+            gpkg, "SELECT * FROM {}".format(T),
             os.path.join(output, "{}{}{}".format(
                 "" if not useXmlName else fprop(xmlOsm, 'fn') + "_",
                 TABLES[T],
@@ -32,7 +53,7 @@ def osm_to_featcls(xmlOsm, output, fileFormat='.shp', useXmlName=None,
         )
     
     # Del temp DB
-    del_file(sqDB)
+    del_file(gpkg)
 
     return output
 

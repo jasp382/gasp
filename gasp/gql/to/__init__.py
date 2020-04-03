@@ -121,3 +121,28 @@ def shp_to_psql(dbname, shpData, pgTable=None, api="pandas",
     
     return tables[0] if len(tables) == 1 else tables
 
+def rst_to_psql(rst, srs, dbname, sql_script=None):
+    """
+    Run raster2pgsql to import a raster dataset into PostGIS Database
+    """
+    
+    import os
+    from gasp     import exec_cmd
+    from gasp.sql import psql_cmd
+    
+    rst_name = os.path.splitext(os.path.basename(rst))[0]
+    
+    if not sql_script:
+        sql_script = os.path.join(os.path.dirname(rst), rst_name + '.sql')
+    
+    cmd = exec_cmd((
+        'raster2pgsql -s {epsg} -I -C -M {rfile} -F -t 100x100 '
+        'public.{name} > {sqls}'
+    ).format(
+        epsg=str(srs), rfile=rst, name=rst_name, sqls=sql_script
+    ))
+    
+    psql_cmd(dbname, sql_script)
+    
+    return rst_name
+
