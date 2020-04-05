@@ -362,6 +362,7 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
                 __mdl.save()
     else:
         import json
+        import pandas as pd
         from gasp.sql.fm import q_to_obj
         from gasp.sql.to import df_to_db
         
@@ -370,6 +371,10 @@ def psql_to_djgdb(sql_dumps, db_name, djg_proj=None, mapTbl=None, userDjgAPI=Non
                 continue
             
             data = q_to_obj(tmp_db_name, "SELECT * FROM {}".format(data_tbl[tbl]))
+            
+            if tbl == 'auth_user':
+                data['last_login'] = pd.to_datetime(data.last_login, utc=True)
+                data['date_joined'] = pd.to_datetime(data.date_joined, utc=True)
             
             df_to_db(db_name, data, data_tbl[tbl], append=True)
     
