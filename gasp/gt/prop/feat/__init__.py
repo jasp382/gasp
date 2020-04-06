@@ -3,7 +3,7 @@ Feature Classes Properties
 """
 
 
-def feat_count(shp, gisApi='pandas'):
+def feat_count(shp, gisApi='pandas', work=None, loc=None):
     """
     Count the number of features in a feature class
     
@@ -23,12 +23,20 @@ def feat_count(shp, gisApi='pandas'):
         fcnt = int(lyr.GetFeatureCount())
         data.Destroy()
     
-    elif gisApi == 'pygrass':
-        from grass.pygrass.vector import VectorTopo
+    elif gisApi == 'grass':
+        if not work or not loc:
+            raise ValueError((
+                "If gisApi=='grass', work and loc must be defined!"
+            ))
         
-        open_shp = VectorTopo(shp)
-        open_shp.open(mode='r')
-        fcnt = open_shp.num_primitive_of(geom)
+        import os
+        from gasp.sql.i import row_num
+        
+        db = os.path.join(
+            work, loc, 'PERMANENT', 'sqlite', 'sqlite.db'
+        )
+
+        fcnt = row_num(db, shp, api='sqlite')
     
     elif gisApi == 'pandas':
         from gasp.gt.fmshp import shp_to_obj

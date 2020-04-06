@@ -10,3 +10,4 @@ gasp.egg-info
 scripts/usee/obs_to_txt_nc.json
 # Configuration json
 gasp/cons/*.json
+!gasp/cons/sentinel-ex.json

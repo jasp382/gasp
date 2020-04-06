@@ -59,8 +59,8 @@ PRIORITIES = {
         1222, 1221, 12, 5, 14, 13, 11, 2, 3
     ],
     "CORINE_LAND_COVER" : [
-        1222, 1221, 12, 52, 51, 4, 14, 13, 11, 22,
-        23, 21, 24, 2, 32, 33, 31
+        1222, 1221, 12, 52, 51, 4, 142, 1421, 141, 13, 11, 22,
+        23, 21, 24, 2, 324, 321, 33, 31
     ],
     "GLOBE_LAND_30"     : [
         802, 801, 80, 60, 50, 10, 30, 20, 40, 90, 100
@@ -69,7 +69,8 @@ PRIORITIES = {
         98, 99, 12, 5, 14, 13, 11, 2, 3
     ],
     "CORINE_LAND_COVER_NUMPY" : [
-        98, 99, 12, 52, 51, 4, 14, 13, 11, 23, 22, 21, 24, 2, 32, 33, 31
+        98, 99, 12, 52, 51, 4, 97, 96, 95, 13, 11,
+        22, 23, 21, 24, 2, 93, 94, 33, 31
     ],
     "GLOBE_LAND_30_NUMPY" : [
         82, 81, 80, 60, 50, 10, 30, 20, 40, 90, 100
@@ -102,14 +103,17 @@ LEGEND = {
         12 : ("Industrial, commercial, public, military, "
               "private and transport units"),
         13 : "Mine, dump and construction sites",
-        14 : "Artificial non-agricutural vegetated areas",
+        141 : "Green urban areas (Level 3)",
+        142 : "Sport and leisure facilities (Level 3)",
+        1421 : "Sport and leisure facilities (Level 3)",
         2  : "Agricultural areas (Level 1)",
         21 : "Arable Land (Level 2)",
         22 : "Permanent crops (Level 2)",
         23 : "Pastures (Level 2)",
         24 : "Heterogeneous agricultural areas (Level 2)",
         31 : "Forests",
-        32 : "Scrub and/or herbaceous vegetation associations",
+        321 : "Natural grasslands",
+        324 : "Transitional woodland-shrub",
         33 : "Open spaces with little or no vegetation",
         51 : "Inland waters",
         52 : "Marine waters",
@@ -152,17 +156,21 @@ LEGEND = {
         12 : ("Industrial, commercial, public, military, "
               "private and transport units"),
         13 : "Mine, dump and construction sites",
-        14 : "Artificial non-agricutural vegetated areas",
         2  : "Agricultural areas",
         21 : "Arable Land",
         22 : "Permanent crops",
         23 : "Pastures",
         24 : "Heterogeneous",
         31 : "Forests",
-        32 : "Scrub and/or herbaceous vegetation associations",
         33 : "Open spaces with little or no vegetation",
-        5  : "Water",
-        4  : "Wetlands"
+        51 : "Inland waters",
+        52 : "Marine waters",
+        4  : "Wetlands",
+        95 : "Green urban areas (Level 3)",
+        97 : "Sport and leisure facilities (Level 3)",
+        96 : "Sport and leisure facilities (Level 3)",
+        94 : "Natural grasslands",
+        93 : "Transitional woodland-shrub",
     },
     "GLOBE_LAND_30_NUMPY" : {
         82  : "Artificial surfaces",

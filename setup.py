@@ -24,7 +24,7 @@ setup(
         'gasp.gql', 'gasp.gql.to',
         # ******************************************************************** #
         'gasp.gt',
-        'gasp.gt.attr', 'gasp.gt.gop', 'gasp.gt.gop.osm',
+        'gasp.gt.attr', 'gasp.gt.fmweb', 'gasp.gt.gop', 'gasp.gt.gop.osm',
         'gasp.gt.nop', 'gasp.gt.nop.sat',
         'gasp.gt.prop', 'gasp.gt.prop.feat', 'gasp.gt.prox',
         'gasp.gt.toshp', 'gasp.gt.stats', 'gasp.gt.wenv',

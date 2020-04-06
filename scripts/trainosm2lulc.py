@@ -12,6 +12,9 @@ from gasp.gt.toshp.coord import shpext_to_boundshp
 from gasp.gt.wenv.grs    import run_grass
 from gasp.gt.torst       import shp_to_rst
 from gasp.pyt.df.split   import df_split
+from gasp.gt.sample      import nfishnet_fm_rst
+from gasp.gt.fmshp       import shp_to_obj
+from gasp.gt.toshp       import df_to_shp
 
 def lulc_by_cell(tid, boundary, lulc_shps, fishnet, result, workspace):
     bname = fprop(boundary, 'fn')
@@ -31,11 +34,9 @@ def lulc_by_cell(tid, boundary, lulc_shps, fishnet, result, workspace):
     
     # GRASS GIS Modules
     from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
-    from gasp.gt.gop.ovlay import clip, union, intersection
-    from gasp.gt.tbl.attr import geomattr_to_db
-    
-    # Send boundary to GRASS GIS
-    b = shp_to_grs(boundary, 'b_' + bname, asCMD=True)
+    from gasp.gt.gop.ovlay import intersection
+    from gasp.gt.tbl.attr  import geomattr_to_db
+    from gasp.gt.prop.feat import feat_count
     
     # Send Fishnet to GRASS GIS
     fnet = shp_to_grs(fishnet, fprop(fishnet, 'fn'), asCMD=True)
@@ -47,22 +48,13 @@ def lulc_by_cell(tid, boundary, lulc_shps, fishnet, result, workspace):
         iname = fprop(shp, 'fn')
 
         # LULC Class to GRASS GIS
-        lulc_grs = shp_to_grs(
-            shp, iname + '_large', filterByReg=True, asCMD=True
-        )
-    
-        # Clip LULC Classes using boundary as clip features
-        try:
-            lulc_grs = clip(lulc_grs, b, iname + '_clip', api_gis="grass")
-        except:
-            # No areas in fishnet boundary
-            # Do nothing
+        lulc_grs = shp_to_grs(shp, iname, filterByReg=True, asCMD=True)
+
+        if not feat_count(lulc_grs, gisApi='grass', work=workspace, loc=loc_name):
             continue
         
-        # Union Fishnet | LULC CLass
-        union_grs = union(
-            fnet, lulc_grs, iname + '_union', api_gis="grass"
-        )
+        # Intersect Fishnet | LULC CLass
+        union_grs = intersection(fnet, lulc_grs, iname + '_i', api="grass")
         
         # Get Areas
         geomattr_to_db(union_grs, "areav", "area", "boundary", unit='meters')
@@ -79,14 +71,16 @@ def lulc_by_cell(tid, boundary, lulc_shps, fishnet, result, workspace):
     ist_shp = []
     if len(l_lulc_grs) > 1:
         for i in range(len(l_lulc_grs)):
-            for e in range(i+1, len(lulc_grs)):
-                try:
-                    ist_shp.append(intersection(
-                        l_lulc_grs[i], l_lulc_grs[e],
-                        'lulcint_' + str(i) + '_' + str(e), api="grass"
-                    ))
-                except:
+            for e in range(i+1, len(l_lulc_grs)):
+                ishp = intersection(
+                    l_lulc_grs[i], l_lulc_grs[e],
+                    'lulcint_' + str(i) + '_' + str(e), api="grass"
+                )
+                
+                if not feat_count(ishp, gisApi='grass', work=workspace, loc=loc_name):
                     continue
+                else:
+                    ist_shp.append(ishp)
         
         if len(ist_shp):
             from gasp.gt.gop.genze import dissolve
@@ -114,7 +108,7 @@ def lulc_by_cell(tid, boundary, lulc_shps, fishnet, result, workspace):
             overlay_areas = dissolve(merge_shp, 'overlay_areas', 'refid', api='grass')
 
             # Union Fishnet | Overlay's
-            union_ovl = union(fnet, overlay_areas, 'ovl_union', api_gis="grass")
+            union_ovl = intersection(fnet, overlay_areas, 'ovl_union', api="grass")
 
             funion_ovl = grs_to_shp(
                 union_ovl, os.path.join(result, union_ovl + '.shp'), 'area'
@@ -139,26 +133,34 @@ def thrd_lulc_by_cell(thrd_id, df_fishnet, l_lulc, result):
 
 if __name__ == '__main__':
     """
+    Set environment variables
+    """
+
+    """
     Parameters
     """
 
-    osmtolulc = '/home/jasp/mrgis/landsense/r_lisboa'
-    fishnets  = '/home/jasp/mrgis/landsense/fishnet'
-    results   = '/home/jasp/mrgis/landsense/sample_lisboa'
+    ref_raster = '/home/jasp/mrgis/landsense_pp/rst_pnse.tif'
+    osmtolulc  = '/home/jasp/mrgis/landsense_pp/res_pnse'
+    tmp_folder = '/home/jasp/mrgis/landsense_pp/tmp_pnse'
+    results    = '/home/jasp/mrgis/landsense_pp/sample_pnse'
 
     """
     Run Script
     """
+
+    # Create Fishnets
+    fishnets = mkdir(os.path.join(tmp_folder, 'fishnets_shp'))
+    fnet= nfishnet_fm_rst(ref_raster, 500 , 500, fishnets)
+
     # List Fishnet
-    df_fnet = pd.DataFrame(lst_ff(
-        fishnets, file_format='.shp'
-    ), columns=['fishnet'])
+    df_fnet = pd.DataFrame(fnet, columns=['fishnet'])
 
     # List results
     lst_lulc = lst_ff(osmtolulc, file_format='.shp')
 
     # Produce boundaries for each fishnet
-    bf = mkdir(os.path.join(results, 'boundaries'))
+    bf = mkdir(os.path.join(tmp_folder, 'boundaries'))
 
     def produce_bound(row):
         row['bound'] = shpext_to_boundshp(
@@ -175,7 +177,7 @@ if __name__ == '__main__':
 
     thrds = [mp.Process(
         target=thrd_lulc_by_cell, name='th_{}'.format(str(i+1)),
-        args=(i+1, dfs[i], lst_lulc, results)
+        args=(i+1, dfs[i], lst_lulc, tmp_folder)
     ) for i in range(len(dfs))]
 
     for i in thrds:
@@ -183,6 +185,52 @@ if __name__ == '__main__':
     
     for i in thrds:
         i.join()
+    
+    # Re-list fishnets
+    fish_files = df_fnet.fishnet.tolist()
+
+    for fishp in fish_files:
+        # List Intersection files for each fishnet
+        int_files = lst_ff(os.path.join(
+            tmp_folder, fprop(fishp, 'fn')
+        ), file_format='.shp')
+
+        if not len(int_files):
+            continue
+
+        # Open Fishnet
+        fish_df = shp_to_obj(fishp)
+        fish_df.rename(columns={'FID' : 'fid'}, inplace=True)
+        fish_df['area'] = fish_df.geometry.area
+
+        # Open Other files
+        for f in int_files:
+            fn = fprop(f, 'fn')
+
+            df = shp_to_obj(f)
+
+            if fn != 'ovl_union':
+                df = df[~df.b_lulc.isnull()]
+            else:
+                df = df[~df.b_refid.isnull()]
+            
+            if fn == 'ovl_union':
+                df['areav'] = df.geometry.area
+            
+            df = pd.DataFrame({'areav' : df.groupby(['a_FID'])['areav'].agg('sum')}).reset_index()
+
+            fish_df = fish_df.merge(df, how='left', left_on='fid', right_on='a_FID')
+
+            if fn != 'ovl_union':
+                fish_df[fn] = fish_df.areav * 100 / fish_df.area
+            
+            else:
+                fish_df['overlay'] = fish_df.areav * 100 / fish_df.area
+            
+            fish_df.drop(['areav', 'a_FID'], axis=1, inplace=True)
+
+        # Save file
+        df_to_shp(fish_df, os.path.join(results, os.path.basename(fishp)))
     
     # Write List of Fishnet
     from gasp.to import obj_to_tbl
