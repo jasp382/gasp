@@ -1,6 +1,6 @@
 {
     "USER"     : "admin",
-    "PASSWORD" : "kurosaki++zangetsu",
+    "PASSWORD" : "geoserver",
     "HOST"     : "geoserver.flainar.com",
     "PORT"     : "80",
     "PROTOCOL" : "http"
