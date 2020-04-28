@@ -2,6 +2,27 @@
 OSM2LULC using Numpy
 """
 
+def rstcls_map(rstcode):
+    if rstcode == 98:
+        return 1222
+    elif rstcode == 99:
+        return 1221
+    elif rstcode == 82:
+        return 802
+    elif rstcode == 142:
+        return 97
+    elif rstcode == 1421:
+        return 96
+    elif rstcode == 141:
+        return 95
+    elif rstcode == 321:
+        return 94
+    elif rstcode == 324:
+        return 93
+    elif rstcode == 81:
+        return 801
+    else:
+        return rstcode
 
 def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
              overwrite=None, dataStore=None, roadsAPI='POSTGIS'):
@@ -260,8 +281,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     __priorities = PRIORITIES[nomenclature + "_NUMPY"]
     
     for lulcCls in __priorities:
-        __lulcCls = 1222 if lulcCls == 98 else 1221 if lulcCls == 99 else \
-            802 if lulcCls == 82 else 801 if lulcCls == 81 else lulcCls
+        __lulcCls = rstcls_map(lulcCls)
+
         if __lulcCls not in arrayRst:
             continue
         else:
@@ -270,18 +291,15 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
             )
     
     for i in range(len(__priorities)):
-        lulc_i = 1222 if __priorities[i] == 98 else 1221 \
-            if __priorities[i] == 99 else 802 if __priorities[i] == 82 \
-            else 801 if __priorities[i] == 81 else __priorities[i]
+        lulc_i = rstcls_map(__priorities[i])
+
         if lulc_i not in arrayRst:
             continue
         
         else:
             for e in range(i+1, len(__priorities)):
-                lulc_e = 1222 if __priorities[e] == 98 else 1221 \
-                    if __priorities[e] == 99 else \
-                    802 if __priorities[e] == 82 else 801 \
-                    if __priorities[e] == 81 else __priorities[e]
+                lulc_e = rstcls_map(__priorities[e])
+
                 if lulc_e not in arrayRst:
                     continue
                 
@@ -295,9 +313,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
     # Merge all rasters
     startCls = 'None'
     for i in range(len(__priorities)):
-        lulc_i = 1222 if __priorities[i] == 98 else 1221 \
-            if __priorities[i] == 99 else 802 if __priorities[i] == 82 \
-            else 801 if __priorities[i] == 81 else __priorities[i]
+        lulc_i = rstcls_map(__priorities[i])
+        
         if lulc_i in arrayRst:
             resultSum = arrayRst[lulc_i]
             startCls = i
@@ -307,9 +324,8 @@ def osm2lulc(osmdata, nomenclature, refRaster, lulcRst,
         return 'NoResults'
     
     for i in range(startCls + 1, len(__priorities)):
-        lulc_i = 1222 if __priorities[i] == 98 else 1221 \
-            if __priorities[i] == 99 else 802 if __priorities[i] == 82 \
-            else 801 if __priorities[i] == 81 else __priorities[i]
+        lulc_i = rstcls_map(__priorities[i])
+        
         if lulc_i not in arrayRst:
             continue
         

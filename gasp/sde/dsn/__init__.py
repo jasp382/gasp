@@ -332,7 +332,7 @@ def dsnsearch_by_cell(GRID_PNT, EPSG, RADIUS, DATA_SOURCE, db, OUTPUT_TABLE):
     from gasp.sql.db            import create_db
     from gasp.sde.dsn.fb.places import places_by_query
     from gasp.g.prj             import df_prj
-    from gasp.pyt.df.mng        import merge_df
+    from gasp.pyt.df.to         import merge_df
     from gasp.gt.toshp.db       import dbtbl_to_shp
     from gasp.sql.to            import q_to_ntbl
     from gasp.sql.to            import df_to_db

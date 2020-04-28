@@ -42,3 +42,19 @@ def dict_to_df(df):
     
     return pandas.DataFrame.from_dict(df, orient="index")
 
+
+def merge_df(dfs, ignIndex=True):
+    """
+    Merge Multiple DataFrames into one
+    """
+    
+    if type(dfs) != list:
+        raise ValueError('dfs should be a list with Pandas Dataframe')
+    
+    result = dfs[0]
+    
+    for df in dfs[1:]:
+        result = result.append(df, ignore_index=ignIndex)#, sort=True)
+    
+    return result
+

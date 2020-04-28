@@ -3,22 +3,6 @@ Manage data in Pandas DataFrame
 """
 
 
-def merge_df(dfs, ignIndex=True):
-    """
-    Merge Multiple DataFrames into one
-    """
-    
-    if type(dfs) != list:
-        raise ValueError('dfs should be a list with Pandas Dataframe')
-    
-    result = dfs[0]
-    
-    for df in dfs[1:]:
-        result = result.append(df, ignore_index=ignIndex)#, sort=True)
-    
-    return result
-
-
 def col_list_val_to_row(pndDf, colWithLists, geomCol=None, epsg=None):
     """
     Convert a dataframe:
@@ -84,6 +68,8 @@ def dfcolstorows(inDf, colField, valField, colFid=None):
     6 |  ind3   | 265
     7 | id_unit | 3618
     """
+
+    from gasp.pyt.df.to import merge_df
     
     newDfs = []
     cols = list(inDf.columns.values)
