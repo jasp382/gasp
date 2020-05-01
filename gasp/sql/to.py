@@ -33,7 +33,7 @@ def restore_db(conDB, sqlScript, api='psql'):
 
 def restore_tbls(dbn, sql, tablenames=None):
     """
-    Restore one table from a sql Script
+    Restore tables from a sql Script
     
     TODO: add mysql option
     """

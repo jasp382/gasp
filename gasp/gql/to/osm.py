@@ -44,7 +44,8 @@ def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
     osmData = '/home/jasp/flainar/osm_centro.xml'
     
     inSchema = {
-        "TBL" : 'points', 'FID' : 'CAST(osm_id AS bigint)',
+        "TBL" : ['points', 'lines', 'multipolygons'],
+        'FID' : 'CAST(osm_id AS bigint)',
         "COLS" : [
             'name',
             "ST_X(wkb_geometry) AS longitude",
@@ -79,10 +80,13 @@ def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
     }
     """
     
+    from gasp.pyt     import obj_to_lst
     from gasp.pyt.oss import fprop
     from gasp.sql.i   import cols_name
     from gasp.sql.to  import q_to_ntbl
     from gasp.sql.db  import create_db
+
+    inSchema["TBL"] = obj_to_lst(inSchema["TBL"])
     
     # Create DB
     db = create_db(fprop(osmData, 'fn') if not db_name else db_name, api='psql')
@@ -91,33 +95,42 @@ def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
     osm_to_psql(osmData, db)
     
     # Get KEYS COLUMNS
-    cols = cols_name(db, inSchema["TBL"], sanitizeSpecialWords=None)
-    transcols = [c for c in cols if c not in inSchema["NOT_KEYS"]]
+    transcols = {}
+    for tbl in inSchema["TBL"]:
+        transcols[tbl] = [c for c in cols_name(
+            db, tbl, sanitizeSpecialWords=None
+        ) if c not in inSchema["NOT_KEYS"]]
     
-    # Create osmGeoTbl 
-    osmgeotbl = q_to_ntbl(db, osmGeoTbl['TBL'], (
+    # Create osmGeoTbl
+    osmgeotbl = [q_to_ntbl(db, osmGeoTbl[tbl]['TBL'], (
         "SELECT {} AS {}, {} FROM {}"
     ).format(
-        inSchema["FID"], osmGeoTbl["FID"],
-        ", ".join(inSchema["COLS"]), inSchema["TBL"]
-    ), api='psql')
+        inSchema["FID"], osmGeoTbl[tbl]["FID"],
+        ", ".join(inSchema["COLS"]), tbl
+    ), api='psql') for tbl in inSchema["TBL"]]
     
     # Create OSM categories table
-    qs = [(
-        "SELECT '{keyV}' AS {keyC}, CAST({t}.{keyV} AS text) AS {valC} "
-        "FROM {t} WHERE {t}.{keyV} IS NOT NULL "
-        "GROUP BY {t}.{keyV}"
-    ).format(
-        keyV=c, t=inSchema["TBL"], keyC=osmCatTbl["KEY_COL"],
-        valC=osmCatTbl["VAL_COL"]
-    ) for c in transcols]
+    qs = []
+    for tbl in inSchema["TBL"]:
+        qs.extend([(
+            "SELECT '{keyV}' AS {keyC}, CAST({t}.{keyV} AS text) AS {valC} "
+            "FROM {t} WHERE {t}.{keyV} IS NOT NULL "
+            "GROUP BY {t}.{keyV}"
+        ).format(
+            keyV=c, t=tbl, keyC=osmCatTbl["KEY_COL"],
+            valC=osmCatTbl["VAL_COL"]
+        ) for c in transcols[tbl]])
     
     osmcatbl = q_to_ntbl(db, osmCatTbl["TBL"], (
         "SELECT row_number() OVER(ORDER BY {keyC}) "
         "AS {osmcatid}, {keyC}, {valC}{ocols} "
         "FROM ({q}) AS foo"
     ).format(
-        q=" UNION ALL ".join(qs), keyC=osmCatTbl["KEY_COL"],
+        q="SELECT {k}, {v} FROM ({t}) AS kvtbl GROUP BY {k}, {v}".format(
+            k=osmCatTbl["KEY_COL"], v=osmCatTbl["VAL_COL"],
+            t=" UNION ALL ".join(qs), 
+        ) if len(inSchema["TBL"]) > 1 else " UNION ALL ".join(qs),
+        keyC=osmCatTbl["KEY_COL"],
         osmcatid=osmCatTbl["FID"], valC=osmCatTbl["VAL_COL"],
         ocols="" if "COLS" not in osmCatTbl else ", {}".format(
             ", ".join(osmCatTbl["COLS"])
@@ -125,25 +138,29 @@ def osm_to_relationaldb(osmData, inSchema, osmGeoTbl, osmCatTbl, osmRelTbl,
     ), api='psql')
     
     # Create relation table
-    qs = [(
-        "SELECT {fid}, '{keyV}' AS key, CAST({t}.{keyV} AS text) AS osmval "
-        "FROM {t} WHERE {t}.{keyV} IS NOT NULL"
-    ).format(
-        fid=inSchema["FID"], keyV=c, t=inSchema["TBL"]
-    ) for c in transcols]
+    osmreltbl = []
+    for tbl in inSchema["TBL"]:
+        qs = [(
+            "SELECT {fid}, '{keyV}' AS key, CAST({t}.{keyV} AS text) AS osmval "
+            "FROM {t} WHERE {t}.{keyV} IS NOT NULL"
+        ).format(
+            fid=inSchema["FID"], keyV=c, t=tbl
+        ) for c in transcols[tbl]]
     
-    osmreltbl = q_to_ntbl(db, osmRelTbl["TBL"], (
-        "SELECT foo.{fid}, catbl.{osmcatfid} "
-        "FROM ({mtbl}) AS foo INNER JOIN {catTbl} AS catbl "
-        "ON foo.key = catbl.keycategory AND foo.osmval = catbl.value"
-    ).format(
-        mtbl=" UNION ALL ".join(qs), fid=inSchema["FID"],
-        catTbl=osmCatTbl["TBL"], osmcatfid=osmCatTbl["FID"]
-    ), api='psql')
+        osmreltbl.append(q_to_ntbl(db, osmRelTbl[tbl]["TBL"], (
+            "SELECT foo.{fid} AS {nfid}, catbl.{osmcatfid} "
+            "FROM ({mtbl}) AS foo INNER JOIN {catTbl} AS catbl "
+            "ON foo.key = catbl.{catkey} AND foo.osmval = catbl.{catval}"
+        ).format(
+            mtbl=" UNION ALL ".join(qs), fid=inSchema["FID"],
+            nfid=osmRelTbl[tbl]["FID"],
+            catTbl=osmCatTbl["TBL"], osmcatfid=osmCatTbl["FID"],
+            catkey=osmCatTbl["KEY_COL"], catval=osmCatTbl["VAL_COL"]
+        ), api='psql'))
     
     if not outSQL:
         return osmgeotbl, osmcatbl, osmreltbl
     else:
         from gasp.sql.fm import dump_tbls
         
-        return dump_tbls(db, [osmgeotbl, osmcatbl, osmreltbl], outSQL)
+        return dump_tbls(db, osmgeotbl + [osmcatbl] + osmreltbl, outSQL)
