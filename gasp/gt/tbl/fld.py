@@ -141,19 +141,18 @@ def rn_cols(inShp, columns, api="ogr2ogr"):
     * ogr2ogr;
     * grass;
     * pygrass;
-    
-    TODO: For now implies output. In the future, it option will be removed
     """
     
     if api == "ogr2ogr":
         import os
-        from gasp.pyt     import obj_to_lst
-        from gasp.pyt.oss import fprop
-        from gasp.pyt.oss import del_file, lst_ff
-        from gasp.gt.attr import sel_by_attr
+        from gasp.pyt         import obj_to_lst
+        from gasp.pyt.oss     import fprop
+        from gasp.pyt.oss     import del_file, lst_ff
+        from gasp.gt.attr     import sel_by_attr
+        from gasp.gt.prop.fld import lst_cols
         
         # List Columns
-        cols = lst_fld(inShp)
+        cols = lst_cols(inShp)
         for c in cols:
             if c in columns:
                 continue
@@ -184,7 +183,7 @@ def rn_cols(inShp, columns, api="ogr2ogr"):
         # Rename Output file
         oufiles = lst_ff(inshpfld, filename=inshpname + '_xtmp')
         for f in oufiles:
-            os.rename(f, os.path.join(inshpfld, inshpname + fprop(inShp, 'ff')))
+            os.rename(f, os.path.join(inshpfld, inshpname + fprop(f, 'ff')))
     
     elif api == 'grass':
         from gasp import exec_cmd

@@ -2,7 +2,7 @@
 Table Statistics
 """
 
-def tbl_to_areamtx(inShp, col_a, col_b, outXls):
+def tbl_to_areamtx(inShp, col_a, col_b, outXls, db=None, with_metrics=None):
     """
     Table to Matrix
     
@@ -30,39 +30,83 @@ def tbl_to_areamtx(inShp, col_a, col_b, outXls):
     
     col_a = rows
     col_b = cols
+
+    api options:
+    * pandas;
+    * psql;
     """
+
+    if not db:
+        import pandas as pd
+        import numpy as np
+        from gasp.gt.fmshp import shp_to_obj
+        from gasp.to       import obj_to_tbl
     
-    import pandas as pd
-    import numpy as np
-    from gasp.gt.fmshp import shp_to_obj
-    from gasp.to       import obj_to_tbl
+        # Open data
+        df = shp_to_obj(inShp)
+
+        # Remove nan values by -9999
+        df = df[pd.notnull(df[col_a])]
+        df = df[pd.notnull(df[col_b])]
     
-    # Open data
-    df = shp_to_obj(inShp)
+        # Get Area
+        df['realarea'] = df.geometry.area / 1000000
     
-    # Get Area
-    df['realarea'] = df.geometry.area
+        # Get rows and Cols
+        rows = df[col_a].unique()
+        cols = df[col_b].unique()
+        refval = list(np.sort(np.unique(np.append(rows, cols))))
     
-    # Get rows and Cols
-    rows = list(np.sort(df[col_a].unique()))
-    cols = list(np.sort(df[col_b].unique()))
-    
-    # Produce matrix
-    outDf = []
-    for row in rows:
-        newCols = [row]
-        for col in cols:
-            newDf = df[(df[col_a] == row) & (df[col_b] == col)]
+        # Produce matrix
+        outDf = []
+        for row in refval:
+            newCols = [row]
+            for col in refval:
+                newDf = df[(df[col_a] == row) & (df[col_b] == col)]
+
+                if not newDf.shape[0]:
+                    newCols.append(0)
+                
+                else:
+                    area = newDf.realarea.sum()
             
-            area = newDf.realarea.sum()
-            
-            newCols.append(area)
+                    newCols.append(area)
         
-        outDf.append(newCols)
+            outDf.append(newCols)
     
-    outcols = ['class'] + cols
-    outDf = pd.DataFrame(outDf, columns=outcols)
+        outcols = ['class'] + refval
+        outDf = pd.DataFrame(outDf, columns=outcols)
+
+        if with_metrics:
+            from gasp.pyt.dtcls.eval import get_measures_for_mtx
+
+            out_df = get_measures_for_mtx(outDf, 'class')
+
+            return obj_to_tbl(out_df, outXls)
     
-    # Export to Excel
-    return obj_to_tbl(outDf, outXls)
+        # Export to Excel
+        return obj_to_tbl(outDf, outXls)
+    
+    else:
+        from gasp.pyt.oss   import fprop
+        from gasp.sql.db    import create_db
+        from gasp.sql.i     import db_exists
+        from gasp.gql.to    import shp_to_psql
+        from gasp.gql.tomtx import tbl_to_area_mtx
+        from gasp.to        import db_to_tbl
+
+        # Create database if not exists
+        is_db = db_exists(db)
+
+        if not is_db:
+            create_db(db, api='psql')
+
+        # Add data to database
+        tbl = shp_to_psql(db, inShp, api='shp2pgsql')
+
+        # Create matrix
+        mtx = tbl_to_area_mtx(db, tbl, col_a, col_b, fprop(outXls, 'fn'))
+
+        # Export result
+        return db_to_tbl(db, mtx, outXls, sheetsNames='matrix')
 

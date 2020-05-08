@@ -7,7 +7,7 @@ Overlay operations
 Clip Tools
 """
 
-def clip(inFeat, clipFeat, outFeat, api_gis="grass"):
+def clip(inFeat, clipFeat, outFeat, api_gis="grass", clip_by_region=None):
     """
     Clip Analysis
     
@@ -20,10 +20,16 @@ def clip(inFeat, clipFeat, outFeat, api_gis="grass"):
     if api_gis == "pygrass":
         from grass.pygrass.modules import Module
         
-        vclip = Module(
-            "v.clip", input=inFeat, clip=clipFeat,
-            output=outFeat, overwrite=True, run_=False, quiet=True
-        )
+        if not clip_by_region:
+            vclip = Module(
+                "v.clip", input=inFeat, clip=clipFeat,
+                output=outFeat, overwrite=True, run_=False, quiet=True
+            )
+        else:
+            vclip = Module(
+                "v.clip", input=inFeat, output=outFeat, overwrite=True,
+                flags='r', run_=False, quiet=True
+            )
         
         vclip()
     
@@ -31,8 +37,9 @@ def clip(inFeat, clipFeat, outFeat, api_gis="grass"):
         from gasp import exec_cmd
         
         rcmd = exec_cmd(
-            "v.clip input={} clip={} output={} --overwrite --quiet".format(
-                inFeat, clipFeat, outFeat
+            "v.clip input={}{} output={} {}--overwrite --quiet".format(
+                inFeat, " clip={}".format(clipFeat) if clipFeat else "",
+                outFeat, "-r " if not clipFeat else ""
             )
         )
     
@@ -221,7 +228,7 @@ def union_for_all_pairs(inputList):
     return outputs
 
 
-def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
+def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary,
                          workspace=None, multiProcess=None):
     """
     Optimized Union Analysis
@@ -230,12 +237,15 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
     """
     
     import os
-    from gasp.pyt.oss       import fprop
+    from gasp.pyt.oss       import fprop, lst_ff
+    from gasp.pyt.oss       import cpu_cores
     from gasp.gt.sample     import create_fishnet
     from gasp.gt.wenv.grs   import run_grass
     from gasp.gt.toshp      import eachfeat_to_newshp
     from gasp.gt.toshp.mtos import shps_to_shp
     from gasp.gt.attr       import split_shp_by_attr
+    from gasp.gt.torst      import shpext_to_rst
+    from gasp.gt.prop.ext   import get_ext
     
     if workspace:
         if not os.path.exists(workspace):
@@ -250,13 +260,28 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
             os.path.dirname(outShp), "union_work"))
     
     # Create Fishnet
+    ncpu = cpu_cores()
+    if ncpu == 12:
+        nrow = 4
+        ncol = 3
+    elif ncpu == 8:
+        nrow = 4
+        ncol = 2
+    else:
+        nrow = 2
+        ncol = 2
+    
+    ext = get_ext(ref_boundary)
+    width  = (ext[1] - ext[0]) / ncol
+    height = (ext[3] - ext[2]) / nrow
+    
     gridShp = create_fishnet(
         ref_boundary, os.path.join(workspace, 'ref_grid.shp'),
-        4, 4, xy_row_col=True, srs=epsg
+        width, height, xy_row_col=None
     )
     
     # Split Fishnet in several files
-    cellsShp = eachfeat_to_newshp(gridShp, workspace, epsg=epsg)
+    cellsShp = eachfeat_to_newshp(gridShp, workspace)
     
     if not multiProcess:
         # INIT GRASS GIS Session
@@ -296,26 +321,45 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
         ) for shp in UNION_SHP]
     
     else:
-        def clip_and_union(la, lb, cell, work, ref, proc, output):
+        def clip_and_union(la, lb, cell, work, proc, output):
+            ref_rst = shpext_to_rst(cell, os.path.join(
+                os.path.dirname(cell), fprop(cell, 'fn') + '.tif'
+            ), cellsize=10)
+
             # Start GRASS GIS Session
-            grsbase = run_grass(work, location="proc_" + str(proc), srs=ref)
+            loc = "proc_" + str(proc)
+            grsbase = run_grass(work, location=loc, srs=ref_rst)
             import grass.script.setup as gsetup
-            gsetup.init(grsbase, work, "proc_" + str(proc), 'PERMANENT')
+            gsetup.init(grsbase, work, loc, 'PERMANENT')
             
             # Import GRASS GIS modules
             from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
+            from gasp.gt.prop.feat import feat_count
             
             # Add data to GRASS
-            a = shp_to_grs(la, fprop(la, 'fn'), asCMD=True)
-            b = shp_to_grs(lb, fprop(lb, 'fn'), asCMD=True)
-            c = shp_to_grs(cell, fprop(cell, 'fn'), asCMD=True)
+            a = shp_to_grs(la, fprop(la, 'fn'), filterByReg=True, asCMD=True)
+            b = shp_to_grs(lb, fprop(lb, 'fn'), filterByReg=True, asCMD=True)
+
+            if not feat_count(a, gisApi="grass", work=work, loc=loc):
+                return
+            
+            if not feat_count(b, gisApi="grass", work=work,loc=loc):
+                return
             
             # Clip
-            a_clip = clip(a, c, "{}_clip".format(a), api_gis="grass")
-            b_clip = clip(b, c, "{}_clip".format(b), api_gis="grass")
+            a_clip = clip(
+                a, None, "{}_clip".format(a), api_gis="grass",
+                clip_by_region=True
+            )
+            b_clip = clip(
+                b, None, "{}_clip".format(b), api_gis="grass",
+                clip_by_region=True
+            )
             
             # Union
-            u_shp = union(a_clip, b_clip, "un_{}".format(c), api_gis="grass")
+            u_shp = union(
+                a_clip, b_clip,
+                "un_{}".format(fprop(cell, 'fn')), api_gis="grass")
             
             # Export
             o = grs_to_shp(u_shp, output, "area")
@@ -325,7 +369,7 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
         thrds = [multiprocessing.Process(
             target=clip_and_union, name="th-{}".format(i), args=(
                 lyr_a, lyr_b, cellsShp[i],
-                os.path.join(workspace, "th_{}".format(i)), ref_boundary, i,
+                os.path.join(workspace, "th_{}".format(i)), i,
                 os.path.join(workspace, "uniao_{}.shp".format(i))
             )
         ) for i in range(len(cellsShp))]
@@ -336,15 +380,22 @@ def optimized_union_anls(lyr_a, lyr_b, outShp, ref_boundary, epsg,
         for t in thrds:
             t.join()
         
-        _UNION_SHP = [os.path.join(
-            workspace, "uniao_{}.shp".format(i)
-        ) for i in range(len(cellsShp))]
+        ff_shp = lst_ff(workspace, file_format='.shp')
+        _UNION_SHP = []
+        for i in range(len(cellsShp)):
+            p = os.path.join(
+                workspace, "uniao_{}.shp".format(i)
+            )
+
+            if p in ff_shp:
+                _UNION_SHP.append(p)
+            else:
+                continue
     
     # Merge all union into the same layer
     MERGED_SHP = shps_to_shp(_UNION_SHP, outShp, api="ogr2ogr")
     
-    return outShp
-
+    return MERGED_SHP
 
 
 def intersection(inShp, intersectShp, outShp, api='geopandas'):
@@ -487,8 +538,8 @@ def erase(inShp, erase_feat, out, splitMultiPart=None, notTbl=None,
     return out
 
 
-def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
-                     GRASS_REGION_TEMPLATE=None):
+def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB,
+                     GRASS_REGION_TEMPLATE):
     """
     Script to check differences between pairs of Feature Classes
     
@@ -496,7 +547,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
     possui um determinado atributo; imagine tambem que,
     considerando todos os pares possiveis entre estas FC,
     se pretende comparar as diferencas na distribuicao dos valores
-    desse atributo em cada par.
+    desse atributo para cada par.
     
     * Dependencias:
     - GRASS;
@@ -513,12 +564,14 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
     from gasp.gt.toshp.db  import dbtbl_to_shp
     from gasp.gt.toshp.rst import rst_to_polyg
     from gasp.gql.to       import shp_to_psql
+    from gasp.gql.tomtx    import tbl_to_area_mtx
     from gasp.gt.prop.ff   import check_isRaster
     from gasp.pyt.oss      import fprop
     from gasp.sql.db       import create_db
     from gasp.sql.tbl      import tbls_to_tbl
     from gasp.sql.to       import q_to_ntbl
     from gasp.gql.cln      import fix_geom
+    from gasp.to           import db_to_tbl
     
     # Check if folder exists, if not create it
     if not os.path.exists(OUT_FOLDER):
@@ -526,17 +579,11 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
         mkdir(OUT_FOLDER, overwrite=None)
     else:
         raise ValueError('{} already exists!'.format(OUT_FOLDER))
-    
-    # Start GRASS GIS Session if GIS_SOFTWARE == GRASS
-    if not GRASS_REGION_TEMPLATE:
-        raise ValueError(
-            'To use GRASS GIS you need to specify GRASS_REGION_TEMPLATE'
-        )
         
     from gasp.gt.wenv.grs import run_grass
         
     gbase = run_grass(
-        OUT_FOLDER, grassBIN='grass76', location='shpdif',
+        OUT_FOLDER, grassBIN='grass78', location='shpdif',
         srs=GRASS_REGION_TEMPLATE
     )
         
@@ -550,7 +597,6 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
     from gasp.gt.tbl.fld   import rn_cols
     
     # Convert to SHAPE if file is Raster
-    # Import to GRASS GIS if GIS SOFTWARE == GRASS
     i = 0
     _SHP_TO_COMPARE = {}
     for s in SHAPES_TO_COMPARE:
@@ -560,9 +606,9 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
             # To GRASS
             rstName = fprop(s, 'fn')
             inRst   = rst_to_grs(s, "rst_" + rstName, as_cmd=True)
-            # To Raster
+            # To Vector
             d       = rst_to_polyg(inRst, rstName,
-                rstColumn="lulc_{}".format(i), gisApi="grasscmd")
+                rstColumn="lulc_{}".format(i), gisApi="grass")
                 
             # Export Shapefile
             shp = grs_to_shp(
@@ -575,13 +621,16 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
             grsV = shp_to_grs(s, fprop(s, 'fn'), asCMD=True)
                 
             # Change name of column with comparing value
-            rn_cols(grsV, SHAPES_TO_COMPARE[s], api="grass")
+            ncol = "lulc_{}".format(str(i))
+            rn_cols(grsV, {
+                SHAPES_TO_COMPARE[s] : "lulc_{}".format(str(i))
+            }, api="grass")
                 
             # Export
             shp = grs_to_shp(
                 grsV, os.path.join(OUT_FOLDER, grsV + '_rn.shp'), "area")
                 
-            _SHP_TO_COMPARE[shp] = "lulc_{}".format(i)
+            _SHP_TO_COMPARE[shp] = "lulc_{}".format(str(i))
         
         i += 1
     
@@ -596,7 +645,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
     UNION_SHAPE = {}
     FIX_GEOM = {}
     
-    SHPS = __SHAPES_TO_COMPARE.keys()
+    SHPS = list(__SHAPES_TO_COMPARE.keys())
     for i in range(len(SHPS)):
         for e in range(i + 1, len(SHPS)):
             # Optimized Union
@@ -605,7 +654,7 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
             __unShp = optimized_union_anls(
                 SHPS[i], SHPS[e],
                 os.path.join(OUT_FOLDER, "un_{}_{}.shp".format(i, e)),
-                GRASS_REGION_TEMPLATE, SRS_CODE,
+                GRASS_REGION_TEMPLATE,
                 os.path.join(OUT_FOLDER, "work_{}_{}".format(i, e)),
                 multiProcess=True
             )
@@ -620,14 +669,12 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
             
             UNION_SHAPE[(SHPS[i], SHPS[e])] = unShp
     
-    # Send data one more time to postgresql
+    # Send data to postgresql
     SYNTH_TBL = {}
     
     for uShp in UNION_SHAPE:
         # Send data to PostgreSQL
-        union_tbl = shp_to_psql(
-            DB, UNION_SHAPE[uShp], srsEpsgCode=SRS_CODE, api='shp2pgsql'
-        )
+        union_tbl = shp_to_psql(DB, UNION_SHAPE[uShp], api='shp2pgsql')
         
         # Produce table with % of area equal in both maps
         areaMapTbl = q_to_ntbl(DB, "{}_syn".format(union_tbl), (
@@ -658,58 +705,12 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
         ), api='psql')
         
         # Produce confusion matrix for the pair in comparison
-        lulcCls = q_to_obj(DB, (
-            "SELECT fcol FROM ("
-                "SELECT CAST({map1_cls} AS text) AS fcol FROM {tbl} "
-                "GROUP BY {map1_cls} "
-                "UNION ALL SELECT CAST({map2_cls} AS text) FROM {tbl} "
-                "GROUP BY {map2_cls}"
-            ") AS foo GROUP BY fcol ORDER BY fcol"
-        ).format(
-            tbl = union_tbl,
-            map1_cls = __SHAPES_TO_COMPARE[uShp[0]],
-            map2_cls = __SHAPES_TO_COMPARE[uShp[1]]
-        ), db_api='psql').fcol.tolist()
-        
-        matrixTbl = q_to_ntbl(DB, "{}_matrix".format(union_tbl), (
-            "SELECT * FROM crosstab('"
-                "SELECT CASE "
-                    "WHEN foo.{map1_cls} IS NOT NULL "
-                    "THEN foo.{map1_cls} ELSE jtbl.flyr "
-                "END AS lulc1_cls, CASE "
-                    "WHEN foo.{map2_cls} IS NOT NULL "
-                    "THEN foo.{map2_cls} ELSE jtbl.slyr "
-                "END AS lulc2_cls, CASE "
-                    "WHEN foo.garea IS NOT NULL "
-                    "THEN round(CAST(foo.garea / 1000000 AS numeric)"
-                    ", 3) ELSE 0 "
-                "END AS garea FROM ("
-                    "SELECT CAST({map1_cls} AS text) AS {map1_cls}, "
-                    "CAST({map2_cls} AS text) AS {map2_cls}, "
-                    "SUM(ST_Area(geom)) AS garea "
-                    "FROM {tbl} GROUP BY {map1_cls}, {map2_cls}"
-                ") AS foo FULL JOIN ("
-                    "SELECT f.flyr, s.slyr FROM ("
-                        "SELECT CAST({map1_cls} AS text) AS flyr "
-                        "FROM {tbl} GROUP BY {map1_cls}"
-                    ") AS f, ("
-                        "SELECT CAST({map2_cls} AS text) AS slyr "
-                        "FROM {tbl} GROUP BY {map2_cls}"
-                    ") AS s"
-                ") AS jtbl "
-                "ON foo.{map1_cls} = jtbl.flyr AND "
-                "foo.{map2_cls} = jtbl.slyr "
-                "ORDER BY 1,2"
-            "') AS ct("
-                "lulc_cls text, {crossCols}"
-            ")"
-        ).format(
-            crossCols = ", ".join([
-                "cls_{} numeric".format(c) for c in lulcCls]),
-            tbl = union_tbl,
-            map1_cls = __SHAPES_TO_COMPARE[uShp[0]],
-            map2_cls = __SHAPES_TO_COMPARE[uShp[1]]
-        ), api='psql')
+        matrixTbl = tbl_to_area_mtx(
+            DB, union_tbl,
+            __SHAPES_TO_COMPARE[uShp[0]],
+            __SHAPES_TO_COMPARE[uShp[1]],
+            union_tbl + '_mtx'
+        )
         
         SYNTH_TBL[uShp] = {"TOTAL" : areaMapTbl, "MATRIX" : matrixTbl}
     
@@ -796,11 +797,107 @@ def check_shape_diff(SHAPES_TO_COMPARE, OUT_FOLDER, REPORT, DB, SRS_CODE,
         ) for x in SYNTH_TBL
     ]
     
-    from gasp.to import db_to_tbl
-    
     db_to_tbl(
         DB, ["SELECT * FROM {}".format(x) for x in TABLES],
         REPORT, sheetsNames=SHEETS, dbAPI='psql'
     )
     
     return REPORT
+
+
+def shp_diff_fm_ref(refshp, refcol, shps, out_folder,
+    refrst, db=None):
+    """
+    Check differences between each shp in shps and one reference shape
+
+    Dependencies:
+    - GRASS;
+    - PostgreSQL with Postgis or GeoPandas;
+    """
+
+    import os
+    from gasp.gt.prop.ff   import check_isRaster
+    from gasp.gt.wenv.grs  import run_grass
+    from gasp.pyt.oss      import fprop
+    from gasp.gt.tbl.tomtx import tbl_to_areamtx
+
+    # Check if folder exists, if not create it
+    if not os.path.exists(out_folder):
+        from gasp.pyt.oss import mkdir
+        mkdir (out_folder)
+    
+    # Start GRASS GIS Session
+    gbase = run_grass(
+        out_folder, grassBIN='grass78', location='shpdif',
+        srs=refrst
+    )
+
+    import grass.script.setup as gsetup
+
+    gsetup.init(gbase, out_folder, 'shpdif', 'PERMANENT')
+
+    from gasp.gt.toshp.cff import shp_to_grs, grs_to_shp
+    from gasp.gt.torst     import rst_to_grs
+    from gasp.gt.tbl.fld   import rn_cols
+    from gasp.gt.toshp.rst import rst_to_polyg
+
+    # Convert to SHAPE if file is Raster
+    # Rename interest columns
+    i = 0
+    lstff = [refshp] + list(shps.keys())
+    __shps = {}
+    for s in lstff:
+        is_rst = check_isRaster(s)
+
+        if is_rst:
+            # To GRASS
+            rname = fprop(s, 'fn')
+            inrst = rst_to_grs(s, "rst_" + rname, as_cmd=True)
+
+            # To vector
+            d = rst_to_polyg(
+                inrst, rname,
+                rstColumn="lulc_{}".format(str(i)), gisApi="grass"
+            )
+        
+        else:
+            # To GRASS
+            d = shp_to_grs(s, fprop(s, 'fn'), asCMD=True)
+
+            # Change name of interest colum
+            rn_cols(d, {
+                shps[s] if i else refcol : "lulc_{}".format(str(i))
+            }, api="grass")
+
+        # Export To Shapefile
+        if not i:
+            refshp = grs_to_shp(d, os.path.join(out_folder, d + '.shp'), 'area')
+            refcol = "lulc_{}".format(str(i))
+        
+        else:
+            shp = grs_to_shp(d, os.path.join(out_folder, d + '.shp'), 'area')
+            __shps[shp] = "lulc_{}".format(str(i))
+        
+        i += 1
+    
+    # Union Shapefiles
+    union_shape = {}
+
+    for shp in __shps:
+        # Optimized Union
+        sname = fprop(shp, 'fn')
+        union_shape[shp] = optimized_union_anls(
+            shp, refshp,
+            os.path.join(out_folder, sname + '_un.shp'),
+            refrst,
+            os.path.join(out_folder, "wk_" + sname), multiProcess=True
+        )
+        
+        # Produce confusion matrices
+        mtxf = tbl_to_areamtx(
+            union_shape[shp], "a_" + __shps[shp], 'b_' + refcol,
+            os.path.join(out_folder, sname + '.xlsx'),
+            db=db, with_metrics=True
+        )
+
+    return out_folder
