@@ -15,19 +15,18 @@ def save_geodata(request, field_tag, folder):
     
     import os
     from gasp.web.djg.ff import save_file
+    from gasp.gt.prop.ff import vector_formats, raster_formats
     
     files = request.FILES.getlist(field_tag)
     
+    # Save all files
+    ff = []
     for f in files:
         save_file(folder, f)
+
+        ffmt = os.path.splitext(f)[1]
+        if ffmt in vector_formats or ffmt in raster_formats:
+            ff.append(os.path.join(folder, f))
     
-    if len(files) > 1:
-        shape = os.path.join(folder, '{f_name}.shp'.format(
-            f_name = os.path.splitext(files[0].name)[0]
-        ))
-    
-    else:
-        shape = os.path.join(folder, files[0].name)
-    
-    return shape
+    return None if not len(ff) else ff[0] if len(ff) == 1 else ff
 
