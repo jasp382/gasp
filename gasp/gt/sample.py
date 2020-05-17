@@ -12,17 +12,17 @@ def create_fishnet(boundary, shpfishnet, x, y, xy_row_col=None, srs=None):
     
     import os
     from gasp.gt.prop.ext import get_ext
-    from gasp.gt.prop.prj import get_srs
+    from gasp.gt.prop.prj import get_epsg
     from gasp.g.smp       import fishnet
 
     # Check Path
-    if not os.path.exists(os.path.dirname(fishnet)):
+    if not os.path.exists(os.path.dirname(shpfishnet)):
         raise ValueError('The path for the output doesn\'t exist')
     
     # Get boundary extent
     xmin, xmax, ymin, ymax = get_ext(boundary)
     # Get SRS
-    epsg = get_srs(boundary) if not srs else int(srs)
+    epsg = get_epsg(boundary) if not srs else int(srs)
     
     return fishnet(
         (xmin, ymax), (xmax, ymin),
@@ -379,3 +379,37 @@ def rst_val_to_points2(pntShp, listRasters):
     
     return pntDict
 
+
+"""
+Extract features from files
+"""
+
+def extract_random_features(inshp, nfeat, outshp, is_percentage=None):
+    """
+    Extract Random features from one Feature Class
+    and save them in a new file
+    """
+
+    import numpy as np
+    from gasp.gt.fmshp    import shp_to_obj
+    from gasp.gt.toshp    import obj_to_shp
+    from gasp.gt.prop.prj import get_epsg_shp
+
+    # Open data
+    df = shp_to_obj(inshp)
+
+    # Get number of random features
+    n = int(round(nfeat * df.shape[0] / 100, 0)) if is_percentage else nfeat
+
+    # Get random sample
+    df['idx'] = df.index
+    rnd = np.random.choice(df.idx, n, replace=False)
+
+    # Filter features
+    rnd_df = df[df.idx.isin(rnd)]
+
+    rnd_df.drop('idx', axis=1, inplace=True)
+
+    # Save result
+    epsg = get_epsg_shp(inshp)
+    return obj_to_shp(rnd_df, 'geometry', epsg, outshp)

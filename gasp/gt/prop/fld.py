@@ -46,8 +46,6 @@ def map_pyType_fldCode(pyObj):
         return 2
     elif type(pyObj) == int:
         return 12
-    elif type(pyObj) == long:
-        return 12
     elif type(pyObj) == str:
         return 4
     else:
@@ -108,4 +106,20 @@ def ogr_list_fields_defn(shp):
         data.Destroy()
     
     return fields
+
+
+def lst_cols(shp):
+    """
+    Return columns in GeoFile
+    """
+
+    from gasp.gt.fmshp import shp_to_obj
+
+    df = shp_to_obj(shp)
+
+    cols = df.columns.values
+
+    del df
+
+    return cols
 
