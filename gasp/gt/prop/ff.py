@@ -4,7 +4,9 @@ File Format Properties
 
 def vector_formats():
     return [
-        '.shp', '.gml', '.json', '.geojson', '.kml'
+        '.shp', '.gml', '.json', '.geojson', '.kml',
+        '.osm', '.pbf', '.dbf', '.vct', '.nc', '.vrt',
+        '.sqlite', '.gdb'
     ]
 
 
