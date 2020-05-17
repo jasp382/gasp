@@ -33,3 +33,4 @@ djangorestframework==3.11.0
 sentinelsat==0.13
 simpledbf==0.2.6
 #mysqlclient==1.4.6
+xmltodict

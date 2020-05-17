@@ -219,7 +219,7 @@ def write_raster_sld(attrProp, outSld, dataType="CATEGORICAL"):
     
     # Create a propor dict with style options for every value
     attrStyleOptions = {}
-    RASTER_VALUES = attrProp.keys()
+    RASTER_VALUES = list(attrProp.keys())
     RASTER_VALUES.sort()
     rules_Order = []
     i = 1
