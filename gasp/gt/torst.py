@@ -636,7 +636,7 @@ def shpext_to_rst(inShp, outRaster, cellsize=None, epsg=None,
     
     # Get extent
     try:
-        left, right, bottom, top = get_ext(inShp, gisApi='ogr')
+        left, right, bottom, top = get_ext(inShp)
     except:
         left, right, bottom, top = inShp.GetEnvelope()
     

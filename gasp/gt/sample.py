@@ -30,125 +30,82 @@ def create_fishnet(boundary, shpfishnet, x, y, xy_row_col=None, srs=None):
     )
 
 
-def points_as_grid(boundary, fishnet_pnt, width=None, height=None,
-                   nr_cols=None, nr_rows=None):
+def nfishnet_fm_rst(rst, max_row, max_col, out_fld):
     """
-    Equivalent to the centroid of each cell of a fishnet grid
+    Create N fishnets for the extent of one raster file
+    the number of fishnets (N) will be determined by the extent of the raster
+    and values max_row/max_col
+
+    Fishnet cellsize will be the same as the raster
     """
-    
-    import os; from osgeo import ogr
-    from math             import ceil
-    from gasp.pyt.oss     import fprop
-    from gasp.gt.prop.ff  import drv_name
-    from gasp.gt.prop.ext import get_ext
-    from gasp.gt.prop.prj import get_shp_sref
-    
-    # Get boundary extent
-    xmin, xmax, ymin, ymax = get_ext(boundary)
-    
-    # Clean width and height
-    if width and height:
-        if type(width) != float:
-            try:
-                # Convert to float
-                width = float(width)
-            except:
-                raise ValueError(
-                    'Width value is not valid. Please give a numeric value'
-                )
+
+    import os
+    from osgeo           import gdal
+    from gasp.g.prop.img import get_cell_size, rst_epsg
+    from gasp.g.smp      import fishnet
+
+    # Open Raster
+    img = gdal.Open(rst)
+
+    # Get EPSG
+    epsg = rst_epsg(img)
+
+    # Get Cellsize
+    tl_x, cs_x, xr, tl_y, yr, cs_y = img.GetGeoTransform()
+
+    # Get N cols and Rows
+    numimg = img.ReadAsArray()
+    nrows = numimg.shape[0]
+    ncols = numimg.shape[1]
+
+    # Get raster max_x and min_y
+    rst_max_x = tl_x + (ncols * cs_x)
+    rst_min_y = tl_y + (nrows * cs_y)
+
+    # Fishnet N
+    fnrows = int(nrows / max_row)
+    fnrows = fnrows if fnrows == nrows / max_row else fnrows + 1
+    fncols = int(ncols / max_col)
+    fncols = fncols if fncols == ncols / max_col else fncols + 1
+
+    fi = 1
+    fishp = []
+    for i in range(fnrows):
+        # TopLeft Y
+        tly = tl_y + ((max_row * cs_y) * i)
+
+        # BottomRight Y
+        bry = tly + (cs_y * max_row)
+        # If fishnet min y is lesser than raster min_y
+        # Use raster min_y
+
+        if bry < rst_min_y:
+            bry = rst_min_y
         
-        if type(height) != float:
-            try:
-                # Convert to float
-                height = float(height)
-            except:
-                raise ValueError(
-                    'Height value is not valid. Please give a numeric value'
-                )
-    
-    else:
-        if nr_cols and nr_rows:
-            if type(nr_cols) != float:
-                try:
-                    # convert to float
-                    nr_cols = float(nr_cols)
-                except:
-                    raise ValueError(
-                        'Columns number value is not valid. Please give a numeric value'
-                    )
+        for e in range(fncols):
+            # TopLeft X 
+            tlx = tl_x + ((max_col * cs_x) * e)
+
+            # BottomRight X
+            brx = tlx + (cs_x * max_col)
+
+            # If fishnet max x is greater than raster max_x
+            # Use raster max_x
+            if brx > rst_max_x:
+                brx = rst_max_x
             
-            if type(nr_rows) != float:
-                try:
-                    nr_rows = float(nr_rows)
-                except:
-                    raise ValueError(
-                        'Lines number value is not valid. Please give a numeric value'
-                    )
-            
-            width = (xmax + xmin) / nr_cols
-            height = (ymax + ymin) / nr_rows
-        
-        else:
-            raise ValueError('Please giver numeric values to with/height or to nr_cols/nr_rows')
-    
-    # get rows number
-    rows = ceil((ymax-ymin) / height)
-    # get columns number
-    cols = ceil((xmax-xmin) / width)
-    
-    # Create output file
-    if not os.path.exists(os.path.dirname(fishnet_pnt)):
-        return 'The path for the output doesn\'t exist'
-    
-    out_fishnet = ogr.GetDriverByName(drv_name(
-        fishnet_pnt)).CreateDataSource(fishnet_pnt)
-    fishnet_lyr = out_fishnet.CreateLayer(
-        fprop(fishnet_pnt, 'fn'), get_shp_sref(boundary),
-        geom_type=ogr.wkbPoint
-    )
-    
-    feat_defn = fishnet_lyr.GetLayerDefn()
-    
-    # create grid cells
-    # - start grid cell envelope -#
-    ringXleftOrigin = xmin
-    ringXrightOrigin = xmin + width
-    ringYtopOrigin = ymax
-    ringYbottomOrigin = ymax - height
-    
-    count_cols = 0
-    while count_cols < cols:
-        count_cols += 1
-        
-        # reset envelope for rows
-        ringYtop = ringYtopOrigin
-        ringYbottom = ringYbottomOrigin
-        count_rows = 0
-        
-        while count_rows < rows:
-            count_rows += 1
-            
-            pnt = ogr.Geometry(ogr.wkbPoint)
-            pnt.AddPoint(
-                (ringXleftOrigin + ringXrightOrigin) / 2.0,
-                (ringYbottom + ringYtop) / 2.0
+            # Create fishnet file
+            fshp = fishnet(
+                (tlx, tly), (brx, bry),
+                os.path.join(out_fld, 'fishnet_{}.shp'.format(str(fi))),
+                cs_x, abs(cs_y), epsg=epsg
             )
-            
-            # add new geom to layer
-            out_feature = ogr.Feature(feat_defn)
-            out_feature.SetGeometry(pnt)
-            fishnet_lyr.CreateFeature(out_feature)
-            out_feature = None
-            
-            # new envelope for next poly
-            ringYtop = ringYtop - height
-            ringYbottom = ringYbottom - height
-        
-        # new envelope for next poly
-        ringXleftOrigin = ringXleftOrigin + width
-        ringXrightOrigin = ringXrightOrigin + width
-    
-    out_fishnet.Destroy()
+
+            fishp.append(fshp)
+
+            fi += 1
+
+    return fishp
 
 
 """
