@@ -12,17 +12,17 @@ def create_fishnet(boundary, shpfishnet, x, y, xy_row_col=None, srs=None):
     
     import os
     from gasp.gt.prop.ext import get_ext
-    from gasp.gt.prop.prj import get_srs
+    from gasp.gt.prop.prj import get_epsg
     from gasp.g.smp       import fishnet
 
     # Check Path
-    if not os.path.exists(os.path.dirname(fishnet)):
+    if not os.path.exists(os.path.dirname(shpfishnet)):
         raise ValueError('The path for the output doesn\'t exist')
     
     # Get boundary extent
     xmin, xmax, ymin, ymax = get_ext(boundary)
     # Get SRS
-    epsg = get_srs(boundary) if not srs else int(srs)
+    epsg = get_epsg(boundary) if not srs else int(srs)
     
     return fishnet(
         (xmin, ymax), (xmax, ymin),

@@ -10,7 +10,7 @@ def rst_to_polyg(inRst, outShp, rstColumn=None, gisApi='gdal', epsg=None):
     * gdal;
     * qgis;
     * pygrass;
-    * grasscmd
+    * grass;
     """
     
     if gisApi == 'gdal':
@@ -57,7 +57,7 @@ def rst_to_polyg(inRst, outShp, rstColumn=None, gisApi='gdal', epsg=None):
         )
         rtop()
     
-    elif gisApi == 'grasscmd':
+    elif gisApi == 'grass':
         from gasp import exec_cmd
         
         rstField = "value" if not rstColumn else rstColumn

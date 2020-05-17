@@ -146,11 +146,12 @@ def db_to_tbl(db, tables, outTbl, txtDelimiter=None, dbAPI='psql',
         if outTblF[0] == '.' else '.' + outTblF
     
     if len(tables) > 1:
-        if not os.path.isdir(outTbl) or not outTblF:
-            raise ValueError((
-                "When tables has more than one table, "
-                "outTbl must be dir and outTblF must be specified"
-            ))
+        if not sheetsNames:
+            if not os.path.isdir(outTbl) or not outTblF:
+                raise ValueError((
+                    "When tables has more than one table, "
+                    "outTbl must be dir and outTblF must be specified"
+                ))
     
     elif len(tables) == 1:
         if os.path.isdir(outTbl) and outTblF:
@@ -175,7 +176,7 @@ def db_to_tbl(db, tables, outTbl, txtDelimiter=None, dbAPI='psql',
         "SELECT") else "SELECT * FROM {}".format(t), db_api=dbAPI
     ) for t in tables]
     
-    if os.path.isfile(outTbl):
+    if os.path.splitext(outTbl)[1] != '':
         from gasp.pyt.oss import fprop
         
         ff = fprop(outTbl, 'ff')
