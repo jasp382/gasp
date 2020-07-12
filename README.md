@@ -1,4 +1,4 @@
 GeoData Algorithms for Spatial Problems (GASP)
 ====================
 
-**GASP has been discontinued. You can find a new version that will replace it at**
+**GASP has been discontinued. You can find a new version that will replace it at https://github.com/jasp382/glass**
